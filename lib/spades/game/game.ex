@@ -1,5 +1,5 @@
 defmodule Spades.Game do
-  defstruct ~w(current_player dealer deck leader play_order players scores state trick)a
+  defstruct ~w(advance current_player dealer deck leader play_order players scores spades_broken state trick)a
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
@@ -33,6 +33,7 @@ defmodule Spades.Game do
     player = Map.get(game.players, name)
 
     %{
+      advance: false,
       cards: player.hand.cards,
       call: player.hand.call,
       leader: game.leader,
@@ -40,6 +41,7 @@ defmodule Spades.Game do
       scores: game.scores,
       current_player: game.current_player,
       play_order: game.play_order,
+      spades_broken: false,
       state: game.state
     }
   end
@@ -70,7 +72,7 @@ defmodule Spades.Game do
       ) do
     if can_play?(game, name) do
       game
-      |> update_player(name, &Player.make_call(&1, call))
+      |> maybe_make_call(name, call)
       |> next_player()
       |> maybe_start_game()
     else
@@ -103,6 +105,10 @@ defmodule Spades.Game do
     }
   end
 
+  defp advance(game) do
+    %{game | advance: true}
+  end
+
   defp maybe_deal_cards(%__MODULE__{players: players} = game) when map_size(players) == 4 do
     deal_cards(game)
   end
@@ -120,17 +126,30 @@ defmodule Spades.Game do
     Enum.at(game.play_order, game.current_player) == name
   end
 
-  defp next_player(game) do
-    %{game | current_player: rem(game.current_player + 1, 4)}
+  defp next_player(%__MODULE__{advance: true} = game) do
+    %{game | current_player: rem(game.current_player + 1, 4), advance: false}
   end
 
-  defp update_player(game, name, func) do
-    %{game | players: Map.update!(game.players, name, func)}
+  defp next_player(game), do: game
+
+  def maybe_make_call(
+        %__MODULE__{play_order: play_order, current_player: current_player} = game,
+        name,
+        call
+      ) do
+    if Enum.at(play_order, current_player) == name do
+      %{game | players: Map.update!(game.players, name, &Player.make_call(&1, call))}
+      |> advance()
+    else
+      game
+    end
   end
 
   defp maybe_play_card(%__MODULE__{trick: []} = game, name, card) do
     %{game | trick: [{name, card}]}
     |> take_card_from_hand(name, card)
+    |> spades_broken(card)
+    |> advance()
   end
 
   defp maybe_play_card(
@@ -141,9 +160,15 @@ defmodule Spades.Game do
     if lead.suit == card.suit || Player.can_play_spade?(players[name], lead.suit) do
       %{game | trick: [{name, card} | trick]}
       |> take_card_from_hand(name, card)
+      |> spades_broken(card)
+      |> advance()
     else
       game
     end
+  end
+
+  defp spades_broken(game, card) do
+    %{game | spades_broken: card.suit == :spades || game.spades_broken}
   end
 
   defp take_card_from_hand(game, name, card) do

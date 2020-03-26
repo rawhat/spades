@@ -11,7 +11,7 @@ defmodule Spades.Game.Player do
     }
   end
 
-  def receive_cards(%__MODULE__{} = player, cards) do
+  def receive_cards(%__MODULE__{} = player, cards) when is_list(cards) do
     %{player | hand: Hand.new(cards)}
   end
 
