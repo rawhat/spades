@@ -18,25 +18,12 @@ defmodule Spades.Game.GameManager do
     GenServer.call(pid, {:get_state, name})
   end
 
-  def start_game(pid) do
-    GenServer.call(pid, :start_game)
-  end
-
   def make_call(pid, name, value) do
     GenServer.call(pid, {:make_call, name, value})
   end
 
   def play_card(pid, name, card) do
     GenServer.call(pid, {:play_card, name, card})
-  end
-
-  # TODO: remove
-  def test_init(pid) do
-    GenServer.call(pid, {:init, [{0, "alex"}, {0, "jon"}, {1, "jake"}, {1, "gopal"}]})
-  end
-
-  def get_state(pid) do
-    GenServer.call(pid, :get_state)
   end
 
   # Server
@@ -58,17 +45,6 @@ defmodule Spades.Game.GameManager do
   end
 
   @impl true
-  def handle_call(:start_game, _from, game) do
-    case Game.start_game(game) do
-      {:ok, started_game} ->
-        {:reply, :ok, started_game}
-
-      {:err, _} ->
-        {:reply, :err, game}
-    end
-  end
-
-  @impl true
   def handle_call({:make_call, name, value}, _from, game) do
     {:reply, :ok, Game.make_call(game, name, value)}
   end
@@ -76,18 +52,5 @@ defmodule Spades.Game.GameManager do
   @impl true
   def handle_call({:play_card, name, card}, _from, game) do
     {:reply, :ok, Game.play_card(game, name, card)}
-  end
-
-  # TODO: remove
-  @impl true
-  def handle_call({:init, players}, _from, game) do
-    players = Enum.map(players, fn {team, name} -> Player.new(name, team) end)
-    new_game = Enum.reduce(players, game, fn player, g -> Game.add_player(g, player) end)
-    {:reply, :ok, new_game}
-  end
-
-  @impl true
-  def handle_call(:get_state, _from, game) do
-    {:reply, game, game}
   end
 end

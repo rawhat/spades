@@ -2,6 +2,7 @@ defmodule Spades.Game.Player do
   @enforce_keys [:name, :team]
   defstruct ~w(hand name team)a
 
+  alias Spades.Game.Card
   alias Spades.Game.Hand
 
   def new(name, team) do
@@ -46,8 +47,17 @@ defmodule Spades.Game.Player do
     |> Enum.filter(&(&1.team == team))
   end
 
-  def can_play_spade?(%__MODULE__{hand: hand}, suit, broken) do
-    broken || Enum.all?(hand.cards, &(&1.suit != suit))
+  def can_play?(%__MODULE__{hand: hand}, %Card{suit: :spades}, nil, broken) do
+    Enum.all?(hand.cards, &(&1.suit == :spades)) || broken
+  end
+
+  def can_play?(_player, _card, nil, _broken), do: true
+
+  def can_play?(%__MODULE__{hand: hand}, card, lead, broken) do
+    Enum.member?(hand.cards, card) &&
+      (card.suit == lead.suit ||
+         Enum.all?(hand.cards, &(&1.suit != lead.suit)) ||
+         (card.suit == :spades && broken))
   end
 
   def play_card(%__MODULE__{hand: hand} = player, card) do

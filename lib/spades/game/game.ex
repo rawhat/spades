@@ -14,6 +14,7 @@ defmodule Spades.Game do
       players: %{},
       play_order: [],
       scores: %{0 => 0, 1 => 0},
+      spades_broken: false,
       state: :waiting,
       trick: []
     }
@@ -32,38 +33,23 @@ defmodule Spades.Game do
   def state_for_player(%__MODULE__{} = game, name) do
     player = Map.get(game.players, name)
 
-    %{
-      advance: false,
-      cards: player.hand.cards,
-      call: player.hand.call,
-      leader: game.leader,
-      tricks: player.hand.tricks,
-      scores: game.scores,
-      current_player: game.current_player,
-      play_order: game.play_order,
-      spades_broken: false,
-      state: game.state
-    }
+    if player == nil do
+      %{}
+    else
+      %{
+        cards: if(player.hand == nil, do: [], else: player.hand.cards),
+        call: if(player.hand == nil, do: -2, else: player.hand.call),
+        leader: game.leader,
+        tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
+        scores: game.scores,
+        current_player: game.current_player,
+        play_order: game.play_order,
+        spades_broken: game.spades_broken,
+        state: game.state,
+        trick: game.trick
+      }
+    end
   end
-
-  # def start_game(%__MODULE__{} = game) do
-  # cond do
-  # game.state == :waiting && Enum.count(game.players) == 4 ->
-  # play_order =
-  # Map.keys(game.players)
-  # |> Enum.shuffle()
-
-  # {:ok,
-  # %{
-  # deal_cards(game)
-  # | state: :bidding,
-  # play_order: play_order
-  # }}
-
-  # true ->
-  # {:err, game}
-  # end
-  # end
 
   def make_call(
         %__MODULE__{state: :bidding} = game,
@@ -93,7 +79,6 @@ defmodule Spades.Game do
       |> maybe_award_trick()
       |> maybe_end_hand()
       |> maybe_end_round()
-      |> next_player()
     else
       game
     end
@@ -149,11 +134,15 @@ defmodule Spades.Game do
     end
   end
 
-  defp maybe_play_card(%__MODULE__{trick: []} = game, name, card) do
-    %{game | trick: [{name, card}]}
-    |> take_card_from_hand(name, card)
-    |> spades_broken(card)
-    |> advance()
+  defp maybe_play_card(%__MODULE__{trick: [], players: players} = game, name, card) do
+    if Player.can_play?(players[name], card, nil, game.spades_broken) do
+      %{game | trick: [{name, card}]}
+      |> take_card_from_hand(name, card)
+      |> spades_broken(card)
+      |> advance()
+    else
+      game
+    end
   end
 
   defp maybe_play_card(
@@ -161,13 +150,12 @@ defmodule Spades.Game do
          name,
          card
        ) do
-    if lead.suit == card.suit || (Player.can_play_spade?(players[name], lead.suit, game.spades_broken) && card.suit == :spades) do
+    if Player.can_play?(players[name], card, lead, game.spades_broken) do
       %{game | trick: [{name, card} | trick]}
       |> take_card_from_hand(name, card)
       |> spades_broken(card)
       |> advance()
     else
-      IO.puts "can't play: #{name}, #{inspect(card)}, #{inspect(players[name])}"
       game
     end
   end
@@ -191,17 +179,19 @@ defmodule Spades.Game do
         true -> elem(Card.max_of_suit(trick, lead.suit), 0)
       end
 
+    winner = Enum.find_index(game.play_order, &(&1 == name))
+
     %{
       game
       | players: Map.update!(game.players, name, &Player.take(&1)),
-        leader: Enum.find_index(game.play_order, &(&1 == name))
+        leader: winner,
+        current_player: winner
     }
   end
 
-  defp maybe_award_trick(game), do: game
+  defp maybe_award_trick(game), do: next_player(game)
 
   defp maybe_start_game(game) do
-    #IO.inspect game
     if Enum.all?(game.players, &(elem(&1, 1).hand.call != nil)) do
       %{game | state: :playing}
     else
@@ -224,7 +214,7 @@ defmodule Spades.Game do
     if all_empty do
       game
       |> award_points()
-      |> deal_cards()
+      |> deal_cards(true)
       |> start_bidding()
     else
       game
@@ -243,7 +233,9 @@ defmodule Spades.Game do
     %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
   end
 
-  defp deal_cards(%__MODULE__{deck: deck, players: players, play_order: play_order} = game) do
+  defp deal_cards(%__MODULE__{players: players, play_order: play_order} = game, shuffle \\ false) do
+    deck = if shuffle, do: Enum.shuffle(game.deck), else: game.deck
+
     dealt_players =
       Enum.chunk_every(deck, 4)
       |> Enum.zip()

@@ -66,17 +66,112 @@ defmodule Spades.Game.GameTest do
     assert g.current_player == 0
   end
 
-  test "play all cards, round ends", %{game: game, deck: deck} do
+  test "play all cards, round ends", %{game: game, deck: deck, p1: p1, p2: p2, p3: p3, p4: p4} do
     g =
-      Game.play_card(game, "alex", Enum.at(deck, 0))
-      |> Game.play_card("jon", Enum.at(deck, 1))
-      |> Game.play_card("jake", Enum.at(deck, 2))
-      |> Game.play_card("gopal", Enum.at(deck, 3))
-      |> Game.play_card("alex", Enum.at(deck, 4))
-      |> Game.play_card("jon", Enum.at(deck, 5))
-      |> Game.play_card("jake", Enum.at(deck, 6))
-      |> Game.play_card("gopal", Enum.at(deck, 7))
+      Game.play_card(game, p1.name, Enum.at(deck, 0))
+      |> Game.play_card(p2.name, Enum.at(deck, 1))
+      |> Game.play_card(p3.name, Enum.at(deck, 2))
+      |> Game.play_card(p4.name, Enum.at(deck, 3))
+      |> Game.play_card(p1.name, Enum.at(deck, 4))
+      |> Game.play_card(p2.name, Enum.at(deck, 5))
+      |> Game.play_card(p3.name, Enum.at(deck, 6))
+      |> Game.play_card(p4.name, Enum.at(deck, 7))
 
     assert g.scores == %{0 => -79, 1 => -70}
+  end
+
+  test "can't play non-matching card", %{game: game, deck: deck, p1: p1, p2: p2} do
+    g =
+      Game.play_card(game, p1.name, Enum.at(deck, 0))
+      |> Game.play_card(p2.name, Enum.at(deck, 5))
+
+    assert g.trick == [{p1.name, Enum.at(deck, 0)}]
+  end
+
+  test "spades not broken, can't lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
+    deck = [
+      Card.new(:diamond, 2),
+      Card.new(:diamond, 3),
+      Card.new(:diamond, 4),
+      Card.new(:diamond, 5),
+      Card.new(:spades, 2),
+      Card.new(:hearts, 2),
+      Card.new(:hearts, 3),
+      Card.new(:hearts, 4)
+    ]
+
+    game =
+      Game.new(deck)
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.make_call(p1.name, 1)
+      |> Game.make_call(p2.name, 1)
+      |> Game.make_call(p3.name, 1)
+      |> Game.make_call(p4.name, 1)
+      |> Game.play_card(p1.name, Card.new(:spades, 2))
+
+    assert game.trick == []
+  end
+
+  test "only have spades, can lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
+    deck = [
+      Card.new(:spades, 2),
+      Card.new(:diamond, 3),
+      Card.new(:diamond, 4),
+      Card.new(:diamond, 5)
+    ]
+
+    game =
+      Game.new(deck)
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.make_call(p1.name, 1)
+      |> Game.make_call(p2.name, 1)
+      |> Game.make_call(p3.name, 1)
+      |> Game.make_call(p4.name, 1)
+      |> Game.play_card(p1.name, Card.new(:spades, 2))
+
+    assert game.trick == [{p1.name, Card.new(:spades, 2)}]
+  end
+
+  test "once spades are broken, they can be lead", %{p1: p1, p2: p2, p3: p3, p4: p4} do
+    deck = [
+      Card.new(:diamond, 2),
+      Card.new(:diamond, 3),
+      Card.new(:hearts, 4),
+      Card.new(:hearts, 5),
+      #
+      Card.new(:diamond, 4),
+      Card.new(:diamond, 5),
+      Card.new(:spades, 4),
+      Card.new(:spades, 5),
+      #
+      Card.new(:diamond, 6),
+      Card.new(:diamond, 7),
+      Card.new(:spades, 6),
+      Card.new(:spades, 7)
+    ]
+
+    game =
+      Game.new(deck)
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.make_call(p1.name, 1)
+      |> Game.make_call(p2.name, 1)
+      |> Game.make_call(p3.name, 1)
+      |> Game.make_call(p4.name, 1)
+      |> Game.play_card(p1.name, Enum.at(deck, 0))
+      |> Game.play_card(p2.name, Enum.at(deck, 1))
+      |> Game.play_card(p3.name, Enum.at(deck, 6))
+      |> Game.play_card(p4.name, Enum.at(deck, 7))
+      |> Game.play_card(p4.name, Enum.at(deck, 11))
+
+    assert game.trick == [{p4.name, Card.new(:spades, 7)}]
   end
 end

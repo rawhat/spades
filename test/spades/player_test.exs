@@ -45,12 +45,17 @@ defmodule Spades.Game.PlayerTest do
     assert Player.get_team_players(player_map, 0) == [alex, jon]
   end
 
-  test "when only spades, can play spades", %{alex: alex} do
-    assert Player.can_play_spade?(alex, :heart, false) == true
+  test "when only spades in hand, can play spades", %{alex: alex, ace_of_spades: ace_of_spades} do
+    assert Player.can_play?(alex, ace_of_spades, nil, false) == true
   end
 
-  test "when other suits, can't play spades", %{jon: jon} do
-    assert Player.can_play_spade?(jon, :hearts, false) == false
+  test "when spades not broken, can't play spades", %{jon: jon, ace_of_spades: ace_of_spades} do
+    assert Player.can_play?(jon, ace_of_spades, nil, false) == false
+  end
+
+  test "when hand has lead suit and attempting to play other", %{jon: jon} do
+    assert Player.can_play?(jon, Card.new(:hearts, 10), Card.new(:diamond, 10), false) ==
+             false
   end
 
   test "playing card removes from hand", %{alex: alex, ace_of_spades: ace_of_spades} do
@@ -105,6 +110,7 @@ defmodule Spades.Game.PlayerTest do
 
   test "score with nil", %{alex: alex, jon: jon} do
     alex = Player.make_call(alex, 0)
+
     jon =
       Player.make_call(jon, 3)
       |> Player.take()
