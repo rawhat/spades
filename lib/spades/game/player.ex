@@ -41,14 +41,13 @@ defmodule Spades.Game.Player do
     end
   end
 
-  def get_team_hands(players, team) do
+  def get_team_players(players, team) do
     Map.values(players)
     |> Enum.filter(&(&1.team == team))
-    |> Enum.map(& &1.hand)
   end
 
-  def can_play_spade?(%__MODULE__{hand: hand}, suit) do
-    !Enum.any?(hand.cards, fn card -> card.suit == suit end)
+  def can_play_spade?(%__MODULE__{hand: hand}, suit, broken) do
+    broken || Enum.all?(hand.cards, &(&1.suit != suit))
   end
 
   def play_card(%__MODULE__{hand: hand} = player, card) do

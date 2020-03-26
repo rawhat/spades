@@ -4,7 +4,7 @@ defmodule Spades.Game.HandTest do
   alias Spades.Game.Card
   alias Spades.Game.Hand
 
-  setup do
+  setup_all do
     ace_of_spades = Card.new(:spades, 1)
     two_of_hearts = Card.new(:hearts, 2)
 

@@ -2,10 +2,9 @@ defmodule Spades.Game.PlayerTest do
   use ExUnit.Case
 
   alias Spades.Game.Card
-  alias Spades.Game.Hand
   alias Spades.Game.Player
 
-  setup do
+  setup_all do
     ace_of_spades = Card.new(:spades, 1)
     queen_of_hearts = Card.new(:hearts, 12)
     three_of_diamonds = Card.new(:diamonds, 3)
@@ -42,16 +41,16 @@ defmodule Spades.Game.PlayerTest do
      ace_of_spades: ace_of_spades}
   end
 
-  test "get team hands", %{player_map: player_map, only_spades: only_spades, all_cards: all_cards} do
-    assert Player.get_team_hands(player_map, 0) == [Hand.new(only_spades), Hand.new(all_cards)]
+  test "get team hands", %{player_map: player_map, alex: alex, jon: jon} do
+    assert Player.get_team_players(player_map, 0) == [alex, jon]
   end
 
   test "when only spades, can play spades", %{alex: alex} do
-    assert Player.can_play_spade?(alex, :heart) == true
+    assert Player.can_play_spade?(alex, :heart, false) == true
   end
 
   test "when other suits, can't play spades", %{jon: jon} do
-    assert Player.can_play_spade?(jon, :hearts) == false
+    assert Player.can_play_spade?(jon, :hearts, false) == false
   end
 
   test "playing card removes from hand", %{alex: alex, ace_of_spades: ace_of_spades} do

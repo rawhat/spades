@@ -6,7 +6,7 @@ defmodule Spades.Game.Deck do
     |> Enum.shuffle()
   end
 
-  defp generate_cards() do
+  def generate_cards() do
     for suit <- [:clubs, :diamonds, :hearts, :spades],
         value <- 1..13 do
       Card.new(suit, value)

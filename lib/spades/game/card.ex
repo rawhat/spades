@@ -14,7 +14,7 @@ defmodule Spades.Game.Card do
   def max_of_suit(cards, suit) when is_list(cards) do
     cards
     |> Enum.filter(fn {_, card} -> card.suit == suit end)
-    |> Enum.max_by(fn {_, card} -> card.value end, fn -> nil end)
+    |> Enum.max_by(fn {_, card} -> if card.value == 1, do: 14, else: card.value end, fn -> nil end)
   end
 end
 

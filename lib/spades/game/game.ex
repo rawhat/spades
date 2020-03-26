@@ -80,6 +80,8 @@ defmodule Spades.Game do
     end
   end
 
+  def make_call(game, _name, _call), do: game
+
   def play_card(
         %__MODULE__{state: :playing} = game,
         name,
@@ -96,6 +98,8 @@ defmodule Spades.Game do
       game
     end
   end
+
+  def play_card(game, _name, _card), do: game
 
   defp put_player(game, player) do
     %{
@@ -157,12 +161,13 @@ defmodule Spades.Game do
          name,
          card
        ) do
-    if lead.suit == card.suit || Player.can_play_spade?(players[name], lead.suit) do
+    if lead.suit == card.suit || (Player.can_play_spade?(players[name], lead.suit, game.spades_broken) && card.suit == :spades) do
       %{game | trick: [{name, card} | trick]}
       |> take_card_from_hand(name, card)
       |> spades_broken(card)
       |> advance()
     else
+      IO.puts "can't play: #{name}, #{inspect(card)}, #{inspect(players[name])}"
       game
     end
   end
@@ -196,9 +201,9 @@ defmodule Spades.Game do
   defp maybe_award_trick(game), do: game
 
   defp maybe_start_game(game) do
+    #IO.inspect game
     if Enum.all?(game.players, &(elem(&1, 1).hand.call != nil)) do
       %{game | state: :playing}
-      |> deal_cards()
     else
       game
     end
@@ -220,6 +225,7 @@ defmodule Spades.Game do
       game
       |> award_points()
       |> deal_cards()
+      |> start_bidding()
     else
       game
     end
@@ -227,25 +233,29 @@ defmodule Spades.Game do
 
   defp award_points(%__MODULE__{scores: scores, players: players} = game) do
     team_one_score =
-      Player.get_team_hands(players, 0)
+      Player.get_team_players(players, 0)
       |> Player.get_score()
 
     team_two_score =
-      Player.get_team_hands(players, 1)
+      Player.get_team_players(players, 1)
       |> Player.get_score()
 
     %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
   end
 
-  defp deal_cards(%__MODULE__{deck: deck, players: players} = game) do
+  defp deal_cards(%__MODULE__{deck: deck, players: players, play_order: play_order} = game) do
     dealt_players =
       Enum.chunk_every(deck, 4)
       |> Enum.zip()
-      |> Enum.zip(Map.values(players))
+      |> Enum.zip(Enum.reverse(play_order))
       |> Enum.map(fn {hand, player} ->
-        Player.receive_cards(player, Tuple.to_list(hand))
+        Player.receive_cards(players[player], Tuple.to_list(hand))
       end)
 
     %{game | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.name, &1))}
+  end
+
+  defp start_bidding(game) do
+    %{game | state: :bidding}
   end
 end

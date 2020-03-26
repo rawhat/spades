@@ -2,7 +2,7 @@ defmodule Spades.Game.GameTest do
   use ExUnit.Case
 
   alias Spades.Game
-  alias Spades.Game.Deck
+  alias Spades.Game.Card
   alias Spades.Game.Player
 
   setup_all do
@@ -11,7 +11,19 @@ defmodule Spades.Game.GameTest do
     p3 = Player.new("jake", 1)
     p4 = Player.new("gopal", 1)
 
-    deck = Deck.new()
+    deck = [
+      # First hand
+      Card.new(:diamond, 1),
+      Card.new(:diamond, 6),
+      Card.new(:diamond, 5),
+      Card.new(:diamond, 4),
+
+      # Second hand
+      Card.new(:hearts, 10),
+      Card.new(:hearts, 9),
+      Card.new(:hearts, 12),
+      Card.new(:spades, 2)
+    ]
 
     game =
       Game.new(deck)
@@ -42,29 +54,29 @@ defmodule Spades.Game.GameTest do
     assert Enum.count(g.trick) == 1
   end
 
-  test "play four cards, assign trick", %{p1: p1, p2: p2, p3: p3, p4: p4, game: game} do
+  test "play four cards, assign trick", %{game: game, deck: deck, p1: p1} do
     g =
-      Game.play_card(game, p1.name, Enum.at(p1.hand.cards, 0))
-      |> Game.play_card(p2.name, Enum.at(p2.hand.cards, 0))
-      |> Game.play_card(p3.name, Enum.at(p3.hand.cards, 0))
-      |> Game.play_card(p4.name, Enum.at(p4.hand.cards, 0))
-
-    IO.puts("hi")
-    IO.inspect(g)
+      Game.play_card(game, "alex", Enum.at(deck, 0))
+      |> Game.play_card("jon", Enum.at(deck, 1))
+      |> Game.play_card("jake", Enum.at(deck, 2))
+      |> Game.play_card("gopal", Enum.at(deck, 3))
 
     assert Enum.count(g.trick) == 0
+    assert g.players[p1.name].hand.tricks == 1
+    assert g.current_player == 0
   end
 
-  test "play all cards, round ends", %{p1: p1, p2: p2, p3: p3, p4: p4, game: game} do
+  test "play all cards, round ends", %{game: game, deck: deck} do
     g =
-      0..12
-      |> Enum.reduce(game, fn index, game ->
-        Game.play_card(game, p1.name, Enum.at(p1.hand.cards, index))
-        |> Game.play_card(p2.name, Enum.at(p2.hand.cards, index))
-        |> Game.play_card(p3.name, Enum.at(p3.hand.cards, index))
-        |> Game.play_card(p4.name, Enum.at(p4.hand.cards, index))
-      end)
+      Game.play_card(game, "alex", Enum.at(deck, 0))
+      |> Game.play_card("jon", Enum.at(deck, 1))
+      |> Game.play_card("jake", Enum.at(deck, 2))
+      |> Game.play_card("gopal", Enum.at(deck, 3))
+      |> Game.play_card("alex", Enum.at(deck, 4))
+      |> Game.play_card("jon", Enum.at(deck, 5))
+      |> Game.play_card("jake", Enum.at(deck, 6))
+      |> Game.play_card("gopal", Enum.at(deck, 7))
 
-    assert g.scores[0] != 0
+    assert g.scores == %{0 => -79, 1 => -70}
   end
 end
