@@ -1,15 +1,15 @@
 defmodule Spades.Game do
-  defstruct ~w(current_player dealer leader play_order players scores state trick)a
+  defstruct ~w(current_player dealer deck leader play_order players scores state trick)a
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
-  alias Spades.Game.Hand
   alias Spades.Game.Player
 
-  def new() do
+  def new(deck \\ Deck.new()) do
     %__MODULE__{
       current_player: 0,
       dealer: 0,
+      deck: deck,
       leader: 0,
       players: %{},
       play_order: [],
@@ -44,24 +44,24 @@ defmodule Spades.Game do
     }
   end
 
-  def start_game(%__MODULE__{} = game) do
-    cond do
-      game.state == :waiting && Enum.count(game.players) == 4 ->
-        play_order =
-          Map.keys(game.players)
-          |> Enum.shuffle()
+  # def start_game(%__MODULE__{} = game) do
+  # cond do
+  # game.state == :waiting && Enum.count(game.players) == 4 ->
+  # play_order =
+  # Map.keys(game.players)
+  # |> Enum.shuffle()
 
-        {:ok,
-         %{
-           deal_cards(game)
-           | state: :bidding,
-             play_order: play_order
-         }}
+  # {:ok,
+  # %{
+  # deal_cards(game)
+  # | state: :bidding,
+  # play_order: play_order
+  # }}
 
-      true ->
-        {:err, game}
-    end
-  end
+  # true ->
+  # {:err, game}
+  # end
+  # end
 
   def make_call(
         %__MODULE__{state: :bidding} = game,
@@ -85,10 +85,7 @@ defmodule Spades.Game do
       ) do
     if can_play?(game, name) do
       game
-      |> update_player(name, fn player ->
-        %{player | hand: Hand.play(player.hand, card)}
-      end)
-      |> add_to_trick(name, card)
+      |> maybe_play_card(name, card)
       |> maybe_award_trick()
       |> maybe_end_hand()
       |> maybe_end_round()
@@ -131,25 +128,37 @@ defmodule Spades.Game do
     %{game | players: Map.update!(game.players, name, func)}
   end
 
-  defp add_to_trick(game, name, card) do
-    %{game | trick: [{name, card} | game.trick]}
+  defp maybe_play_card(%__MODULE__{trick: []} = game, name, card) do
+    %{game | trick: [{name, card}]}
+    |> take_card_from_hand(name, card)
+  end
+
+  defp maybe_play_card(
+         %__MODULE__{trick: [{_, lead} | _] = trick, players: players} = game,
+         name,
+         card
+       ) do
+    if lead.suit == card.suit || Player.can_play_spade?(players[name], lead.suit) do
+      %{game | trick: [{name, card} | trick]}
+      |> take_card_from_hand(name, card)
+    else
+      game
+    end
+  end
+
+  defp take_card_from_hand(game, name, card) do
+    %{game | players: Map.update!(game.players, name, &Player.play_card(&1, card))}
   end
 
   defp maybe_award_trick(%__MODULE__{trick: trick} = game) when length(trick) == 4 do
-    [lead | _] = trick
+    [{_, lead} | _] = trick
 
-    max_spade =
-      trick
-      |> Enum.map(&elem(&1, 1))
-      |> Card.max_spade()
+    max_spade = Card.max_spade(trick)
 
     name =
       cond do
-        lead.suit == :spade || max_spade != nil ->
-          find_card_in_trick(trick, max_spade)
-
-        true ->
-          find_card_in_trick(trick, Card.max_of_suit(trick, lead.suit))
+        lead.suit == :spade || max_spade != nil -> elem(max_spade, 0)
+        true -> elem(Card.max_of_suit(trick, lead.suit), 0)
       end
 
     %{
@@ -163,7 +172,8 @@ defmodule Spades.Game do
 
   defp maybe_start_game(game) do
     if Enum.all?(game.players, &(elem(&1, 1).hand.call != nil)) do
-      start_game(game)
+      %{game | state: :playing}
+      |> deal_cards()
     else
       game
     end
@@ -176,7 +186,12 @@ defmodule Spades.Game do
   defp maybe_end_hand(game), do: game
 
   defp maybe_end_round(%__MODULE__{players: players} = game) do
-    if Enum.all?(players, &Enum.empty?(&1.hand.cards)) do
+    all_empty =
+      Enum.all?(players, fn {_, player} ->
+        Enum.empty?(player.hand.cards)
+      end)
+
+    if all_empty do
       game
       |> award_points()
       |> deal_cards()
@@ -186,18 +201,20 @@ defmodule Spades.Game do
   end
 
   defp award_points(%__MODULE__{scores: scores, players: players} = game) do
-    team_one_total = 
+    team_one_score =
+      Player.get_team_hands(players, 0)
+      |> Player.get_score()
+
+    team_two_score =
+      Player.get_team_hands(players, 1)
+      |> Player.get_score()
+
+    %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
   end
 
-  defp find_card_in_trick(trick, card) do
-    trick
-    |> Enum.find(&(elem(&1, 1) == card))
-    |> elem(0)
-  end
-
-  defp deal_cards(%__MODULE__{players: players} = game) do
+  defp deal_cards(%__MODULE__{deck: deck, players: players} = game) do
     dealt_players =
-      Enum.chunk_every(Deck.new(), 4)
+      Enum.chunk_every(deck, 4)
       |> Enum.zip()
       |> Enum.zip(Map.values(players))
       |> Enum.map(fn {hand, player} ->

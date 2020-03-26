@@ -21,12 +21,17 @@ defmodule Spades.Game.Hand do
   end
 
   def play(%__MODULE__{cards: cards} = hand, %Card{} = card) do
-    {card, %{hand | cards: Enum.filter(cards, &(&1 != card))}}
+    %{hand | cards: Enum.filter(cards, &(&1 != card))}
   end
 
-  def broken_nil?(%__MODULE__{call: 0, tricks: tricks}) when tricks != 0, do: true
-  def broken_nil?(_hand), do: false
+  def is_nil?(%__MODULE__{call: 0}), do: true
+  def is_nil?(%__MODULE__{call: -1}), do: true
+  def is_nil?(%__MODULE__{call: _}), do: false
 
-  def broken_blind_nil?(%__MODULE__{call: -1, tricks: tricks}) when tricks != 0, do: true
-  def broken_blind_nil?(_hand), do: false
+  def score(%__MODULE__{call: 0, tricks: 0}), do: 50
+  def score(%__MODULE__{call: 0, tricks: _}), do: -50
+  def score(%__MODULE__{call: -1, tricks: 0}), do: 100
+  def score(%__MODULE__{call: -1, tricks: _}), do: -100
+  def score(%__MODULE__{call: call, tricks: tricks}) when call == tricks, do: tricks * 10
+  def score(%__MODULE__{call: call}), do: call * -10
 end
