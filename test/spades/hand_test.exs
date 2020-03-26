@@ -36,7 +36,7 @@ defmodule Spades.Game.HandTest do
       Hand.call(hand, 0)
       |> Hand.take()
 
-    assert Hand.score(broken_nil) == -50
+    assert Hand.score(broken_nil) == -49
   end
 
   test "scoring made tricks hand", %{hand: hand} do

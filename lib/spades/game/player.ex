@@ -29,12 +29,12 @@ defmodule Spades.Game.Player do
     if exists_nil do
       Hand.score(hand1) + Hand.score(hand2)
     else
-      total_tricks = hand1.tricks + hand2.tricks
       taken = hand1.tricks + hand2.tricks
       called = hand1.call + hand2.call
 
-      if taken >= total_tricks do
-        called * 10 + (taken - called)
+      if taken >= called do
+        bags = if taken > called, do: taken - called, else: 0
+        called * 10 + bags
       else
         called * -10
       end

@@ -103,4 +103,16 @@ defmodule Spades.Game.PlayerTest do
 
     assert Player.get_score([alex, jon]) == -50
   end
+
+  test "score with nil", %{alex: alex, jon: jon} do
+    alex = Player.make_call(alex, 0)
+    jon =
+      Player.make_call(jon, 3)
+      |> Player.take()
+      |> Player.take()
+      |> Player.take()
+      |> Player.take()
+
+    assert Player.get_score([alex, jon]) == 81
+  end
 end

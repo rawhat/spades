@@ -29,9 +29,11 @@ defmodule Spades.Game.Hand do
   def is_nil?(%__MODULE__{call: _}), do: false
 
   def score(%__MODULE__{call: 0, tricks: 0}), do: 50
-  def score(%__MODULE__{call: 0, tricks: _}), do: -50
+  def score(%__MODULE__{call: 0, tricks: n}), do: -50 + n
   def score(%__MODULE__{call: -1, tricks: 0}), do: 100
-  def score(%__MODULE__{call: -1, tricks: _}), do: -100
-  def score(%__MODULE__{call: call, tricks: tricks}) when call == tricks, do: tricks * 10
+  def score(%__MODULE__{call: -1, tricks: n}), do: -100 + n
+  def score(%__MODULE__{call: call, tricks: tricks}) when tricks >= call do
+    call * 10 + (if tricks > call, do: tricks - call, else: 0)
+  end
   def score(%__MODULE__{call: call}), do: call * -10
 end
