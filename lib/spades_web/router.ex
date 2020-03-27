@@ -19,6 +19,12 @@ defmodule SpadesWeb.Router do
     get "/", PageController, :index
   end
 
+  scope "/api", SpadesWeb do
+    pipe_through :api
+
+    get ""
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", SpadesWeb do
   #   pipe_through :api
