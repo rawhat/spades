@@ -9,9 +9,10 @@ defmodule Spades.Application do
     # List all child processes to be supervised
     children = [
       # Start the endpoint when the application starts
-      SpadesWeb.Endpoint
+      SpadesWeb.Endpoint,
       # Starts a worker by calling: Spades.Worker.start_link(arg)
       # {Spades.Worker, arg},
+      {Registry, keys: :unique, name: Spades.Game.Registry}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

@@ -22,7 +22,7 @@ defmodule SpadesWeb.Router do
   scope "/api", SpadesWeb do
     pipe_through :api
 
-    get ""
+    #get ""
   end
 
   # Other scopes may use custom stacks.
