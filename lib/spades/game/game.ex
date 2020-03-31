@@ -25,7 +25,7 @@ defmodule Spades.Game do
         %Player{} = player
       ) do
     game
-    |> put_player(player)
+    |> maybe_put_player(player)
     |> maybe_deal_cards()
     |> maybe_start_bidding()
   end
@@ -86,11 +86,15 @@ defmodule Spades.Game do
 
   def play_card(game, _name, _card), do: game
 
-  defp put_player(game, player) do
+  defp maybe_put_player(%__MODULE__{players: players} = game, _player)
+       when map_size(players) >= 4,
+       do: game
+
+  defp maybe_put_player(game, player) do
     %{
       game
       | players: Map.put(game.players, player.name, player),
-        play_order: [player.name | game.play_order]
+        play_order: Enum.concat(game.play_order, [player.name])
     }
   end
 
@@ -106,7 +110,7 @@ defmodule Spades.Game do
 
   defp maybe_start_bidding(%__MODULE__{players: players, state: :waiting} = game)
        when map_size(players) == 4 do
-    %{game | state: :bidding, play_order: Enum.reverse(game.play_order)}
+    %{game | state: :bidding}
   end
 
   defp maybe_start_bidding(game), do: game
@@ -214,6 +218,7 @@ defmodule Spades.Game do
     if all_empty do
       game
       |> award_points()
+      |> increment_play_order()
       |> deal_cards(true)
       |> start_bidding()
     else
@@ -233,18 +238,29 @@ defmodule Spades.Game do
     %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
   end
 
+  defp increment_play_order(%__MODULE__{play_order: play_order} = game) do
+    updated_play_order =
+      Enum.slice(play_order, 1..3)
+      |> Enum.concat(Enum.slice(play_order, 0..1))
+
+    %{game | play_order: updated_play_order}
+  end
+
   defp deal_cards(%__MODULE__{players: players, play_order: play_order} = game, shuffle \\ false) do
     deck = if shuffle, do: Enum.shuffle(game.deck), else: game.deck
 
     dealt_players =
       Enum.chunk_every(deck, 4)
       |> Enum.zip()
-      |> Enum.zip(Enum.reverse(play_order))
+      |> Enum.zip(play_order)
       |> Enum.map(fn {hand, player} ->
         Player.receive_cards(players[player], Tuple.to_list(hand))
       end)
 
-    %{game | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.name, &1))}
+    %{
+      game
+      | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.name, &1))
+    }
   end
 
   defp start_bidding(game) do
