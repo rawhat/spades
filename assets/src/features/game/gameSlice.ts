@@ -30,12 +30,19 @@ interface Card {
 
 type PlayedCard = [string, Card];
 
+interface PublicPlayer {
+  name: string | null,
+  cards: number;
+  call: number;
+  tricks: number;
+}
+
 export interface GameStatus {
   id: string;
   cards: number;
   scores: { [team: number]: number };
   current_player: number;
-  play_order: string[];
+  players: PublicPlayer[];
   spades_broken: boolean;
   state: State;
   trick: PlayedCard[];

@@ -45,11 +45,7 @@ defmodule Spades.Game do
         tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
         scores: game.scores,
         current_player: game.current_player,
-        players:
-          Stream.filter(game.play_order, &(&1 != name))
-          |> Stream.map(&Map.get(game.players, &1))
-          |> Stream.map(&Player.to_public/1)
-          |> Enum.to_list(),
+        players: get_player_list(game, name),
         spades_broken: game.spades_broken,
         state: game.state,
         trick: game.trick
@@ -74,11 +70,18 @@ defmodule Spades.Game do
       cards: cards,
       scores: game.scores,
       current_player: game.current_player,
-      play_order: game.play_order,
+      players: get_player_list(game),
       spades_broken: game.spades_broken,
       state: game.state,
       trick: game.trick
     }
+  end
+
+  defp get_player_list(game, name \\ nil) do
+    Stream.filter(game.play_order, &(&1 != name))
+    |> Stream.map(&Map.get(game.players, &1))
+    |> Stream.map(&Player.to_public/1)
+    |> Enum.to_list()
   end
 
   def make_call(
