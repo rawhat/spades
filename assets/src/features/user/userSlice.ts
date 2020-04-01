@@ -4,17 +4,17 @@ interface UserState {
   username?: string;
 }
 
-const initialState: UserState = {}
+const initialState: UserState = {};
 
 export const slice = createSlice({
-  name: 'user',
+  name: "user",
   initialState,
   reducers: {
     setUsername: (state, action: PayloadAction<string>) => {
       state.username = action.payload;
-    }
-  }
-})
+    },
+  },
+});
 
 export const { setUsername } = slice.actions;
 

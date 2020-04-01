@@ -13,9 +13,12 @@ function Home() {
   const dispatch = useDispatch();
   const history = useHistory();
 
-  const onNameChange = useCallback(e => {
-    setName(e.currentTarget.value);
-  }, [setName]);
+  const onNameChange = useCallback(
+    (e) => {
+      setName(e.currentTarget.value);
+    },
+    [setName]
+  );
 
   const onJoin = useCallback(() => {
     dispatch(setUsername(name));
@@ -32,7 +35,7 @@ function Home() {
       />
       <button onClick={onJoin}>Join</button>
     </div>
-  )
+  );
 }
 
 export default Home;

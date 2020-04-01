@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { Redirect } from "react-router-dom";
 import { Route } from "react-router-dom";
@@ -8,7 +8,7 @@ import Game from "./Game";
 import Home from "./Home";
 import Lobby from "./Lobby";
 
-import './App.css';
+import "./App.css";
 
 function App() {
   return (

@@ -1,7 +1,7 @@
-import React from 'react'
+import React from "react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { useEffect } from "react"
+import { useEffect } from "react";
 import { useSelector } from "react-redux";
 
 import { RootState } from "./app/store";
@@ -12,7 +12,7 @@ function Lobby() {
 
   useEffect(() => {
     dispatch(fetchGames());
-  }, [dispatch])
+  }, [dispatch]);
 
   const games = useSelector((state: RootState) => state.lobby.games);
 
@@ -20,7 +20,7 @@ function Lobby() {
     <div>
       <div>welcome to the lobby</div>
       <ul>
-        {games.map(game => (
+        {games.map((game) => (
           <li key={game}>
             <Link to={`/game/${game}`}>{game}</Link>
           </li>

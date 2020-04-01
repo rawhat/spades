@@ -1,8 +1,11 @@
-export async function client<T>(path: string, overrides: RequestInit = {}): Promise<T> {
+export async function client<T>(
+  path: string,
+  overrides: RequestInit = {}
+): Promise<T> {
   const options = {
     method: "GET",
     ...overrides,
-  }
+  };
   try {
     const res = await fetch(`/api${path}`, options);
     if (!res.ok) {
