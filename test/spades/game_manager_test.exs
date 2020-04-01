@@ -50,6 +50,8 @@ defmodule Spades.Game.GameManagerTest do
     state = GameManager.get_game_state_for_player(id, p1[:name])
 
     assert state.state == :playing
+    assert length(state.players) == 3
+    assert Enum.find(state.players, &(&1[:name] == p2[:name])).call == 1
   end
 
   test "it allows multiple games", %{id_2: id_2, p1: p1} do

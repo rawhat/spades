@@ -12,6 +12,24 @@ defmodule Spades.Game.Player do
     }
   end
 
+  def to_public(%__MODULE__{} = player) do
+    if player.hand != nil do
+      %{
+        cards: Enum.count(player.hand.cards),
+        call: player.hand.call,
+        name: player.name,
+        tricks: player.hand.tricks
+      }
+    else
+      %{
+        name: nil,
+        cards: 0,
+        call: -2,
+        tricks: 0
+      }
+    end
+  end
+
   def receive_cards(%__MODULE__{} = player, cards) when is_list(cards) do
     %{player | hand: Hand.new(cards)}
   end

@@ -101,7 +101,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new(deck)
+      Game.new("1", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -124,7 +124,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new(deck)
+      Game.new("1", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -157,7 +157,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new(deck)
+      Game.new("1", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -172,6 +172,6 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.name, Enum.at(deck, 7))
       |> Game.play_card(p4.name, Enum.at(deck, 11))
 
-    assert game.trick == [{p4.name, Card.new(:spades, 7)}]
+    assert game.trick == [{p4.name, Enum.at(deck, 11)}]
   end
 end

@@ -5,7 +5,7 @@ defmodule Spades.Game do
   alias Spades.Game.Deck
   alias Spades.Game.Player
 
-  def new(id, deck \\ Deck.new()) do
+  def new(id, deck \\ Deck.new()) when is_binary(id) do
     %__MODULE__{
       current_player: 0,
       dealer: 0,
@@ -45,7 +45,11 @@ defmodule Spades.Game do
         tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
         scores: game.scores,
         current_player: game.current_player,
-        play_order: game.play_order,
+        players:
+          Stream.filter(game.play_order, &(&1 != name))
+          |> Stream.map(&Map.get(game.players, &1))
+          |> Stream.map(&Player.to_public/1)
+          |> Enum.to_list(),
         spades_broken: game.spades_broken,
         state: game.state,
         trick: game.trick
@@ -102,6 +106,7 @@ defmodule Spades.Game do
     if can_play?(game, name) do
       game
       |> maybe_play_card(name, card)
+      |> next_player()
       |> maybe_award_trick()
       |> maybe_end_hand()
       |> maybe_end_round()
@@ -152,11 +157,11 @@ defmodule Spades.Game do
   defp next_player(game), do: game
 
   def maybe_make_call(
-        %__MODULE__{play_order: play_order, current_player: current_player} = game,
+        %__MODULE__{} = game,
         name,
         call
       ) do
-    if Enum.at(play_order, current_player) == name do
+    if can_play?(game, name) do
       %{game | players: Map.update!(game.players, name, &Player.make_call(&1, call))}
       |> advance()
     else
