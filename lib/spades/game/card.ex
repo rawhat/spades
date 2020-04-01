@@ -1,6 +1,7 @@
 defmodule Spades.Game.Card do
   @enforce_keys [:suit, :value]
 
+  @derive Jason.Encoder
   defstruct ~w(suit value)a
 
   def new(suit, value) do

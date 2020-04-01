@@ -6,24 +6,47 @@ defmodule Spades.Game.GameManager do
 
   # Client
 
-  def start_link(game \\ Game.new()) do
-    GenServer.start_link(__MODULE__, game)
+  def start_link(opts) do
+    {id, _} = Keyword.pop_first(opts, :id, next_id())
+    {game, _} = Keyword.pop_first(opts, :game, Game.new(id))
+    name = via_tuple(id)
+    GenServer.start_link(__MODULE__, game, name: name)
   end
 
-  def add_player(pid, name: name, team: team) do
-    GenServer.call(pid, {:add_player, name, team})
+  def next_id() do
+    keys = Registry.count(Spades.Game.Registry)
+    to_string(keys + 1)
   end
 
-  def get_game_state_for_player(pid, name) do
-    GenServer.call(pid, {:get_state, name})
+  def exists?(id) do
+    case Registry.lookup(Spades.Game.Registry, id) do
+      [] -> false
+      _ -> true
+    end
   end
 
-  def make_call(pid, name, value) do
-    GenServer.call(pid, {:make_call, name, value})
+  def add_player(id, name: name, team: team) do
+    GenServer.call(via_tuple(id), {:add_player, name, team})
   end
 
-  def play_card(pid, name, card) do
-    GenServer.call(pid, {:play_card, name, card})
+  def get_game_state(id) do
+    GenServer.call(via_tuple(id), :get_state)
+  end
+
+  def get_game_state_for_player(id, name) do
+    GenServer.call(via_tuple(id), {:get_state, name})
+  end
+
+  def make_call(id, name, value) do
+    GenServer.call(via_tuple(id), {:make_call, name, value})
+  end
+
+  def play_card(id, name, card) do
+    GenServer.call(via_tuple(id), {:play_card, name, card})
+  end
+
+  defp via_tuple(game_id) do
+    {:via, Registry, {Spades.Game.Registry, game_id}}
   end
 
   # Server
@@ -37,6 +60,11 @@ defmodule Spades.Game.GameManager do
   def handle_call({:add_player, name, team}, _from, game) do
     player = Player.new(name, team)
     {:reply, player, Game.add_player(game, player)}
+  end
+
+  @impl true
+  def handle_call(:get_state, _from, game) do
+    {:reply, Game.state(game), game}
   end
 
   @impl true

@@ -26,7 +26,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new(deck)
+      Game.new("1", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)

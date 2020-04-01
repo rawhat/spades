@@ -1,15 +1,16 @@
 defmodule Spades.Game do
-  defstruct ~w(advance current_player dealer deck leader play_order players scores spades_broken state trick)a
+  defstruct ~w(advance current_player dealer deck id leader play_order players scores spades_broken state trick)a
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
   alias Spades.Game.Player
 
-  def new(deck \\ Deck.new()) do
+  def new(id, deck \\ Deck.new()) do
     %__MODULE__{
       current_player: 0,
       dealer: 0,
       deck: deck,
+      id: id,
       leader: 0,
       players: %{},
       play_order: [],
@@ -37,6 +38,7 @@ defmodule Spades.Game do
       %{}
     else
       %{
+        id: game.id,
         cards: if(player.hand == nil, do: [], else: player.hand.cards),
         call: if(player.hand == nil, do: -2, else: player.hand.call),
         leader: game.leader,
@@ -49,6 +51,30 @@ defmodule Spades.Game do
         trick: game.trick
       }
     end
+  end
+
+  def state(%__MODULE__{} = game) do
+    cards =
+      if map_size(game.players) == 0 do
+        0
+      else
+        player =
+          Map.values(game.players)
+          |> Enum.at(0)
+
+        Enum.count(player.hand.cards)
+      end
+
+    %{
+      id: game.id,
+      cards: cards,
+      scores: game.scores,
+      current_player: game.current_player,
+      play_order: game.play_order,
+      spades_broken: game.spades_broken,
+      state: game.state,
+      trick: game.trick
+    }
   end
 
   def make_call(
@@ -86,16 +112,16 @@ defmodule Spades.Game do
 
   def play_card(game, _name, _card), do: game
 
-  defp maybe_put_player(%__MODULE__{players: players} = game, _player)
-       when map_size(players) >= 4,
-       do: game
-
-  defp maybe_put_player(game, player) do
-    %{
+  defp maybe_put_player(%__MODULE__{players: players} = game, player) do
+    if map_size(players) == 4 || Map.has_key?(players, player.name) do
       game
-      | players: Map.put(game.players, player.name, player),
-        play_order: Enum.concat(game.play_order, [player.name])
-    }
+    else
+      %{
+        game
+        | players: Map.put(game.players, player.name, player),
+          play_order: Enum.concat(game.play_order, [player.name])
+      }
+    end
   end
 
   defp advance(game) do
