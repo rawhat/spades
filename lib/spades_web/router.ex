@@ -27,6 +27,7 @@ defmodule SpadesWeb.Router do
     pipe_through :api
 
     scope "/game" do
+      get "/", GameController, :list
       post "/", GameController, :create
 
       pipe_through :game

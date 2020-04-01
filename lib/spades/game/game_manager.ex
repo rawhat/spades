@@ -13,9 +13,19 @@ defmodule Spades.Game.GameManager do
     GenServer.start_link(__MODULE__, game, name: name)
   end
 
+  def active_games() do
+    Registry.select(Spades.Game.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+  end
+
   def next_id() do
-    keys = Registry.count(Spades.Game.Registry)
-    to_string(keys + 1)
+    {id, _} =
+      active_games()
+      |> Enum.sort()
+      |> Enum.reverse()
+      |> Enum.at(0)
+      |> Integer.parse()
+
+    to_string(id + 1)
   end
 
   def exists?(id) do

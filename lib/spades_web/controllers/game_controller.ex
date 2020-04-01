@@ -3,6 +3,11 @@ defmodule SpadesWeb.GameController do
 
   alias Spades.Game.GameManager
 
+  def list(conn, _params) do
+    games = GameManager.active_games()
+    json(conn, %{games: games})
+  end
+
   def create(conn, _params) do
     id = GameManager.next_id()
     GameManager.start_link(id: id)
