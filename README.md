@@ -10,7 +10,7 @@ Any file changes for the UI will recompile automatically and refresh the
 application.  Currently the API does not support this.  It is usually useful
 to get an interactive session with IEx.  To do so, instead run:
 
-  `docker-compose run api iex -S mix phx.server`
+  `docker-compose run --service-ports api iex -S mix phx.server`
 
 The behavior should still be the same, but now you can interact with the
 API modules directly, or type `recompile` to rebuild the application with
