@@ -1,0 +1,29 @@
+version: '3'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    volumes:
+      - api_build:/opt/app/_build
+      - node_modules:/opt/app/assets/node_modules
+      - ./:/opt/app
+    ports:
+      - 3000:3000
+      - 4000:4000
+    depends_on:
+      - db
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: spades
+      POSTGRES_PASSWORD: spades
+      POSTGRES_DB: spades_dev
+    volumes:
+      - db:/var/lib/postgresql/data
+
+volumes:
+  api_build:
+  db:
+  node_modules:

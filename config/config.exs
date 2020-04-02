@@ -7,13 +7,16 @@
 # General application configuration
 use Mix.Config
 
+config :spades,
+  ecto_repos: [Spades.Repo]
+
 # Configures the endpoint
 config :spades, SpadesWeb.Endpoint,
   url: [host: "localhost"],
-  secret_key_base: "PVzBL7GuC7eero2Rq1KSXofxEbwkwUyls6015Cvxb0b5cB3W3Auap7xif2nHi3N1",
+  secret_key_base: "gNuWdW4suCqoW2P2OTszWMc6hNWRefgVutBXxTHb3jDSf1Jwq0QCfbC8Ppm6BID6",
   render_errors: [view: SpadesWeb.ErrorView, accepts: ~w(html json)],
   pubsub: [name: Spades.PubSub, adapter: Phoenix.PubSub.PG2],
-  live_view: [signing_salt: "mdP/5Iyg"]
+  live_view: [signing_salt: "AmbWDbkE"]
 
 # Configures Elixir's Logger
 config :logger, :console,

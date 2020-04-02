@@ -7,7 +7,7 @@ defmodule SpadesWeb.Endpoint do
   @session_options [
     store: :cookie,
     key: "_spades_key",
-    signing_salt: "6g6DeaL+"
+    signing_salt: "44ckgjK9"
   ]
 
   socket "/socket", SpadesWeb.UserSocket,

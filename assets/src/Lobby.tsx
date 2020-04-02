@@ -18,7 +18,7 @@ function Lobby() {
 
   return (
     <div>
-      <div>welcome to the lobby</div>
+      <div>welcome to the lobby.</div>
       <ul>
         {games.map((game) => (
           <li key={game}>

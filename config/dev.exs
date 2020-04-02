@@ -1,5 +1,14 @@
 use Mix.Config
 
+# Configure your database
+config :spades, Spades.Repo,
+  username: "spades",
+  password: "spades",
+  database: "spades_dev",
+  hostname: "db",
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
+
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
