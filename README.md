@@ -1,15 +1,22 @@
 # Spades
 
-To start your Phoenix server:
+To run the application using docker-compose, run:
 
-  * Install dependencies with `mix deps.get`
-  * Create and migrate your database with `mix ecto.setup`
-  * Install Node.js dependencies with `cd assets && npm install`
-  * Start Phoenix endpoint with `mix phx.server`
+  * `docker-compose build`
+  * `docker-compose up`
+  * Navigate to `localhost:3000` in your browser
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+Any file changes for the UI will recompile automatically and refresh the
+application.  Currently the API does not support this.  It is usually useful
+to get an interactive session with IEx.  To do so, instead run:
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+  `docker-compose run api iex -S mix phx.server`
+
+The behavior should still be the same, but now you can interact with the
+API modules directly, or type `recompile` to rebuild the application with
+any changes.
+
+## "To break you, of course."
 
 ## Learn more
 
