@@ -18,11 +18,13 @@ defmodule Spades.Game.Player do
         cards: Enum.count(player.hand.cards),
         call: player.hand.call,
         name: player.name,
+        team: player.team,
         tricks: player.hand.tricks
       }
     else
       %{
         name: nil,
+        team: nil,
         cards: 0,
         call: -2,
         tricks: 0

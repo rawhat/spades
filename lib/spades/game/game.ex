@@ -1,5 +1,5 @@
 defmodule Spades.Game do
-  defstruct ~w(advance current_player dealer deck id leader play_order players scores spades_broken state trick)a
+  defstruct ~w(advance current_player dealer deck id play_order players scores spades_broken state trick)a
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
@@ -11,7 +11,6 @@ defmodule Spades.Game do
       dealer: 0,
       deck: deck,
       id: id,
-      leader: 0,
       players: %{},
       play_order: [],
       scores: %{0 => 0, 1 => 0},
@@ -41,7 +40,6 @@ defmodule Spades.Game do
         id: game.id,
         cards: if(player.hand == nil, do: [], else: player.hand.cards),
         call: if(player.hand == nil, do: -2, else: player.hand.call),
-        leader: game.leader,
         tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
         scores: game.scores,
         current_player: game.current_player,
@@ -54,20 +52,8 @@ defmodule Spades.Game do
   end
 
   def state(%__MODULE__{} = game) do
-    cards =
-      if map_size(game.players) == 0 do
-        0
-      else
-        player =
-          Map.values(game.players)
-          |> Enum.at(0)
-
-        Enum.count(player.hand.cards)
-      end
-
     %{
       id: game.id,
-      cards: cards,
       scores: game.scores,
       current_player: game.current_player,
       players: get_player_list(game),
@@ -222,7 +208,6 @@ defmodule Spades.Game do
     %{
       game
       | players: Map.update!(game.players, name, &Player.take(&1)),
-        leader: winner,
         current_player: winner
     }
   end

@@ -4,6 +4,7 @@ import { Redirect } from "react-router-dom";
 import { Route } from "react-router-dom";
 import { Switch } from "react-router-dom";
 
+import Authenticated from "./Authenticated";
 import Game from "./Game";
 import Home from "./Home";
 import Lobby from "./Lobby";
@@ -17,12 +18,12 @@ function App() {
         <Route exact={true} path="/">
           <Home />
         </Route>
-        <Route path="/lobby">
+        <Authenticated path="/lobby">
           <Lobby />
-        </Route>
-        <Route path="/game/:id">
+        </Authenticated>
+        <Authenticated path="/game/:id">
           <Game />
-        </Route>
+        </Authenticated>
         <Route>
           <Redirect to="/" />
         </Route>

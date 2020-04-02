@@ -18,14 +18,19 @@ defmodule Spades.Game.GameManager do
   end
 
   def next_id() do
-    {id, _} =
-      active_games()
-      |> Enum.sort()
-      |> Enum.reverse()
-      |> Enum.at(0)
-      |> Integer.parse()
+    case active_games() do
+      [] ->
+        "1"
 
-    to_string(id + 1)
+      games ->
+        {id, _} =
+          Enum.sort(games)
+          |> Enum.reverse()
+          |> Enum.at(0)
+          |> Integer.parse()
+
+        to_string(id + 1)
+    end
   end
 
   def exists?(id) do
