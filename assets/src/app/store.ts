@@ -11,5 +11,7 @@ export const store = configureStore({
   },
 });
 
+export type Store = typeof store;
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppThunk = ThunkAction<void, RootState, unknown, Action<string>>;

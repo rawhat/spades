@@ -18,6 +18,8 @@ import {
   selectPlayerState
 } from "./features/game/gameSlice";
 
+import { useGameState } from "./Socket";
+
 function Game() {
   const dispatch = useDispatch();
   const { id } = useParams();
@@ -56,12 +58,14 @@ function Game() {
     }
   }, [dispatch, id, username])
 
+  const { state } = useGameState(id, username);
+
   return (
     <>
       <div>WELCOME TO THE GAME.</div>
       {canJoin && <JoinButton onJoin={onJoin} state={gameState} />}
-      <GameInfo state={gameState} />
-      <PlayerInfo state={playerState} />
+      <GameInfo state={state} />
+      {/*<PlayerInfo state={playerState} />*/}
     </>
   );
 }
