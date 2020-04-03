@@ -34,16 +34,17 @@ defmodule Spades.Game do
     player = Map.get(game.players, name)
 
     if player == nil do
-      %{}
+      state(game)
     else
       %{
         id: game.id,
         cards: if(player.hand == nil, do: [], else: player.hand.cards),
         call: if(player.hand == nil, do: -2, else: player.hand.call),
         tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
+        team: player.team,
         scores: game.scores,
         current_player: game.current_player,
-        players: get_player_list(game, name),
+        players: get_player_list(game),
         spades_broken: game.spades_broken,
         state: game.state,
         trick: game.trick
@@ -63,9 +64,8 @@ defmodule Spades.Game do
     }
   end
 
-  defp get_player_list(game, name \\ nil) do
-    Stream.filter(game.play_order, &(&1 != name))
-    |> Stream.map(&Map.get(game.players, &1))
+  defp get_player_list(game) do
+    Stream.map(game.play_order, &Map.get(game.players, &1))
     |> Stream.map(&Player.to_public/1)
     |> Enum.to_list()
   end
@@ -107,13 +107,22 @@ defmodule Spades.Game do
   def play_card(game, _name, _card), do: game
 
   defp maybe_put_player(%__MODULE__{players: players} = game, player) do
-    if map_size(players) == 4 || Map.has_key?(players, player.name) do
+    if map_size(players) == 4 || Map.has_key?(players, player.name) ||
+         Enum.count(players, fn {_, p} -> p.team == player.team end) == 2 do
       game
     else
+      new_players = Map.put(players, player.name, player)
+
+      play_order =
+        Enum.concat(game.play_order, [player.name])
+        |> Enum.split_with(fn p -> Map.get(new_players, p).team == 0 end)
+        |> Tuple.to_list()
+        |> zip()
+
       %{
         game
-        | players: Map.put(game.players, player.name, player),
-          play_order: Enum.concat(game.play_order, [player.name])
+        | players: new_players,
+          play_order: play_order
       }
     end
   end
@@ -284,5 +293,13 @@ defmodule Spades.Game do
 
   defp start_bidding(game) do
     %{game | state: :bidding}
+  end
+
+  defp zip(teams, players \\ [])
+  defp zip([[], team_two], players), do: Enum.concat(players, team_two)
+  defp zip([team_one, []], players), do: Enum.concat(players, team_one)
+
+  defp zip([[one | team_one], [two | team_two]], players) do
+    zip([team_one, team_two], Enum.concat(players, [one, two]))
   end
 end

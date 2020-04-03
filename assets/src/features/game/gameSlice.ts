@@ -32,9 +32,10 @@ export interface PlayerStatus extends GameStatus {
   spades_broken: boolean;
   state: State;
   trick: PlayedCard[];
+  team: Team;
 }
 
-enum State {
+export enum State {
   Waiting = "waiting",
   Bidding = "bidding",
   Playing = "playing",
@@ -47,14 +48,14 @@ enum Suit {
   Spades = "spades",
 }
 
-interface Card {
+export interface Card {
   suit: Suit;
   value: number;
 }
 
 type PlayedCard = [string, Card];
 
-interface PublicPlayer {
+export interface PublicPlayer {
   name: string | null,
   cards: number;
   call: number;
@@ -104,17 +105,4 @@ export const selectGameState = createSelector(
 export const selectPlayerState = createSelector(
   (state: RootState) => state.game,
   (game: GameState) => game.playerState
-)
-
-type TeamCount = {[Team.One]: number, [Team.Two]: number};
-
-export const selectExistingTeamCounts = createSelector(
-  selectGameState,
-  (game: GameStatus | undefined): TeamCount =>
-    !game
-    ? {0: 0, 1: 0}
-    : game.players.reduce((counts, player) => ({
-        ...counts,
-        [player.team]: (counts[player.team] ?? 0) + 1
-      }), {0: 0, 1: 1} as TeamCount)
 )

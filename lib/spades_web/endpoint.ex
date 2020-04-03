@@ -10,7 +10,7 @@ defmodule SpadesWeb.Endpoint do
     signing_salt: "44ckgjK9"
   ]
 
-  socket "/socket", SpadesWeb.UserSocket,
+  socket "/socket/game", SpadesWeb.GameSocket,
     websocket: true,
     longpoll: false
 

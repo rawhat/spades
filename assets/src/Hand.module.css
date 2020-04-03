@@ -1,0 +1,58 @@
+.playerHand {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  height: 100%;
+}
+
+.playerCard {
+  background-color: white;
+  /*flex-grow: 1;*/
+  border: 1px solid darkgray;
+  border-radius: 4px;
+  padding: 10px;
+  cursor: pointer;
+  width: 5%;
+  text-align: center;
+}
+
+.playerCard:hover {
+  background-color: lightblue;
+}
+
+.topHand {
+  display: flex;
+  justify-content: space-evenly;
+  height: 100%;
+}
+
+.hiddenHand-vertical {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  height: 100%;
+}
+
+.hiddenHand-horizontal {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  width: 100%;
+}
+
+.hiddenCard-vertical {
+  background-color: royalblue;
+  width: 5%;
+  border: 1px solid darkgray;
+  border-radius: 4px;
+  padding: 10px;
+  height: 100%;
+}
+
+.hiddenCard-horizontal {
+  background-color: royalblue;
+  height: 100%;
+  border: 1px solid darkgray;
+  border-radius: 4px;
+  padding: 10px;
+}

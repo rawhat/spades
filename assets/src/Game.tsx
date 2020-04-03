@@ -9,15 +9,10 @@ import { useState } from "react";
 import { RootState } from "./app/store";
 import {
   GameStatus,
-  PlayerStatus,
-  joinGame,
   loadGameState,
-  loadPlayerState,
-  selectExistingTeamCounts,
-  selectGameState,
-  selectPlayerState
 } from "./features/game/gameSlice";
 
+import GameView from "./GameView";
 import { useGameState } from "./Socket";
 
 function Game() {
@@ -33,39 +28,21 @@ function Game() {
     }
   }, [dispatch, id]);
 
-  const gameState = useSelector(selectGameState);
-  const playerState = useSelector(selectPlayerState);
-
-  const canJoin =
-    gameState &&
-    gameState.players.length < 4 &&
-    !gameState.players.find(({name}) => name !== username);
-
-  const shouldLoadPlayerState =
-    gameState &&
-    !playerState &&
-    gameState.players.find(({name}) => name === username);
-
-  useEffect(() => {
-    if (shouldLoadPlayerState && username && id) {
-      dispatch(loadPlayerState(username, id));
-    }
-  }, [dispatch, id, username, shouldLoadPlayerState])
+  const { state, joinGame } = useGameState(id, username);
 
   const onJoin = useCallback((team: number) => {
     if (id && username) {
-      dispatch(joinGame(id, username, team));
+      joinGame(team);
     }
-  }, [dispatch, id, username])
-
-  const { state } = useGameState(id, username);
+  }, [id, joinGame, username])
 
   return (
     <>
-      <div>WELCOME TO THE GAME.</div>
-      {canJoin && <JoinButton onJoin={onJoin} state={gameState} />}
-      <GameInfo state={state} />
-      {/*<PlayerInfo state={playerState} />*/}
+      <span>
+        <JoinButton onJoin={onJoin} state={state} />
+        as {username}
+      </span>
+      <GameView state={state} />
     </>
   );
 }
@@ -76,27 +53,20 @@ interface JoinButtonProps {
 }
 
 const JoinButton = ({onJoin, state}: JoinButtonProps) => {
-  const counts = useSelector(selectExistingTeamCounts);
-  const options = Object.entries(counts)
-    .filter(([_0, count]) => count < 2);
-  const initialTeam = options.length > 0 ? parseInt(options[0][0]) : null;
-  const [team, setTeam] = useState<number | null>(initialTeam);
+  const [team, setTeam] = useState<number | null>(0);
   if (!state) {
     return null;
   }
 
-  let teamOptions: JSX.Element | undefined;
-  if (options.length > 0) {
-    const onChange = (t: React.ChangeEvent<HTMLSelectElement>) =>
-      setTeam(parseInt(t.currentTarget.value));
-    teamOptions = (
-      <select onChange={onChange}>
-        {options.map(([t, count]) =>
-          count === 2 ? null : <option key={t} value={t}>{t}</option>
-        )}
-      </select>
-    )
+  const onChange = (t: React.ChangeEvent<HTMLSelectElement>) => {
+    setTeam(parseInt(t.currentTarget.value));
   }
+  const teamOptions = (
+    <select onChange={onChange}>
+      <option value={0}>One</option>
+      <option value={1}>Two</option>
+    </select>
+  )
 
   const onClick = () => {
     if (team !== null) {
@@ -110,32 +80,6 @@ const JoinButton = ({onJoin, state}: JoinButtonProps) => {
       <button onClick={onClick}>Join Game</button>
     </span>
   );
-}
-
-interface GameInfoProps {
-  state: GameStatus | undefined;
-}
-
-const GameInfo = ({ state }: GameInfoProps) => {
-  if (!state) {
-    return null;
-  }
-
-  // Who cares right now
-  return <div>{JSON.stringify(state)}</div>;
-};
-
-interface PlayerInfoProps {
-  state: PlayerStatus | undefined;
-}
-
-const PlayerInfo = ({ state }: PlayerInfoProps) => {
-  if (!state) {
-    return null;
-  }
-
-  // Who cares right now
-  return <div>{JSON.stringify(state)}</div>;
 }
 
 export default Game;

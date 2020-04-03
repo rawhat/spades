@@ -1,17 +1,18 @@
 import { configureStore, ThunkAction, Action } from "@reduxjs/toolkit";
-import gameReducer from "../features/game/gameSlice";
-import lobbyReducer from "../features/lobby/lobbySlice";
-import userReducer from "../features/user/userSlice";
+
+import rootReducer, { RootState } from "./rootReducer";
 
 export const store = configureStore({
-  reducer: {
-    game: gameReducer,
-    lobby: lobbyReducer,
-    user: userReducer,
-  },
-});
+  reducer: rootReducer
+})
 
-export type Store = typeof store;
+if (process.env.NODE_ENV === 'development' && (module as any).hot) {
+  (module as any).hot.accept("./rootReducer", () => {
+    const newRootReducer = require('./rootReducer').default;
+    store.replaceReducer(newRootReducer);
+  })
+}
 
-export type RootState = ReturnType<typeof store.getState>;
+export type { RootState };
+
 export type AppThunk = ThunkAction<void, RootState, unknown, Action<string>>;

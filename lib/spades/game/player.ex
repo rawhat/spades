@@ -23,8 +23,8 @@ defmodule Spades.Game.Player do
       }
     else
       %{
-        name: nil,
-        team: nil,
+        name: player.name,
+        team: player.team,
         cards: 0,
         call: -2,
         tricks: 0
