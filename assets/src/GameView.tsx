@@ -4,11 +4,13 @@ import takeWhile from "lodash/takeWhile";
 import { useMemo } from "react";
 import { useSelector } from "react-redux";
 
+import { Card } from "./features/game/gameSlice";
 import { PlayerStatus } from "./features/game/gameSlice";
 import { RootState } from "./app/store";
 import { State } from "./features/game/gameSlice";
 
 import { HiddenHand } from "./Hand";
+import { Marker } from "./Marker";
 import { PlayerHand } from "./Hand";
 
 import viewStyle from "./GameView.module.css";
@@ -28,7 +30,7 @@ const GameView = ({ state }: GameViewProps) => {
     state.user.username
   );
 
-  const [_self, leftPlayer, teammate, rightPlayer] = useMemo(() => {
+  const [self, leftPlayer, teammate, rightPlayer] = useMemo(() => {
     if (!state) {
       return [];
     }
@@ -45,19 +47,23 @@ const GameView = ({ state }: GameViewProps) => {
       <div className={viewStyle.mainPanel}>
         <div className={viewStyle.leftHand}>
           {leftPlayer && (
-            <>
-              <HiddenHand cards={leftPlayer.cards} orientation="horizontal" />
-              <div>{leftPlayer.name}</div>
-            </>
+            <Player
+              cards={leftPlayer.cards}
+              current={!!(state.players[0]?.name === leftPlayer.name)}
+              name={leftPlayer.name}
+              orientation="horizontal"
+            />
           )}
         </div>
         <div className={viewStyle.middleSection}>
           <div className={viewStyle.topHand}>
             {teammate && (
-              <>
-                <div>{teammate.name}</div>
-                <HiddenHand cards={teammate.cards} orientation="vertical" />
-              </>
+              <Player
+                cards={teammate.cards}
+                current={!!(state.players[0]?.name === teammate.name)}
+                name={teammate.name}
+                orientation="vertical"
+              />
             )}
           </div>
           <div className={viewStyle.playArea}>
@@ -66,16 +72,25 @@ const GameView = ({ state }: GameViewProps) => {
           </div>
           <div className={viewStyle.playerHand}>
             <div style={style('lightgray')}>
-              {state.cards && <PlayerHand cards={state.cards} />}
+              {state.cards && (
+                <Self
+                  cards={state.cards}
+                  current={!!(state.players[0]?.name === self.name)}
+                  name={username || ""}
+                  orientation="vertical"
+                />
+              )}
             </div>
           </div>
         </div>
         <div className={viewStyle.rightHand}>
           {rightPlayer && (
-            <>
-              <div>{rightPlayer.name}</div>
-              <HiddenHand cards={rightPlayer.cards} orientation="horizontal" />
-            </>
+            <Player
+              cards={rightPlayer.cards}
+              current={!!(state.players[0]?.name === rightPlayer.name)}
+              name={rightPlayer.name}
+              orientation="horizontal"
+            />
           )}
         </div>
       </div>
@@ -87,5 +102,26 @@ const GameView = ({ state }: GameViewProps) => {
     </div>
   )
 };
+
+interface PlayerProps<T> {
+  cards: T;
+  name: string;
+  current: boolean;
+  orientation: "horizontal" | "vertical";
+}
+
+const Self = ({cards, current, name}: PlayerProps<Card[]>) => (
+  <>
+    <span>{name} {current && <Marker />}</span>
+    <PlayerHand cards={cards} />
+  </>
+)
+
+const Player = ({cards, current, name, orientation}: PlayerProps<number>) => (
+  <>
+    <HiddenHand cards={cards} orientation={orientation} />
+    <span>{name} {current && <Marker />}</span>
+  </>
+)
 
 export default GameView;

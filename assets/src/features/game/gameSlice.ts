@@ -18,7 +18,6 @@ export enum Team {
 export interface GameStatus {
   id: string;
   scores: { [team in keyof Team]: number };
-  current_player: number;
   players: PublicPlayer[];
   spades_broken: boolean;
   state: State;
@@ -56,7 +55,7 @@ export interface Card {
 type PlayedCard = [string, Card];
 
 export interface PublicPlayer {
-  name: string | null,
+  name: string,
   cards: number;
   call: number;
   tricks: number;

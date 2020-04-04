@@ -43,7 +43,6 @@ defmodule Spades.Game do
         tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
         team: player.team,
         scores: game.scores,
-        current_player: game.current_player,
         players: get_player_list(game),
         spades_broken: game.spades_broken,
         state: game.state,
@@ -56,7 +55,6 @@ defmodule Spades.Game do
     %{
       id: game.id,
       scores: game.scores,
-      current_player: game.current_player,
       players: get_player_list(game),
       spades_broken: game.spades_broken,
       state: game.state,
