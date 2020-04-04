@@ -1,4 +1,6 @@
 import React from "react";
+import groupBy from "lodash/groupBy";
+import isEqual from "lodash/isEqual";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useEffect } from "react";
@@ -54,6 +56,22 @@ interface JoinButtonProps {
 
 const JoinButton = ({onJoin, state}: JoinButtonProps) => {
   const [team, setTeam] = useState<number | null>(0);
+  const [options, setOptions] = useState([0, 1]);
+
+  useEffect(() => {
+    if (state) {
+      const countsByTeam = groupBy(state.players, 'team');
+      const teams = [0, 1].filter(t =>
+        countsByTeam[t] !== undefined
+          ? countsByTeam[t].length < 2
+          : true);
+      if (!isEqual(teams, options)) {
+        setTeam(teams[0]);
+        setOptions(teams);
+      }
+    }
+  }, [options, state])
+
   if (!state) {
     return null;
   }
@@ -63,8 +81,9 @@ const JoinButton = ({onJoin, state}: JoinButtonProps) => {
   }
   const teamOptions = (
     <select onChange={onChange}>
-      <option value={0}>One</option>
-      <option value={1}>Two</option>
+      {options.map(o => (
+        <option value={o}>{o === 0 ? "One" : "Two"}</option>
+      ))}
     </select>
   )
 
