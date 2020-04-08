@@ -7,8 +7,8 @@ defmodule Spades.Game.GameTest do
 
   setup_all do
     p1 = Player.new("alex", 0)
-    p2 = Player.new("jon", 0)
-    p3 = Player.new("jake", 1)
+    p2 = Player.new("jake", 1)
+    p3 = Player.new("jon", 0)
     p4 = Player.new("gopal", 1)
 
     deck = [
@@ -35,6 +35,8 @@ defmodule Spades.Game.GameTest do
       |> Game.make_call(p2.name, 3)
       |> Game.make_call(p3.name, 3)
       |> Game.make_call(p4.name, 4)
+
+    IO.inspect(game)
 
     one = Map.get(game.players, p1.name)
     two = Map.get(game.players, p2.name)
@@ -76,6 +78,8 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p2.name, Enum.at(deck, 5))
       |> Game.play_card(p3.name, Enum.at(deck, 6))
       |> Game.play_card(p4.name, Enum.at(deck, 7))
+
+    IO.inspect(g)
 
     assert g.scores == %{0 => -79, 1 => -70}
   end

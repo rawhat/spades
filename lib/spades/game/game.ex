@@ -297,6 +297,7 @@ defmodule Spades.Game do
     %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
   end
 
+  # TODO:  fix post-round next dealer?
   defp increment_play_order(%__MODULE__{current_player: current_player} = game) do
     %{game | current_player: rem(current_player + 1, 4)}
   end
