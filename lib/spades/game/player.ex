@@ -19,7 +19,8 @@ defmodule Spades.Game.Player do
         call: player.hand.call,
         name: player.name,
         team: player.team,
-        tricks: player.hand.tricks
+        tricks: player.hand.tricks,
+        revealed: player.hand.revealed
       }
     else
       %{
@@ -27,13 +28,18 @@ defmodule Spades.Game.Player do
         team: player.team,
         cards: 0,
         call: -2,
-        tricks: 0
+        tricks: 0,
+        revealed: false
       }
     end
   end
 
   def receive_cards(%__MODULE__{} = player, cards) when is_list(cards) do
     %{player | hand: Hand.new(cards)}
+  end
+
+  def reveal(%__MODULE__{hand: hand} = player) do
+    %{player | hand: Hand.reveal(hand)}
   end
 
   def make_call(%__MODULE__{hand: hand} = player, call) do
@@ -59,6 +65,16 @@ defmodule Spades.Game.Player do
       else
         called * -10
       end
+    end
+  end
+
+  def sorted_hand(%__MODULE__{hand: nil}), do: []
+
+  def sorted_hand(%__MODULE__{hand: hand}) do
+    if hand.revealed do
+      Enum.sort(hand.cards, &Card.compare/2)
+    else
+      []
     end
   end
 

@@ -52,6 +52,10 @@ defmodule Spades.Game.GameManager do
     GenServer.call(via_tuple(id), {:get_state, name})
   end
 
+  def reveal_cards(id, name) do
+    GenServer.call(via_tuple(id), {:reveal_cards, name})
+  end
+
   def make_call(id, name, value) do
     GenServer.call(via_tuple(id), {:make_call, name, value})
   end
@@ -85,6 +89,11 @@ defmodule Spades.Game.GameManager do
   @impl true
   def handle_call({:get_state, name}, _from, game) do
     {:reply, Game.state_for_player(game, name), game}
+  end
+
+  @impl true
+  def handle_call({:reveal_cards, name}, _from, game) do
+    {:reply, :ok, Game.reveal_cards(game, name)}
   end
 
   @impl true

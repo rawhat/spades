@@ -1,6 +1,11 @@
 import React from 'react';
+import { useCallback } from "react";
+import { useDispatch } from "react-redux";
 
-import { Card } from "./features/game/gameSlice";
+import {
+  Card,
+  playCard
+} from "./features/game/gameSlice";
 
 import viewStyle from "./Hand.module.css";
 
@@ -9,10 +14,18 @@ interface PlayerHandProps {
 }
 
 export function PlayerHand({cards}: PlayerHandProps) {
+  const dispatch = useDispatch();
+  const getOnClick = useCallback((card: Card) => {
+    return () => dispatch(playCard(card));
+  }, [dispatch]);
   return (
     <div className={viewStyle.playerHand}>
       {cards.map(card => (
-        <PlayerCard key={`${card.value}-${card.suit}`} card={card} />
+        <PlayerCard
+          key={`${card.value}-${card.suit}`}
+          card={card}
+          onClick={getOnClick(card)}
+        />
       ))}
     </div>
   )
@@ -33,14 +46,25 @@ export function HiddenHand({cards, orientation}: HiddenHandProps) {
   )
 }
 
-interface PlayerCardProps {
-  card: Card;
+export function cardValue(value: number): string {
+  switch(value) {
+    case 1: return "A"
+    case 11: return "J"
+    case 12: return "Q"
+    case 13: return "K"
+    default: return value.toString()
+  }
 }
 
-export function PlayerCard({card}: PlayerCardProps) {
+interface PlayerCardProps {
+  card: Card;
+  onClick: () => void;
+}
+
+export function PlayerCard({card, onClick}: PlayerCardProps) {
   return (
-    <div className={viewStyle.playerCard}>
-      <div>{card.value}</div>
+    <div className={viewStyle.playerCard} onClick={onClick}>
+      <div>{cardValue(card.value)}</div>
       <div>{card.suit}</div>
     </div>
   )

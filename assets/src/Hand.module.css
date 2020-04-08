@@ -9,7 +9,7 @@
   /*flex-grow: 1;*/
   border: 1px solid darkgray;
   border-radius: 4px;
-  padding: 10px;
+  /*padding: 10px;*/
   cursor: pointer;
   width: 5%;
   text-align: center;
@@ -44,7 +44,7 @@
   width: 5%;
   border: 1px solid darkgray;
   border-radius: 4px;
-  padding: 10px;
+  /*padding: 10px;*/
   height: 100%;
 }
 
@@ -53,5 +53,5 @@
   height: 100%;
   border: 1px solid darkgray;
   border-radius: 4px;
-  padding: 10px;
+  /*padding: 10px;*/
 }

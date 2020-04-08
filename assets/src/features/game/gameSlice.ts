@@ -1,8 +1,8 @@
 import { Dispatch } from "redux";
 import { createSelector } from "reselect";
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import { get, post } from "../../app/client";
+import { get } from "../../app/client";
 import { RootState } from "../../app/store";
 
 interface GameState {
@@ -19,19 +19,18 @@ export interface GameStatus {
   id: string;
   scores: { [team in keyof Team]: number };
   players: PublicPlayer[];
-  spades_broken: boolean;
   state: State;
   trick: PlayedCard[];
+  current_player: number;
 }
 
 export interface PlayerStatus extends GameStatus {
-  cards: Card[],
+  cards: Card[];
   call: number | null;
   tricks: number | null;
-  spades_broken: boolean;
-  state: State;
   trick: PlayedCard[];
   team: Team;
+  revealed: boolean;
 }
 
 export enum State {
@@ -52,14 +51,18 @@ export interface Card {
   value: number;
 }
 
-type PlayedCard = [string, Card];
+interface PlayedCard {
+  name: string
+  card: Card
+};
 
 export interface PublicPlayer {
-  name: string,
-  cards: number;
   call: number;
-  tricks: number;
+  cards: number;
+  name: string,
+  revealed: boolean;
   team: Team;
+  tricks: number;
 }
 
 const initialState: GameState = {};
@@ -68,40 +71,92 @@ export const gameSlice = createSlice({
   name: "game",
   initialState,
   reducers: {
-    getState: (state, action: PayloadAction<GameStatus>) => {
+    setGameState: (state, action: PayloadAction<GameStatus>) => {
       state.game = action.payload;
     },
-    getPlayerState: (state, action: PayloadAction<PlayerStatus>) => {
+    setPlayerState: (state, action: PayloadAction<PlayerStatus>) => {
       state.playerState = action.payload;
     }
   },
 });
 
-export const { getPlayerState, getState } = gameSlice.actions;
+export const { setGameState } = gameSlice.actions;
 
 export const loadGameState = (id: string) => async (dispatch: Dispatch) => {
-  const data = await get<{ game: GameStatus }>(`/game/${id}`);
-  dispatch(getState(data.game));
-};
-
-export const loadPlayerState = (name: string, id: string) => async (dispatch: Dispatch) => {
-  const data = await get<{game: PlayerStatus}>(`/game/${id}/player/${name}`);
-  dispatch(getPlayerState(data.game));
+  const data = await get<{game: GameStatus}>(`/game/${id}`);
+  dispatch(setGameState(data.game));
 }
 
-export const joinGame = (id: string, name: string, team: number) => async (dispatch: Dispatch) => {
-  const data = await post<{game: PlayerStatus}>(`/game/${id}/player`, {name, team});
-  dispatch(getPlayerState(data.game));
-}
+export const socketError = createAction<string>("game/socketError");
+
+type JoinGamePayload = {id: string, team: Team, username: string};
+export const joinGame = createAction<JoinGamePayload>("game/join");
+
+export const revealCards = createAction("game/reveal");
+export const makeCall = createAction<number>("game/makeCall");
+export const playCard = createAction<Card>("game/playCard");
+
+export const { setPlayerState } = gameSlice.actions;
 
 export default gameSlice.reducer;
 
-export const selectGameState = createSelector(
+export const getGameState = createSelector(
   (state: RootState) => state.game,
   (game: GameState) => game.game
 )
 
-export const selectPlayerState = createSelector(
+export const getPlayerState = createSelector(
   (state: RootState) => state.game,
   (game: GameState) => game.playerState
+)
+
+export const selectGameLoaded = createSelector(
+  getGameState,
+  (state: GameStatus | undefined) => !!state
+)
+
+export const selectPlayers = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState) =>
+    playerState?.players || gameState?.players || []
+)
+
+export const selectPlayerCards = createSelector(
+  getPlayerState,
+  player => player?.cards || []
+)
+
+export const selectPlayerCardsRevealed = createSelector(
+  getPlayerState,
+  player => player?.revealed || false
+)
+
+export const selectCurrentPlayer = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState): PublicPlayer | undefined =>
+    playerState?.players[playerState?.current_player] ||
+      gameState?.players[gameState?.current_player]
+)
+
+export const selectGameState = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState): State | undefined =>
+    playerState?.state || gameState?.state
+)
+
+export const selectTrick = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState) =>
+    playerState?.trick || gameState?.trick || []
+)
+
+export const selectScores = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState) =>
+    playerState?.scores || gameState?.scores || []
 )

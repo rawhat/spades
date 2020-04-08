@@ -174,4 +174,9 @@ defmodule Spades.Game.GameTest do
 
     assert game.trick == [{p4.name, Enum.at(deck, 11)}]
   end
+
+  # TODO: Test something like...
+  # [{10 hearts}, {4 diamonds}, {king diamonds}]
+  # {5 clubs}
+  # ^ won?  which is wrong?
 end

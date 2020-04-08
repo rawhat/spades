@@ -1,4 +1,7 @@
+import { createSelector } from "reselect";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+
+import { RootState } from "../../app/store";
 
 interface UserState {
   username?: string;
@@ -19,3 +22,10 @@ export const slice = createSlice({
 export const { setUsername } = slice.actions;
 
 export default slice.reducer;
+
+export const selectUserState = (state: RootState) => state.user;
+
+export const selectUsername = createSelector(
+  selectUserState,
+  (state: UserState) => state.username
+);
