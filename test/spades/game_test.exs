@@ -78,6 +78,8 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.name, Enum.at(deck, 7))
 
     assert g.scores == %{0 => -79, 1 => -70}
+    assert g.current_player == 0
+    assert Enum.at(g.play_order, 0) == p2.name
   end
 
   test "can't play non-matching card", %{game: game, deck: deck, p1: p1, p2: p2} do

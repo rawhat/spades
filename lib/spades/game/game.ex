@@ -295,9 +295,8 @@ defmodule Spades.Game do
     %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
   end
 
-  # TODO:  fix post-round next dealer?
-  defp increment_play_order(%__MODULE__{current_player: current_player} = game) do
-    %{game | current_player: rem(current_player + 1, 4)}
+  defp increment_play_order(%__MODULE__{play_order: [last | rest]} = game) do
+    %{game | play_order: Enum.concat(rest, [last]), current_player: 0}
   end
 
   defp deal_cards(%__MODULE__{players: players, play_order: play_order} = game, shuffle \\ false) do
