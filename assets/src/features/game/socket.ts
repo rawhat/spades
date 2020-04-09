@@ -49,6 +49,8 @@ export const socketMiddleware = (_store: any) => (next: Dispatch) => {
           next(setGameState(payload));
         }
       });
+
+      channel.push("join_game", {body: action.payload})
     } else if (revealCards.match(action)) {
       channel.push("reveal", {body: {}})
     } else if (makeCall.match(action)) {

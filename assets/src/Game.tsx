@@ -9,6 +9,7 @@ import { useState } from "react";
 import {
   joinGame,
   loadGameState,
+  selectAvailableTeams,
   selectGameLoaded,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
@@ -55,7 +56,13 @@ interface JoinButtonProps {
 }
 
 const JoinButton = ({onJoin}: JoinButtonProps) => {
-  const [team, setTeam] = useState<number | null>(0);
+  const availableTeams = useSelector(selectAvailableTeams);
+  console.log("availableTeams", availableTeams)
+  const [team, setTeam] = useState<number>(availableTeams[0]);
+
+  useEffect(() => {
+    setTeam(availableTeams[0]);
+  }, [availableTeams])
 
   const onChange = (t: React.ChangeEvent<HTMLSelectElement>) => {
     setTeam(parseInt(t.currentTarget.value));
@@ -70,8 +77,9 @@ const JoinButton = ({onJoin}: JoinButtonProps) => {
   return (
     <span>
       <select onChange={onChange}>
-        <option value={0}>One</option>
-        <option value={1}>Two</option>
+        {availableTeams.map(team => (
+          <option key={team} value={team}>{team + 1}</option>
+        ))}
       </select>
       <button onClick={onClick}>Join Game</button>
     </span>

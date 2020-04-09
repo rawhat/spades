@@ -1,3 +1,4 @@
+import groupBy from "lodash/groupBy";
 import { Dispatch } from "redux";
 import { createSelector } from "reselect";
 import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
@@ -114,6 +115,18 @@ export const selectGameLoaded = createSelector(
   getGameState,
   (state: GameStatus | undefined) => !!state
 )
+
+export const selectAvailableTeams = createSelector(
+  getGameState,
+  gameState => {
+    const invalidTeams =
+      Object.entries(groupBy(gameState?.players || [], 'team'))
+      .map(([key, value]) => ({count: value.length, team: key}))
+      .filter(({count}) => count === 2)
+      .map(({team}) => parseInt(team));
+    return [0, 1].filter(team => !invalidTeams.includes(team));
+  }
+);
 
 export const selectPlayers = createSelector(
   getGameState,
