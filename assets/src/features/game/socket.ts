@@ -7,6 +7,7 @@ import {
   GameStatus,
   PlayerStatus,
   joinGame,
+  setConnected,
   setGameState,
   setPlayerState,
   socketError,
@@ -51,6 +52,7 @@ export const socketMiddleware = (_store: any) => (next: Dispatch) => {
       });
 
       channel.push("join_game", {body: action.payload})
+      next(setConnected());
     } else if (revealCards.match(action)) {
       channel.push("reveal", {body: {}})
     } else if (makeCall.match(action)) {

@@ -27,7 +27,7 @@ defmodule Spades.Game.Player do
         name: player.name,
         team: player.team,
         cards: 0,
-        call: -2,
+        call: nil,
         tricks: 0,
         revealed: false
       }

@@ -10,7 +10,9 @@ import {
   joinGame,
   loadGameState,
   selectAvailableTeams,
+  selectConnected,
   selectGameLoaded,
+  selectSelf,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
@@ -20,7 +22,10 @@ function Game() {
   const dispatch = useDispatch();
   const { id } = useParams();
 
+  const availableTeams = useSelector(selectAvailableTeams);
+  const connected = useSelector(selectConnected);
   const gameLoaded = useSelector(selectGameLoaded);
+  const self = useSelector(selectSelf);
   const username = useSelector(selectUsername);
 
   useEffect(() => {
@@ -35,10 +40,16 @@ function Game() {
     }
   }, [dispatch, id, username])
 
+  useEffect(() => {
+    if (self && !connected && id && username) {
+      dispatch(joinGame({id, team: self.team, username}))
+    }
+  }, [connected, dispatch, id, self, username]);
+
   return (
     <>
       <span>
-        {gameLoaded && (
+        {!connected &&  gameLoaded && availableTeams.length > 0 && (
           <>
             <JoinButton onJoin={onJoin} />
             as
@@ -57,7 +68,6 @@ interface JoinButtonProps {
 
 const JoinButton = ({onJoin}: JoinButtonProps) => {
   const availableTeams = useSelector(selectAvailableTeams);
-  console.log("availableTeams", availableTeams)
   const [team, setTeam] = useState<number>(availableTeams[0]);
 
   useEffect(() => {

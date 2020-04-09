@@ -5,10 +5,12 @@ import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import { get } from "../../app/client";
 import { RootState } from "../../app/store";
+import { selectUsername } from "../user/userSlice";
 
 interface GameState {
   game?: GameStatus;
   playerState?: PlayerStatus;
+  connected: boolean;
 }
 
 export enum Team {
@@ -66,12 +68,20 @@ export interface PublicPlayer {
   tricks: number;
 }
 
-const initialState: GameState = {};
+const initialState: GameState = {
+  connected: false,
+};
 
 export const gameSlice = createSlice({
   name: "game",
   initialState,
   reducers: {
+    setConnected: state => {
+      state.connected = true;
+    },
+    setDisconnected: state => {
+      state.connected = false;
+    },
     setGameState: (state, action: PayloadAction<GameStatus>) => {
       state.game = action.payload;
     },
@@ -81,7 +91,7 @@ export const gameSlice = createSlice({
   },
 });
 
-export const { setGameState } = gameSlice.actions;
+export const { setConnected, setDisconnected, setGameState } = gameSlice.actions;
 
 export const loadGameState = (id: string) => async (dispatch: Dispatch) => {
   const data = await get<{game: GameStatus}>(`/game/${id}`);
@@ -172,4 +182,15 @@ export const selectScores = createSelector(
   getPlayerState,
   (gameState, playerState) =>
     playerState?.scores || gameState?.scores || []
+)
+
+export const selectConnected = createSelector(
+  (state: RootState) => state.game,
+  gameState => gameState.connected
+);
+
+export const selectSelf = createSelector(
+  getGameState,
+  selectUsername,
+  (gameState, username) => gameState?.players.find(p => p.name === username)
 )
