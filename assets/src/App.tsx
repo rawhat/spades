@@ -9,26 +9,33 @@ import Game from "./Game";
 import Home from "./Home";
 import Lobby from "./Lobby";
 
+import "spectre.css";
 import "./App.css";
+
+import TopNav from "./TopNav";
+import { Container } from "./Layout";
 
 function App() {
   return (
-    <Router>
-      <Switch>
-        <Route exact={true} path="/">
-          <Home />
-        </Route>
-        <Authenticated path="/lobby">
-          <Lobby />
-        </Authenticated>
-        <Authenticated path="/game/:id">
-          <Game />
-        </Authenticated>
-        <Route>
-          <Redirect to="/" />
-        </Route>
-      </Switch>
-    </Router>
+    <Container>
+      <Router>
+        <TopNav />
+        <Switch>
+          <Route exact={true} path="/">
+            <Home />
+          </Route>
+          <Authenticated path="/lobby">
+            <Lobby />
+          </Authenticated>
+          <Authenticated path="/game/:id">
+            <Game />
+          </Authenticated>
+          <Route>
+            <Redirect to="/" />
+          </Route>
+        </Switch>
+      </Router>
+    </Container>
   );
 }
 

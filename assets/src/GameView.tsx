@@ -18,6 +18,17 @@ import PlayArea from "./PlayArea";
 import { HiddenHand } from "./Hand";
 import { Marker } from "./Marker";
 import { PlayerHand } from "./Hand";
+import {
+  Panel,
+  PanelBody,
+  PanelTitle,
+  PanelFooter,
+  PanelHeader
+} from "./Panel";
+import {
+  Container,
+  SubHeader
+} from "./Layout";
 
 import viewStyle from "./GameView.module.css";
 
@@ -98,10 +109,18 @@ const GameView = () => {
           )}
         </div>
       </div>
-      <div className={viewStyle.sideBar}>
-        <div style={style("lightblue")}>This will have chat.</div>
-        <div>{JSON.stringify(scores)}</div>
-      </div>
+      <Panel>
+        <PanelHeader>
+          <SubHeader>Chat</SubHeader>
+        </PanelHeader>
+        <PanelBody>
+          <div>This is the chat text.</div>
+          <div>{JSON.stringify(scores)}</div>
+        </PanelBody>
+        <PanelFooter>
+          This will be an input.
+        </PanelFooter>
+      </Panel>
     </div>
   );
 };

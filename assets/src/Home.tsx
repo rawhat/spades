@@ -6,7 +6,16 @@ import { useState } from "react";
 
 import { setUsername } from "./features/user/userSlice";
 
-import styles from "./Home.module.css";
+import { Button } from "./Button";
+import {
+  Columns,
+  Column,
+  Container,
+} from "./Layout";
+import {
+  HorizontalForm,
+  Input,
+} from "./Form";
 
 function Home() {
   const [name, setName] = useState("");
@@ -14,9 +23,7 @@ function Home() {
   const history = useHistory();
 
   const onNameChange = useCallback(
-    (e) => {
-      setName(e.currentTarget.value);
-    },
+    setName,
     [setName]
   );
 
@@ -26,15 +33,27 @@ function Home() {
   }, [dispatch, history, name]);
 
   return (
-    <div className={styles.fullscreen}>
-      <input
-        type="text"
-        placeholder="Choose a name"
-        onChange={onNameChange}
-        value={name}
-      />
-      <button onClick={onJoin}>Join</button>
-    </div>
+    <Container>
+      <Columns>
+        <Column width={12}>
+          <Container height={250} />
+        </Column>
+      </Columns>
+      <HorizontalForm>
+        <Columns>
+          <Column margin="left" width={6}>
+            <Input
+              placeholder="Choose a name"
+              onChange={onNameChange}
+              value={name}
+            />
+          </Column>
+          <Column width={3}>
+            <Button onClick={onJoin}>Join</Button>
+          </Column>
+        </Columns>
+      </HorizontalForm>
+    </Container>
   );
 }
 

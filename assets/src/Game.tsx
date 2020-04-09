@@ -17,6 +17,13 @@ import {
 import { selectUsername } from "./features/user/userSlice";
 
 import GameView from "./GameView";
+import {
+  Container,
+  Columns,
+  Column
+} from "./Layout";
+import { Select } from "./Form";
+import { Button } from "./Button";
 
 function Game() {
   const dispatch = useDispatch();
@@ -51,15 +58,9 @@ function Game() {
 
   return (
     <>
-      <span>
-        {!connected && gameLoaded && availableTeams.length > 0 && (
-          <>
-            <JoinButton onJoin={onJoin} />
-            as{" "}
-          </>
-        )}
-        {username}
-      </span>
+      {!connected && gameLoaded && availableTeams.length > 0 && (
+        <JoinButton onJoin={onJoin} />
+      )}
       <GameView />
     </>
   );
@@ -77,8 +78,8 @@ const JoinButton = ({ onJoin }: JoinButtonProps) => {
     setTeam(availableTeams[0]);
   }, [availableTeams]);
 
-  const onChange = (t: React.ChangeEvent<HTMLSelectElement>) => {
-    setTeam(parseInt(t.currentTarget.value));
+  const onChange = (value: string) => {
+    setTeam(parseInt(value));
   };
 
   const onClick = () => {
@@ -88,16 +89,16 @@ const JoinButton = ({ onJoin }: JoinButtonProps) => {
   };
 
   return (
-    <span>
-      <select onChange={onChange}>
-        {availableTeams.map((team) => (
-          <option key={team} value={team}>
-            {team + 1}
-          </option>
-        ))}
-      </select>
-      <button onClick={onClick}>Join Game</button>
-    </span>
+    <Container>
+      <Columns>
+        <Column width={1}>
+          <Select onChange={onChange} options={availableTeams} />
+        </Column>
+        <Column width={2}>
+          <Button onClick={onClick}>Join Game</Button>
+        </Column>
+      </Columns>
+    </Container>
   );
 };
 
