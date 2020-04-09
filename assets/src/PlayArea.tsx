@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { useSelector } from "react-redux";
 
 import {
@@ -6,7 +6,7 @@ import {
   selectCurrentPlayer,
   selectGameState,
   selectPlayerCardsRevealed,
-  selectTrick
+  selectTrick,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
@@ -22,7 +22,8 @@ function PlayArea() {
   const gameState = useSelector(selectGameState);
   const trick = useSelector(selectTrick);
 
-  const isBidding = gameState === State.Bidding && currentPlayer?.name === username;
+  const isBidding =
+    gameState === State.Bidding && currentPlayer?.name === username;
 
   return (
     <div className={viewStyle.container}>
@@ -32,7 +33,7 @@ function PlayArea() {
         {gameState === State.Playing && (
           <div>
             <div>Current trick:</div>
-            {trick.map(({name, card}) => (
+            {trick.map(({ name, card }) => (
               <div key={JSON.stringify(card)}>
                 {name}: {cardValue(card.value)} {card.suit}
               </div>

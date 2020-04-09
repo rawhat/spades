@@ -6,7 +6,7 @@ import { Provider } from "react-redux";
 import * as serviceWorker from "./serviceWorker";
 
 const render = () => {
-  const App = require('./App').default;
+  const App = require("./App").default;
 
   ReactDOM.render(
     <Provider store={store}>
@@ -14,12 +14,12 @@ const render = () => {
     </Provider>,
     document.getElementById("root")
   );
-}
+};
 
 render();
 
-if (process.env.NODE_ENV === 'development' && (module as any).hot) {
-  (module as any).hot.accept('./App', render);
+if (process.env.NODE_ENV === "development" && (module as any).hot) {
+  (module as any).hot.accept("./App", render);
 }
 
 // If you want your app to work offline and load faster, you can change

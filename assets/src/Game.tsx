@@ -34,28 +34,31 @@ function Game() {
     }
   }, [dispatch, id]);
 
-  const onJoin = useCallback((team: number) => {
-    if (id && username) {
-      dispatch(joinGame({id, team, username}));
-    }
-  }, [dispatch, id, username])
+  const onJoin = useCallback(
+    (team: number) => {
+      if (id && username) {
+        dispatch(joinGame({ id, team, username }));
+      }
+    },
+    [dispatch, id, username]
+  );
 
   useEffect(() => {
     if (self && !connected && id && username) {
-      dispatch(joinGame({id, team: self.team, username}))
+      dispatch(joinGame({ id, team: self.team, username }));
     }
   }, [connected, dispatch, id, self, username]);
 
   return (
     <>
       <span>
-        {!connected &&  gameLoaded && availableTeams.length > 0 && (
+        {!connected && gameLoaded && availableTeams.length > 0 && (
           <>
             <JoinButton onJoin={onJoin} />
-            as
-            {' '}
+            as{" "}
           </>
-        )}{username}
+        )}
+        {username}
       </span>
       <GameView />
     </>
@@ -66,34 +69,36 @@ interface JoinButtonProps {
   onJoin: (team: number) => void;
 }
 
-const JoinButton = ({onJoin}: JoinButtonProps) => {
+const JoinButton = ({ onJoin }: JoinButtonProps) => {
   const availableTeams = useSelector(selectAvailableTeams);
   const [team, setTeam] = useState<number>(availableTeams[0]);
 
   useEffect(() => {
     setTeam(availableTeams[0]);
-  }, [availableTeams])
+  }, [availableTeams]);
 
   const onChange = (t: React.ChangeEvent<HTMLSelectElement>) => {
     setTeam(parseInt(t.currentTarget.value));
-  }
+  };
 
   const onClick = () => {
     if (team !== null) {
       onJoin(team);
     }
-  }
+  };
 
   return (
     <span>
       <select onChange={onChange}>
-        {availableTeams.map(team => (
-          <option key={team} value={team}>{team + 1}</option>
+        {availableTeams.map((team) => (
+          <option key={team} value={team}>
+            {team + 1}
+          </option>
         ))}
       </select>
       <button onClick={onClick}>Join Game</button>
     </span>
   );
-}
+};
 
 export default Game;

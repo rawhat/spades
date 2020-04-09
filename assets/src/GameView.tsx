@@ -23,7 +23,7 @@ import viewStyle from "./GameView.module.css";
 
 const style = (backgroundColor: string) => ({
   backgroundColor,
-})
+});
 
 const GameView = () => {
   const username = useSelector(selectUsername);
@@ -34,8 +34,8 @@ const GameView = () => {
   const scores = useSelector(selectScores);
 
   const [self, leftPlayer, teammate, rightPlayer] = useMemo(() => {
-    const after = takeWhile(players, p => p.name !== username);
-    return dropWhile(players, p => p.name !== username).concat(after);
+    const after = takeWhile(players, (p) => p.name !== username);
+    return dropWhile(players, (p) => p.name !== username).concat(after);
   }, [username, players]);
 
   return (
@@ -70,7 +70,7 @@ const GameView = () => {
             <PlayArea />
           </div>
           <div className={viewStyle.playerHand}>
-            <div style={style('lightgray')}>
+            <div style={style("lightgray")}>
               {playerCards && (
                 <Self
                   call={self?.call}
@@ -99,13 +99,11 @@ const GameView = () => {
         </div>
       </div>
       <div className={viewStyle.sideBar}>
-        <div style={style('lightblue')}>
-          This will have chat.
-        </div>
+        <div style={style("lightblue")}>This will have chat.</div>
         <div>{JSON.stringify(scores)}</div>
       </div>
     </div>
-  )
+  );
 };
 
 interface PlayerProps<T> {
@@ -121,28 +119,43 @@ interface SelfProps extends PlayerProps<Card[]> {
   revealed: boolean;
 }
 
-const Self = ({call, cards, current, name, tricks}: SelfProps) => (
+const Self = ({ call, cards, current, name, tricks }: SelfProps) => (
   <>
-    <div className={viewStyle['statusBar-vertical']}>
-      <span>{name} {current && <Marker />}</span>
+    <div className={viewStyle["statusBar-vertical"]}>
+      <span>
+        {name} {current && <Marker />}
+      </span>
       {call !== null && (
-        <span>Call: {call} {tricks !== undefined && <span>({tricks})</span>}</span>
+        <span>
+          Call: {call} {tricks !== undefined && <span>({tricks})</span>}
+        </span>
       )}
     </div>
     <PlayerHand cards={cards} />
   </>
-)
+);
 
-const Player = ({call, cards, current, name, orientation, tricks}: PlayerProps<number>) => (
+const Player = ({
+  call,
+  cards,
+  current,
+  name,
+  orientation,
+  tricks,
+}: PlayerProps<number>) => (
   <>
     <HiddenHand cards={cards} orientation={orientation} />
     <div className={viewStyle[`statusBar-${orientation}`]}>
-      <span>{name} {current && <Marker />}</span>
+      <span>
+        {name} {current && <Marker />}
+      </span>
       {call !== null && (
-        <span>Call: {call} {tricks !== undefined && <span>({tricks})</span>}</span>
+        <span>
+          Call: {call} {tricks !== undefined && <span>({tricks})</span>}
+        </span>
       )}
     </div>
   </>
-)
+);
 
 export default GameView;

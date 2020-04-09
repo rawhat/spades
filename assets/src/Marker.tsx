@@ -1,10 +1,8 @@
-import React from 'react';
+import React from "react";
 
 const markerStyle = {
-  color: 'orange',
-  fontSize: '1.5rem'
-}
+  color: "orange",
+  fontSize: "1.5rem",
+};
 
-export const Marker = () => (
-  <span style={markerStyle}>♦</span>
-)
+export const Marker = () => <span style={markerStyle}>♦</span>;
