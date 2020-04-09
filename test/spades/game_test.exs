@@ -36,8 +36,6 @@ defmodule Spades.Game.GameTest do
       |> Game.make_call(p3.name, 3)
       |> Game.make_call(p4.name, 4)
 
-    IO.inspect(game)
-
     one = Map.get(game.players, p1.name)
     two = Map.get(game.players, p2.name)
     three = Map.get(game.players, p3.name)
@@ -56,12 +54,12 @@ defmodule Spades.Game.GameTest do
     assert Enum.count(g.trick) == 1
   end
 
-  test "play four cards, assign trick", %{game: game, deck: deck, p1: p1} do
+  test "play four cards, assign trick", %{game: game, deck: deck, p1: p1, p2: p2, p3: p3, p4: p4} do
     g =
-      Game.play_card(game, "alex", Enum.at(deck, 0))
-      |> Game.play_card("jon", Enum.at(deck, 1))
-      |> Game.play_card("jake", Enum.at(deck, 2))
-      |> Game.play_card("gopal", Enum.at(deck, 3))
+      Game.play_card(game, p1.name, Enum.at(deck, 0))
+      |> Game.play_card(p2.name, Enum.at(deck, 1))
+      |> Game.play_card(p3.name, Enum.at(deck, 2))
+      |> Game.play_card(p4.name, Enum.at(deck, 3))
 
     assert Enum.count(g.trick) == 0
     assert g.players[p1.name].hand.tricks == 1
@@ -79,8 +77,6 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.name, Enum.at(deck, 6))
       |> Game.play_card(p4.name, Enum.at(deck, 7))
 
-    IO.inspect(g)
-
     assert g.scores == %{0 => -79, 1 => -70}
   end
 
@@ -89,7 +85,7 @@ defmodule Spades.Game.GameTest do
       Game.play_card(game, p1.name, Enum.at(deck, 0))
       |> Game.play_card(p2.name, Enum.at(deck, 5))
 
-    assert g.trick == [{p1.name, Enum.at(deck, 0)}]
+    assert g.trick == [%{name: p1.name, card: Enum.at(deck, 0)}]
   end
 
   test "spades not broken, can't lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -139,7 +135,7 @@ defmodule Spades.Game.GameTest do
       |> Game.make_call(p4.name, 1)
       |> Game.play_card(p1.name, Card.new(:spades, 2))
 
-    assert game.trick == [{p1.name, Card.new(:spades, 2)}]
+    assert game.trick == [%{name: p1.name, card: Card.new(:spades, 2)}]
   end
 
   test "once spades are broken, they can be lead", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -176,11 +172,37 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.name, Enum.at(deck, 7))
       |> Game.play_card(p4.name, Enum.at(deck, 11))
 
-    assert game.trick == [{p4.name, Enum.at(deck, 11)}]
+    assert game.trick == [%{name: p4.name, card: Enum.at(deck, 11)}]
   end
 
-  # TODO: Test something like...
-  # [{10 hearts}, {4 diamonds}, {king diamonds}]
-  # {5 clubs}
-  # ^ won?  which is wrong?
+  test "leading suit with all offsuit wins", %{p1: p1, p2: p2, p3: p3, p4: p4} do
+    deck = [
+      Card.new(:diamond, 13),
+      Card.new(:diamond, 4),
+      Card.new(:hearts, 10),
+      Card.new(:clubs, 5),
+      #
+      Card.new(:clubs, 4),
+      Card.new(:clubs, 6),
+      Card.new(:spades, 4),
+      Card.new(:spades, 5)
+    ]
+
+    game =
+      Game.new("1", deck)
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.make_call(p1.name, 1)
+      |> Game.make_call(p2.name, 1)
+      |> Game.make_call(p3.name, 1)
+      |> Game.make_call(p4.name, 1)
+      |> Game.play_card(p1.name, Enum.at(deck, 0))
+      |> Game.play_card(p2.name, Enum.at(deck, 1))
+      |> Game.play_card(p3.name, Enum.at(deck, 2))
+      |> Game.play_card(p4.name, Enum.at(deck, 3))
+
+    assert game.current_player == 0
+  end
 end

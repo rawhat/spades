@@ -10,9 +10,9 @@ defmodule Spades.Game.GameManagerTest do
     {:ok, _} = GameManager.start_link(id: id_2)
 
     p1 = [name: "alex", team: 0]
-    p2 = [name: "jon", team: 0]
-    p3 = [name: "jake", team: 0]
-    p4 = [name: "gopal", team: 0]
+    p2 = [name: "jake", team: 1]
+    p3 = [name: "jon", team: 0]
+    p4 = [name: "gopal", team: 1]
 
     {:ok, id: id, p1: p1, p2: p2, p3: p3, p4: p4, id_2: id_2}
   end
@@ -50,15 +50,31 @@ defmodule Spades.Game.GameManagerTest do
     state = GameManager.get_game_state_for_player(id, p1[:name])
 
     assert state.state == :playing
-    assert length(state.players) == 3
+    assert length(state.players) == 4
     assert Enum.find(state.players, &(&1[:name] == p2[:name])).call == 1
   end
 
   test "it allows multiple games", %{id_2: id_2, p1: p1} do
-    assert GameManager.get_game_state_for_player(id_2, p1[:name]) == %{}
+    assert GameManager.get_game_state_for_player(id_2, p1[:name]) == %{
+             current_player: 0,
+             id: "2",
+             players: [],
+             scores: %{0 => 0, 1 => 0},
+             spades_broken: false,
+             state: :waiting,
+             trick: []
+           }
   end
 
   test "it returns game state", %{id: id} do
-    assert GameManager.get_game_state(id)[:cards] == 0
+    assert GameManager.get_game_state(id) == %{
+             current_player: 0,
+             id: "1",
+             players: [],
+             scores: %{0 => 0, 1 => 0},
+             spades_broken: false,
+             state: :waiting,
+             trick: []
+           }
   end
 end

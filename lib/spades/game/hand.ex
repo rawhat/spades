@@ -26,8 +26,6 @@ defmodule Spades.Game.Hand do
   end
 
   def play(%__MODULE__{cards: cards} = hand, %Card{} = card) do
-    IO.puts("cards: #{inspect(cards)}")
-    IO.puts("card: #{inspect(card)}")
     %{hand | cards: Enum.filter(cards, &(&1 != card))}
   end
 

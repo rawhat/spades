@@ -77,10 +77,8 @@ defmodule Spades.Game do
         name
       ) do
     if can_play?(game, name) do
-      IO.puts("revealing")
       reveal_player_card(game, name)
     else
-      IO.puts("can't")
       game
     end
   end
