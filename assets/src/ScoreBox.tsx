@@ -10,9 +10,12 @@ const scoreBoxStyle: React.CSSProperties = {
   position: "absolute",
   right: 0,
   bottom: 50,
-  width: "10%",
   height: "20%",
 };
+
+const padding = {
+  paddingRight: 5,
+}
 
 function ScoreBox() {
   const scores = useSelector(selectScores);
@@ -23,13 +26,13 @@ function ScoreBox() {
       <VerticalLayout>
         <SubHeader>Scores</SubHeader>
         <HorizontalLayout justifyContent="space-between">
-          <span>
+          <span style={padding}>
             <b>Team One</b>
           </span>
           <span>{team_one}</span>
         </HorizontalLayout>
         <HorizontalLayout justifyContent="space-between">
-          <span>
+          <span style={padding}>
             <b>Team Two</b>
           </span>
           <span>{team_two}</span>

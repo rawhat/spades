@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useMemo } from "react";
 
-import { Card, playCard } from "./features/game/gameSlice";
+import { Card, Suit, playCard } from "./features/game/gameSlice";
 
 import { HorizontalLayout, VerticalLayout } from "./Layout";
 
@@ -74,6 +74,48 @@ const playerCardStyle = {
   borderRadius: 2,
   border: "1px solid lightgray",
 };
+
+const initialCode = 127137;
+function getCardCode(offset: number) {
+  return `&#${initialCode + offset};`;
+}
+
+function suitToOffset(suit: Suit): number {
+  switch(suit) {
+    case Suit.Spades: {
+      return 0;
+    }
+    case Suit.Hearts: {
+      return 16;
+    }
+    case Suit.Diamonds: {
+      return 32;
+    }
+    case Suit.Clubs: {
+      return 48;
+    }
+  }
+}
+
+function getUnicodeAndColorForCard({value, suit}: Card): [string, string] {
+  let color;
+  switch(suit) {
+    case Suit.Clubs:
+    case Suit.Spades: {
+      color = "black";
+      break;
+    }
+    case Suit.Hearts:
+    case Suit.Diamonds: {
+      color = "red";
+      break;
+    }
+  }
+
+  const offset = suitToOffset(suit);
+  const code = getCardCode(offset + value - 1);
+  return [code, color];
+}
 
 export function PlayerCard({ card, onClick }: PlayerCardProps) {
   return (

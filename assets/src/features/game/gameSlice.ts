@@ -42,7 +42,7 @@ export enum State {
   Playing = "playing",
 }
 
-enum Suit {
+export enum Suit {
   Clubs = "clubs",
   Diamonds = "diamonds",
   Hearts = "hearts",
