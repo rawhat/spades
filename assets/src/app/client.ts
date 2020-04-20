@@ -5,7 +5,7 @@ export async function client<T>(
   const options: RequestInit = {
     method: "GET",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     ...overrides,
   };

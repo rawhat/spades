@@ -6,8 +6,8 @@ import userReducer from "../features/user/userSlice";
 const rootReducer = combineReducers({
   game: gameReducer,
   lobby: lobbyReducer,
-  user: userReducer
-})
+  user: userReducer,
+});
 
 export type RootState = ReturnType<typeof rootReducer>;
 

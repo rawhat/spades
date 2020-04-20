@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
@@ -7,25 +7,15 @@ import { useState } from "react";
 import { setUsername } from "./features/user/userSlice";
 
 import { Button } from "./Button";
-import {
-  Columns,
-  Column,
-  Container,
-} from "./Layout";
-import {
-  HorizontalForm,
-  Input,
-} from "./Form";
+import { Columns, Column, Container } from "./Layout";
+import { HorizontalForm, Input } from "./Form";
 
 function Home() {
   const [name, setName] = useState("");
   const dispatch = useDispatch();
   const history = useHistory();
 
-  const onNameChange = useCallback(
-    setName,
-    [setName]
-  );
+  const onNameChange = useCallback(setName, [setName]);
 
   const onJoin = useCallback(() => {
     dispatch(setUsername(name));

@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import range from "lodash/range";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";

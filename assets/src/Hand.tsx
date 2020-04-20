@@ -1,10 +1,11 @@
-import React from "react";
+import * as React from "react";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
+import { useMemo } from "react";
 
 import { Card, playCard } from "./features/game/gameSlice";
 
-import viewStyle from "./Hand.module.css";
+import { HorizontalLayout, VerticalLayout } from "./Layout";
 
 interface PlayerHandProps {
   cards: Card[];
@@ -19,7 +20,7 @@ export function PlayerHand({ cards }: PlayerHandProps) {
     [dispatch]
   );
   return (
-    <div className={viewStyle.playerHand}>
+    <HorizontalLayout>
       {cards.map((card) => (
         <PlayerCard
           key={`${card.value}-${card.suit}`}
@@ -27,22 +28,23 @@ export function PlayerHand({ cards }: PlayerHandProps) {
           onClick={getOnClick(card)}
         />
       ))}
-    </div>
+    </HorizontalLayout>
   );
 }
 
 interface HiddenHandProps {
   cards: number;
-  orientation: "vertical" | "horizontal";
+  position: "top" | "side";
 }
 
-export function HiddenHand({ cards, orientation }: HiddenHandProps) {
+export function HiddenHand({ cards, position }: HiddenHandProps) {
+  const Component = position === "top" ? HorizontalLayout : VerticalLayout;
   return (
-    <div className={viewStyle[`hiddenHand-${orientation}`]}>
+    <Component justifyContent="space-between" alignItems="stretch">
       {Array.from(Array(cards)).map((_, i) => (
-        <HiddenCard key={`${orientation}-${i}`} orientation={orientation} />
+        <HiddenCard key={`${position}-${i}`} position={position} />
       ))}
-    </div>
+    </Component>
   );
 }
 
@@ -66,19 +68,47 @@ interface PlayerCardProps {
   onClick: () => void;
 }
 
+const playerCardStyle = {
+  height: 80,
+  width: 60,
+  borderRadius: 2,
+  border: "1px solid lightgray",
+};
+
 export function PlayerCard({ card, onClick }: PlayerCardProps) {
   return (
-    <div className={viewStyle.playerCard} onClick={onClick}>
-      <div>{cardValue(card.value)}</div>
-      <div>{card.suit}</div>
+    <div onClick={onClick} style={playerCardStyle}>
+      <VerticalLayout>
+        <div>{cardValue(card.value)}</div>
+        <div>{card.suit}</div>
+      </VerticalLayout>
     </div>
   );
 }
 
 interface HiddenCardProps {
-  orientation: "horizontal" | "vertical";
+  position: "top" | "side";
 }
 
-export function HiddenCard({ orientation }: HiddenCardProps) {
-  return <div className={viewStyle[`hiddenCard-${orientation}`]} />;
+export function HiddenCard({ position }: HiddenCardProps) {
+  const style = useMemo(() => {
+    const baseStyle = {
+      borderRadius: 2,
+      border: "1px solid lightgray",
+      backgroundColor: "darkblue",
+    };
+    if (position === "top") {
+      return {
+        ...baseStyle,
+        height: 80,
+        width: 60,
+      };
+    }
+    return {
+      ...baseStyle,
+      height: 60,
+      width: 80,
+    };
+  }, [position]);
+  return <div style={style} />;
 }

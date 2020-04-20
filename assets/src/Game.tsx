@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useEffect } from "react";
@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { useState } from "react";
 
 import {
+  Team,
   joinGame,
   loadGameState,
   selectAvailableTeams,
@@ -17,11 +18,7 @@ import {
 import { selectUsername } from "./features/user/userSlice";
 
 import GameView from "./GameView";
-import {
-  Container,
-  Columns,
-  Column
-} from "./Layout";
+import { Column, HorizontalLayout, VerticalLayout } from "./Layout";
 import { Select } from "./Form";
 import { Button } from "./Button";
 
@@ -42,7 +39,7 @@ function Game() {
   }, [dispatch, id]);
 
   const onJoin = useCallback(
-    (team: number) => {
+    (team: Team) => {
       if (id && username) {
         dispatch(joinGame({ id, team, username }));
       }
@@ -57,29 +54,29 @@ function Game() {
   }, [connected, dispatch, id, self, username]);
 
   return (
-    <>
+    <VerticalLayout flexGrow={1}>
       {!connected && gameLoaded && availableTeams.length > 0 && (
         <JoinButton onJoin={onJoin} />
       )}
       <GameView />
-    </>
+    </VerticalLayout>
   );
 }
 
 interface JoinButtonProps {
-  onJoin: (team: number) => void;
+  onJoin: (team: Team) => void;
 }
 
 const JoinButton = ({ onJoin }: JoinButtonProps) => {
   const availableTeams = useSelector(selectAvailableTeams);
-  const [team, setTeam] = useState<number>(availableTeams[0]);
+  const [team, setTeam] = useState<Team>(availableTeams[0]);
 
   useEffect(() => {
     setTeam(availableTeams[0]);
   }, [availableTeams]);
 
   const onChange = (value: string) => {
-    setTeam(parseInt(value));
+    setTeam(value as Team);
   };
 
   const onClick = () => {
@@ -89,16 +86,14 @@ const JoinButton = ({ onJoin }: JoinButtonProps) => {
   };
 
   return (
-    <Container>
-      <Columns>
-        <Column width={1}>
-          <Select onChange={onChange} options={availableTeams} />
-        </Column>
-        <Column width={2}>
-          <Button onClick={onClick}>Join Game</Button>
-        </Column>
-      </Columns>
-    </Container>
+    <HorizontalLayout justifyContent="center">
+      <Column width={1}>
+        <Select onChange={onChange} options={availableTeams} />
+      </Column>
+      <Column width={2}>
+        <Button onClick={onClick}>Join Game</Button>
+      </Column>
+    </HorizontalLayout>
   );
 };
 

@@ -13,7 +13,7 @@ import {
   socketError,
   revealCards,
   makeCall,
-  playCard
+  playCard,
 } from "./gameSlice";
 
 export const socketMiddleware = (_store: any) => (next: Dispatch) => {
@@ -25,9 +25,10 @@ export const socketMiddleware = (_store: any) => (next: Dispatch) => {
   return (action: AnyAction) => {
     if (joinGame.match(action)) {
       const params = action.payload;
-      channel = socket.channel(`game:${params.id}`, {params});
+      channel = socket.channel(`game:${params.id}`, { params });
 
-      channel.join()
+      channel
+        .join()
         .receive("ok", (msg: PlayerStatus) => {
           console.log("connected", msg);
           if (msg.team !== undefined) {
@@ -43,24 +44,24 @@ export const socketMiddleware = (_store: any) => (next: Dispatch) => {
 
       channel.on("game_state", (payload: PlayerStatus | GameStatus) => {
         if ((payload as PlayerStatus).team !== undefined) {
-          console.log("player state")
+          console.log("player state");
           next(setPlayerState(payload as PlayerStatus));
         } else {
-          console.log("game state")
+          console.log("game state");
           next(setGameState(payload));
         }
       });
 
-      channel.push("join_game", {body: action.payload})
+      channel.push("join_game", { body: action.payload });
       next(setConnected());
     } else if (revealCards.match(action)) {
-      channel.push("reveal", {body: {}})
+      channel.push("reveal", { body: {} });
     } else if (makeCall.match(action)) {
-      channel.push("make_call", {body: action.payload});
+      channel.push("make_call", { body: action.payload });
     } else if (playCard.match(action)) {
-      channel.push("play_card", {body: action.payload})
+      channel.push("play_card", { body: action.payload });
     }
 
     next(action);
-  }
-}
+  };
+};

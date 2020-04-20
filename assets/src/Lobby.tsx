@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { Link } from "react-router-dom";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
@@ -11,20 +11,14 @@ import { fetchGames } from "./features/lobby/lobbySlice";
 import { createGame } from "./features/lobby/lobbySlice";
 
 import { Button } from "./Button";
-import {
-  Columns,
-  Column,
-  Container,
-  Divider,
-  Header
-} from "./Layout";
+import { Columns, Column, Container, Divider, Header } from "./Layout";
 import {
   Table,
   TableCell,
   TableHeader,
   TableHeaderCell,
   TableBody,
-  TableRow
+  TableRow,
 } from "./Table";
 
 function Lobby() {
@@ -51,7 +45,9 @@ function Lobby() {
       <Divider orientation="horizontal" />
       <Columns>
         <Column width={2} margin="auto">
-          <Button color="success" onClick={newGame}>New Game</Button>
+          <Button color="success" onClick={newGame}>
+            New Game
+          </Button>
         </Column>
       </Columns>
       {games.length > 0 && (
@@ -64,13 +60,9 @@ function Lobby() {
             {games.map((game) => (
               <TableRow key={game}>
                 <TableCell>
-                  <Link to={`/game/${game}`}>
-                    {game}
-                  </Link>
+                  <Link to={`/game/${game}`}>{game}</Link>
                 </TableCell>
-                <TableCell>
-                  ???
-                </TableCell>
+                <TableCell>???</TableCell>
               </TableRow>
             ))}
           </TableBody>

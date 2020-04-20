@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { useSelector } from "react-redux";
 
 import {
@@ -11,9 +11,9 @@ import {
 import { selectUsername } from "./features/user/userSlice";
 
 import CallBox from "./CallBox";
+import ScoreBox from "./ScoreBox";
+import { VerticalLayout } from "./Layout";
 import { cardValue } from "./Hand";
-
-import viewStyle from "./PlayArea.module.css";
 
 function PlayArea() {
   const username = useSelector(selectUsername);
@@ -26,8 +26,8 @@ function PlayArea() {
     gameState === State.Bidding && currentPlayer?.name === username;
 
   return (
-    <div className={viewStyle.container}>
-      <div className={viewStyle.main}>
+    <VerticalLayout flexGrow={1} height="100%" position="relative">
+      <VerticalLayout flexGrow={1} alignItems="center" justifyContent="center">
         {gameState === State.Waiting && <div>Waiting for players...</div>}
         {gameState === State.Bidding && <div>Make your bids!</div>}
         {gameState === State.Playing && (
@@ -40,11 +40,10 @@ function PlayArea() {
             ))}
           </div>
         )}
-      </div>
-      <div className={viewStyle.playerCall}>
-        {isBidding && <CallBox revealed={cardsRevealed} />}
-      </div>
-    </div>
+      </VerticalLayout>
+      <ScoreBox />
+      {isBidding && <CallBox revealed={cardsRevealed} />}
+    </VerticalLayout>
   );
 }
 

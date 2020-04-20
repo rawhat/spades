@@ -1,11 +1,9 @@
-import React from 'react';
-import classnames from 'classnames';
+import * as React from "react";
+import classnames from "classnames";
 
-export const Navbar: React.FC = ({children}) => (
-  <header className="navbar">
-    {children}
-  </header>
-)
+export const Navbar: React.FC = ({ children }) => (
+  <header className="navbar">{children}</header>
+);
 
 interface NavbarSectionProps {
   center?: boolean;
@@ -13,14 +11,14 @@ interface NavbarSectionProps {
 
 export const NavbarSection: React.FC<NavbarSectionProps> = ({
   center,
-  children
+  children,
 }) => (
   <section
     className={classnames({
-      'navbar-section': !center,
-      'navbar-center': center
+      "navbar-section": !center,
+      "navbar-center": center,
     })}
   >
     {children}
   </section>
-)
+);

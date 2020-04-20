@@ -1,5 +1,5 @@
-import React from 'react';
-import classnames from 'classnames';
+import * as React from "react";
+import classnames from "classnames";
 
 interface ButtonProps {
   active?: boolean;
@@ -24,27 +24,30 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => (
   <button
-    className={classnames('btn', {
+    className={classnames("btn", {
       [`btn-${color}`]: color,
       [`btn-${size}`]: size,
-      'btn-active': active,
-      'btn-block': block,
-      'btn-disabled': disabled,
-      'btn-loading': loading,
-      [`float-${float}`]: float
+      "btn-active": active,
+      "btn-block": block,
+      "btn-disabled": disabled,
+      "btn-loading": loading,
+      [`float-${float}`]: float,
     })}
     {...props}
   >
     {children}
   </button>
-)
+);
 
 interface ButtonGroupProps {
   block?: boolean;
 }
 
-export const ButtonGroup: React.FC<ButtonGroupProps> = ({block, children}) => (
-  <div className={classnames('btn-group', {'btn-group-block': block})}>
+export const ButtonGroup: React.FC<ButtonGroupProps> = ({
+  block,
+  children,
+}) => (
+  <div className={classnames("btn-group", { "btn-group-block": block })}>
     {children}
   </div>
-)
+);

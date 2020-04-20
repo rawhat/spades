@@ -21,7 +21,7 @@ export const lobbySlice = createSlice({
     },
     newGame: (state, action: PayloadAction<string>) => {
       state.games.push(action.payload);
-    }
+    },
   },
 });
 
@@ -33,9 +33,9 @@ export const fetchGames = () => async (dispatch: Dispatch) => {
 };
 
 export const createGame = (history: History) => async (dispatch: Dispatch) => {
-  const data = await post<{id: string}>("/game");
+  const data = await post<{ id: string }>("/game");
   dispatch(newGame(data.id));
   history.push(`/game/${data.id}`);
-}
+};
 
 export default lobbySlice.reducer;

@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import { Redirect } from "react-router-dom";
 import { Route } from "react-router-dom";
@@ -13,13 +13,14 @@ import "spectre.css";
 import "./App.css";
 
 import TopNav from "./TopNav";
-import { Container } from "./Layout";
+import { Divider, VerticalLayout } from "./Layout";
 
 function App() {
   return (
-    <Container>
+    <VerticalLayout height="100%">
       <Router>
         <TopNav />
+        <Divider orientation="horizontal" />
         <Switch>
           <Route exact={true} path="/">
             <Home />
@@ -35,7 +36,7 @@ function App() {
           </Route>
         </Switch>
       </Router>
-    </Container>
+    </VerticalLayout>
   );
 }
 
