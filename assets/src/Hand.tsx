@@ -131,9 +131,9 @@ interface HiddenCardProps {
 }
 
 export function HiddenCard({ position }: HiddenCardProps) {
-  const style = useMemo(() => {
+  const style = useMemo((): React.CSSProperties => {
     return {
-      fontSize: '6em',
+      fontSize: position === 'top' ? '6em' : '2em',
       transform: position === 'top' ? undefined : 'rotate(90deg)'
     };
   }, [position]);
