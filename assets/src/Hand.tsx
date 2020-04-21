@@ -20,7 +20,7 @@ export function PlayerHand({ cards }: PlayerHandProps) {
     [dispatch]
   );
   return (
-    <HorizontalLayout>
+    <HorizontalLayout justifyContent='space-between' alignItems='center'>
       {cards.map((card) => (
         <PlayerCard
           key={`${card.value}-${card.suit}`}
@@ -68,13 +68,6 @@ interface PlayerCardProps {
   onClick: () => void;
 }
 
-const playerCardStyle = {
-  height: 80,
-  width: 60,
-  borderRadius: 2,
-  border: "1px solid lightgray",
-};
-
 const initialCode = 127137;
 function getCardCode(offset: number) {
   return `&#${initialCode + offset};`;
@@ -118,12 +111,17 @@ function getUnicodeAndColorForCard({value, suit}: Card): [string, string] {
 }
 
 export function PlayerCard({ card, onClick }: PlayerCardProps) {
+  const [code, color] = getUnicodeAndColorForCard(card);
+  const style = useMemo(() => {
+    return {
+      cursor: 'pointer',
+      color,
+      fontSize: '8em',
+    }
+  }, [color])
   return (
-    <div onClick={onClick} style={playerCardStyle}>
-      <VerticalLayout>
-        <div>{cardValue(card.value)}</div>
-        <div>{card.suit}</div>
-      </VerticalLayout>
+    <div onClick={onClick} style={style}>
+      <span dangerouslySetInnerHTML={{__html: code}} />
     </div>
   );
 }
@@ -134,23 +132,14 @@ interface HiddenCardProps {
 
 export function HiddenCard({ position }: HiddenCardProps) {
   const style = useMemo(() => {
-    const baseStyle = {
-      borderRadius: 2,
-      border: "1px solid lightgray",
-      backgroundColor: "darkblue",
-    };
-    if (position === "top") {
-      return {
-        ...baseStyle,
-        height: 80,
-        width: 60,
-      };
-    }
     return {
-      ...baseStyle,
-      height: 60,
-      width: 80,
+      fontSize: '6em',
+      transform: position === 'top' ? undefined : 'rotate(90deg)'
     };
   }, [position]);
-  return <div style={style} />;
+  return (
+    <div style={style}>
+      <span dangerouslySetInnerHTML={{__html: '&#127136;'}} />
+    </div>
+  );
 }
