@@ -3,7 +3,7 @@ defmodule Spades.Game.Card do
 
   @enforce_keys [:suit, :value]
 
-  @derive Jason.Encoder
+  @derive Poison.Encoder
   defstruct ~w(suit value)a
 
   def new(suit, value) do
