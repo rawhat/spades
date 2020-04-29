@@ -2,10 +2,10 @@ use Mix.Config
 
 # Configure your database
 config :spades, Spades.Repo,
-  username: "spades",
-  password: "spades",
-  database: "spades_dev",
-  hostname: "db",
+  username: System.get_env("DB_USER", "spades"),
+  password: System.get_env("DB_PASS", "spades"),
+  database: System.get_env("DB_NAME", "spades_dev"),
+  hostname: System.get_env("DB_HOST", "db"),
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 

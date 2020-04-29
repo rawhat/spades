@@ -18,29 +18,23 @@ FROM elixir:alpine AS api
 
 WORKDIR /opt/app
 
-ARG SECRET_KEY_BASE
-ARG DATABASE_URL
-
-ENV SECRET_KEY_BASE ${SECRET_KEY_BASE}
-ENV DATABASE_URL ${DATABASE_URL}
-
 RUN mix local.hex --force && \
     mix local.rebar --force
 
-ENV MIX_ENV prod
+ENV MIX_ENV=prod
 
 COPY mix.exs mix.lock ./
+COPY config config
+RUN mix do deps.get, deps.compile
+
+COPY --from=ui /opt/app/build priv
+
+RUN mix phx.digest
+
+# CMD ["/bin/sh"]
+
 COPY lib lib
-
-RUN mix deps.get --only prod && \
-    mix compile
-
-COPY --from=ui /opt/app/build/static priv/static
-
-RUN mix phx.digest && \
-    mix release
-
-CMD ["/bin/bash"]
+RUN MIX_ENV=prod mix do compile, release
 
 # Combine
 FROM alpine:latest
@@ -52,5 +46,11 @@ WORKDIR /opt/app
 COPY --from=api /opt/app/_build/prod/rel/spades ./
 
 ENV HOME /opt/app
+
+ARG SECRET_KEY_BASE
+ARG DATABASE_URL
+
+ENV SECRET_KEY_BASE $SECRET_KEY_BASE
+ENV DATABASE_URL $DATABASE_URL
 
 CMD ["bin/spades", "start"]

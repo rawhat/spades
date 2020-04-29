@@ -24,6 +24,12 @@ defmodule SpadesWeb.Endpoint do
     gzip: false,
     only: ~w(css fonts images js favicon.ico robots.txt)
 
+  plug Plug.Static,
+    at: "/static",
+    from: {:spades, "priv/static"},
+    gzip: true,
+    only: ~w(css fonts images js favicon.ico robots.txt)
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do
