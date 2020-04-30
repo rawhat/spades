@@ -1,15 +1,16 @@
 defmodule Spades.Game do
-  defstruct ~w(advance current_player deck id play_order players scores spades_broken state trick)a
+  defstruct ~w(advance current_player deck id name play_order players scores spades_broken state trick)a
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
   alias Spades.Game.Player
 
-  def new(id, deck \\ Deck.new()) when is_binary(id) do
+  def new(id, name, deck \\ Deck.new()) when is_binary(id) do
     %__MODULE__{
       current_player: 0,
       deck: deck,
       id: id,
+      name: name,
       players: %{},
       play_order: [],
       scores: %{0 => 0, 1 => 0},

@@ -26,7 +26,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new("1", deck)
+      Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -103,7 +103,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new("1", deck)
+      Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -126,7 +126,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new("1", deck)
+      Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -159,7 +159,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new("1", deck)
+      Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -191,7 +191,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     game =
-      Game.new("1", deck)
+      Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)

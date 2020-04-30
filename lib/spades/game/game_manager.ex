@@ -8,7 +8,8 @@ defmodule Spades.Game.GameManager do
 
   def start_link(opts) do
     {id, _} = Keyword.pop_first(opts, :id, next_id())
-    {game, _} = Keyword.pop_first(opts, :game, Game.new(id))
+    {name, _} = Keyword.pop_first(opts, :name)
+    {game, _} = Keyword.pop_first(opts, :game, Game.new(id, name))
     name = via_tuple(id)
     GenServer.start_link(__MODULE__, game, name: name)
   end
