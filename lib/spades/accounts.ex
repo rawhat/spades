@@ -101,18 +101,4 @@ defmodule Spades.Accounts do
   def change_user(%User{} = user) do
     User.changeset(user, %{})
   end
-
-  def user_by_username(username) do
-    Repo.get_by!(User, username: username)
-  end
-
-  def find_by_username_password(conn, username, password) do
-    case Repo.get_by(User, username: username, password: password) do
-      {:ok, user} ->
-        Plug.Conn.assign(conn, :current_user, Map.delete(user, :password))
-
-      _ ->
-        Plug.Conn.halt(conn)
-    end
-  end
 end

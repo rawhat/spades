@@ -8,6 +8,8 @@ defmodule Spades.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
+      # Start the PubSub system
+      {Phoenix.PubSub, name: Spades.PubSub},
       # Start the Ecto repository
       Spades.Repo,
       # Start the endpoint when the application starts

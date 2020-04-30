@@ -1,6 +1,5 @@
 defmodule Spades.AccountsTest do
-  # use Spades.DataCase
-  use ExUnit.Case
+  use Spades.DataCase
 
   alias Spades.Accounts
 
