@@ -17,12 +17,6 @@ defmodule SpadesWeb.Router do
     plug :game_exists
   end
 
-  scope "/", SpadesWeb do
-    pipe_through :browser
-
-    get "/", PageController, :index
-  end
-
   scope "/api", SpadesWeb do
     pipe_through :api
 
@@ -40,6 +34,12 @@ defmodule SpadesWeb.Router do
       put "/:id/player/:name/call", GamePlayerController, :call
       put "/:id/player/:name/play", GamePlayerController, :play
     end
+  end
+
+  scope "/", SpadesWeb do
+    pipe_through :browser
+
+    get "/*path", PageController, :index
   end
 
   defp game_exists(conn, _) do
