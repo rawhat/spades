@@ -72,6 +72,44 @@ export const HorizontalLayout: React.FC<ContainerProps> = (props) => (
   </Container>
 );
 
+interface PaddedProps extends ContainerProps {
+  padding: number;
+}
+
+export const PaddedVerticalLayout: React.FC<PaddedProps> = ({padding, ...props}) => {
+  const style = useMemo(() => {
+    return {
+      paddingTop: padding,
+    }
+  }, [padding])
+  return (
+    <Container display="flex" flexDirection="column" {...props}>
+      {React.Children.map(props.children, (child, i) => (
+        i === 0 ? child : (
+          <div style={style}>{child}</div>
+        )
+      ))}
+    </Container>
+  )
+}
+
+export const PaddedHorizontalLayout: React.FC<PaddedProps> = ({padding, ...props}) => {
+  const style = useMemo(() => {
+    return {
+      paddingLeft: padding,
+    }
+  }, [padding])
+  return (
+    <Container display="flex" flexDirection="row" {...props}>
+      {React.Children.map(props.children, (child, i) => (
+        i === 0 ? child : (
+          <div style={style}>{child}</div>
+        )
+      ))}
+    </Container>
+  )
+}
+
 type Align = "stretch" | "flex-start" | "flex-end" | "center" | "space-between";
 
 interface RowsProps {

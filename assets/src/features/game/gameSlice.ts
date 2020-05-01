@@ -20,6 +20,7 @@ export enum Team {
 
 export interface GameStatus {
   id: string;
+  name: string;
   scores: { [team in keyof Team]: number };
   players: PublicPlayer[];
   state: State;
