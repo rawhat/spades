@@ -6,8 +6,8 @@ defmodule Spades.Game.GameManagerTest do
   setup do
     id = "1"
     id_2 = "2"
-    {:ok, _} = GameManager.start_link(id: id)
-    {:ok, _} = GameManager.start_link(id: id_2)
+    {:ok, _} = GameManager.start_link(id: id, name: "one")
+    {:ok, _} = GameManager.start_link(id: id_2, name: "two")
 
     p1 = [name: "alex", team: 0]
     p2 = [name: "jake", team: 1]
@@ -58,6 +58,7 @@ defmodule Spades.Game.GameManagerTest do
     assert GameManager.get_game_state_for_player(id_2, p1[:name]) == %{
              current_player: 0,
              id: "2",
+             name: "two",
              players: [],
              scores: %{0 => 0, 1 => 0},
              spades_broken: false,
@@ -70,6 +71,7 @@ defmodule Spades.Game.GameManagerTest do
     assert GameManager.get_game_state(id) == %{
              current_player: 0,
              id: "1",
+             name: "one",
              players: [],
              scores: %{0 => 0, 1 => 0},
              spades_broken: false,

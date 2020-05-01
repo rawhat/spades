@@ -30,7 +30,6 @@ export const socketMiddleware = (_store: any) => (next: Dispatch) => {
       channel
         .join()
         .receive("ok", (msg: PlayerStatus) => {
-          console.log("connected", msg);
           if (msg.team !== undefined) {
             next(setPlayerState(msg));
           } else {
@@ -38,16 +37,13 @@ export const socketMiddleware = (_store: any) => (next: Dispatch) => {
           }
         })
         .receive("err", (err: any) => {
-          console.error("error", err);
           next(socketError(err));
         });
 
       channel.on("game_state", (payload: PlayerStatus | GameStatus) => {
         if ((payload as PlayerStatus).team !== undefined) {
-          console.log("player state");
           next(setPlayerState(payload as PlayerStatus));
         } else {
-          console.log("game state");
           next(setGameState(payload));
         }
       });

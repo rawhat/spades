@@ -8,14 +8,21 @@ defmodule Spades.Game.GameManager do
 
   def start_link(opts) do
     {id, _} = Keyword.pop_first(opts, :id, next_id())
-    {name, _} = Keyword.pop_first(opts, :name)
-    {game, _} = Keyword.pop_first(opts, :game, Game.new(id, name))
+    game_name = Keyword.fetch!(opts, :name)
+    {game, _} = Keyword.pop_first(opts, :game, Game.new(id, game_name))
     name = via_tuple(id)
     GenServer.start_link(__MODULE__, game, name: name)
   end
 
   def active_games() do
-    Registry.select(Spades.Game.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+    Registry.select(Spades.Game.Registry, [
+      {{:"$1", :_, :_}, [], [:"$1"]}
+    ])
+    |> Stream.map(&get_game_state/1)
+    |> Stream.map(fn game_state ->
+      %{name: game_state.name, id: game_state.id, players: Enum.count(game_state.players)}
+    end)
+    |> Enum.to_list()
   end
 
   def next_id() do
@@ -25,7 +32,8 @@ defmodule Spades.Game.GameManager do
 
       games ->
         {id, _} =
-          Enum.sort(games)
+          Enum.map(games, & &1.id)
+          |> Enum.sort()
           |> Enum.reverse()
           |> Enum.at(0)
           |> Integer.parse()

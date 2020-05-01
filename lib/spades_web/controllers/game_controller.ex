@@ -11,7 +11,7 @@ defmodule SpadesWeb.GameController do
   def create(conn, %{"name" => name}) do
     id = GameManager.next_id()
     GameManager.start_link(id: id, name: name)
-    json(conn, %{id: id})
+    json(conn, %{id: id, name: name, players: 0})
   end
 
   def show(conn, %{"id" => id}) do

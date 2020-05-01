@@ -48,11 +48,11 @@ function Lobby() {
           </TableHeader>
           <TableBody>
             {games.map((game) => (
-              <TableRow key={game}>
+              <TableRow key={game.id}>
                 <TableCell>
-                  <Link to={`/game/${game}`}>{game}</Link>
+                  <Link to={`/game/${game.id}`}>{game.name}</Link>
                 </TableCell>
-                <TableCell>???</TableCell>
+                <TableCell>{game.players}/4</TableCell>
               </TableRow>
             ))}
           </TableBody>
