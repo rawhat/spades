@@ -178,27 +178,35 @@ Columns.defaultProps = {
 };
 
 interface ColumnProps {
+  lg?: number | "auto";
   margin?: "left" | "right" | "auto";
-  width?: number | "xs" | "sm" | "md" | "lg" | "xl";
+  md?: number | "auto";
+  sm?: number | "auto";
+  width?: number;
+  xl?: number | "auto";
+  xs?: number | "auto";
 }
 
-export const Column: React.FC<ColumnProps> = ({ children, margin, width }) => (
-  <div
-    className={classnames("column", {
-      [`col-${width}`]: typeof width === "number",
-      "col-mx-auto": margin === "auto",
-      "col-ml-auto": margin === "left",
-      "col-mr-auto": margin === "right",
-      "col-xs-auto": width === "xs",
-      "col-sm-auto": width === "sm",
-      "col-md-auto": width === "md",
-      "col-lg-auto": width === "lg",
-      "col-xl-auto": width === "lg",
-    })}
-  >
-    {children}
-  </div>
-);
+export const Column: React.FC<ColumnProps> = ({ children, margin, width, xs, sm, md, lg, xl }) => {
+  return (
+    <div
+      className={classnames("column", {
+        [`col-${width}`]: typeof width === "number",
+        "col-mx-auto": margin === "auto",
+        "col-ml-auto": margin === "left",
+        "col-mr-auto": margin === "right",
+
+        [`col-xs-${xs}`]: typeof xs === "number",
+        [`col-sm-${sm}`]: typeof sm === "number",
+        [`col-md-${md}`]: typeof md === "number",
+        [`col-lg-${lg}`]: typeof lg === "number",
+        [`col-xl-${xl}`]: typeof xl === "number",
+      })}
+    >
+      {children}
+    </div>
+  );
+}
 
 interface DividerProps {
   center?: boolean;

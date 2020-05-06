@@ -16,16 +16,18 @@ interface InputProps {
   label?: JSX.Element;
   onChange: (value: string) => void;
   placeholder?: string;
+  type?: "text" | "password";
   value: string;
 }
 
-export const Input = ({ label, onChange, placeholder, value }: InputProps) => (
+export const Input = ({ label, onChange, placeholder, type = "text", value }: InputProps) => (
   <FormGroup>
     {label && <div className="form-label">{label}</div>}
     <input
       className="form-input"
       onChange={(e) => onChange(e.currentTarget.value)}
       placeholder={placeholder}
+      type={type}
       value={value}
     />
   </FormGroup>

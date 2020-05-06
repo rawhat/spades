@@ -5,9 +5,10 @@ import { Route } from "react-router-dom";
 import { Switch } from "react-router-dom";
 
 import Authenticated from "./Authenticated";
+import CreateAccount from "./CreateAccount";
 import Game from "./Game";
-import Home from "./Home";
 import Lobby from "./Lobby";
+import Login from "./Login";
 
 import "spectre.css";
 import "./App.css";
@@ -22,8 +23,11 @@ function App() {
         <TopNav />
         <Divider orientation="horizontal" />
         <Switch>
-          <Route exact={true} path="/">
-            <Home />
+          <Route path={["/", "/login"]}>
+            <Login />
+          </Route>
+          <Route path="/create_user">
+            <CreateAccount />
           </Route>
           <Authenticated path="/lobby">
             <Lobby />

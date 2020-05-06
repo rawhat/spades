@@ -20,6 +20,12 @@ defmodule SpadesWeb.Router do
   scope "/api", SpadesWeb do
     pipe_through :api
 
+    scope "/user" do
+      get "/:id", UserController, :show
+      post "/", UserController, :create
+      put "/", UserController, :update
+    end
+
     scope "/game" do
       get "/", GameController, :list
       post "/", GameController, :create
