@@ -39,7 +39,13 @@ export const createUser = (
 ) => async (dispatch: Dispatch) => {
   await post<undefined>(
     "/user",
-    {username, password, repeat_password: repeatedPassword}
+    {
+      user: {
+        username,
+        password,
+        repeat_password: repeatedPassword
+      }
+    }
   )
   dispatch(setUsername(username));
 }

@@ -23,7 +23,7 @@ function App() {
         <TopNav />
         <Divider orientation="horizontal" />
         <Switch>
-          <Route path={["/", "/login"]}>
+          <Route exact={true} path={["/", "/login"]}>
             <Login />
           </Route>
           <Route path="/create_user">
