@@ -15,16 +15,14 @@ defmodule SpadesWeb.Router do
 
   pipeline :game do
     plug :game_exists
+    plug SpadesWeb.Auth
   end
 
   scope "/api", SpadesWeb do
     pipe_through :api
 
-    scope "/user" do
-      get "/:id", UserController, :show
-      post "/", UserController, :create
-      put "/", UserController, :update
-    end
+    resources "/user", UserController, only: [:show, :create, :update]
+    resources "/session", SessionController, only: [:create, :delete]
 
     scope "/game" do
       get "/", GameController, :list

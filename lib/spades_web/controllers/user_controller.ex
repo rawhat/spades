@@ -9,14 +9,17 @@ defmodule SpadesWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
-    case Accounts.create_user(user_params) do
-      {:ok, _user} ->
-        IO.puts "hi"
+    case Accounts.register_user(user_params) do
+      {:ok, user} ->
+        IO.puts("hi")
+
         conn
         |> put_status(203)
-        |> json("Ok")
+        |> json(%{username: user.username})
+
       {:error, %Ecto.Changeset{} = changeset} ->
         IO.inspect(changeset.action)
+
         conn
         |> put_status(400)
         |> json(%{error: "Unable to create user"})

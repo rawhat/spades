@@ -8,7 +8,7 @@ interface ButtonProps {
   disabled?: boolean;
   float?: "left" | "right";
   loading?: boolean;
-  onClick: () => void;
+  onClick: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
   size?: "sm" | "lg";
 }
 

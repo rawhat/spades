@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { Link } from "react-router-dom";
 import { useDispatch } from 'react-redux';
+import { useSelector } from "react-redux";
 import { useState } from "react";
 
-import { login } from "./features/user/userSlice";
+import { login, selectLoginError } from "./features/user/userSlice";
 
 import { Button } from "./Button";
 import { Columns, Column, Container, PaddedVerticalLayout } from "./Layout";
@@ -16,7 +17,12 @@ function Login() {
   const [password, setPassword] = useState("");
 
   const dispatch = useDispatch();
-  const onLogin = () => dispatch(login(username, password));
+  const onLogin = (e: React.SyntheticEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    dispatch(login({username, password}));
+  }
+
+  const loginError = useSelector(selectLoginError);
 
   return (
     <Container>
@@ -64,6 +70,13 @@ function Login() {
                       <Button onClick={onLogin}>Login</Button>
                     </Column>
                   </Columns>
+                  {loginError && (
+                    <Columns>
+                      <Column margin="auto" width={9}>
+                        <Bold>{loginError}</Bold>
+                      </Column>
+                    </Columns>
+                  )}
                 </PaddedVerticalLayout>
               </HorizontalForm>
             </PanelBody>
