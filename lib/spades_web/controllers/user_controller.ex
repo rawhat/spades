@@ -2,6 +2,7 @@ defmodule SpadesWeb.UserController do
   use SpadesWeb, :controller
 
   alias Spades.Accounts
+  alias Spades.Accounts.User
 
   def show(conn, _params) do
     conn
@@ -9,6 +10,8 @@ defmodule SpadesWeb.UserController do
   end
 
   def create(conn, %{"user" => user_params}) do
+    IO.inspect(user_params)
+
     case Accounts.register_user(user_params) do
       {:ok, user} ->
         IO.puts("hi")
@@ -18,11 +21,9 @@ defmodule SpadesWeb.UserController do
         |> json(%{username: user.username})
 
       {:error, %Ecto.Changeset{} = changeset} ->
-        IO.inspect(changeset.action)
-
         conn
         |> put_status(400)
-        |> json(%{error: "Unable to create user"})
+        |> json(%{error: User.traverse_errors(changeset)})
     end
   end
 

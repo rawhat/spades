@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 
 import { FetchArguments, Progress, request } from "./app/client"
 
-interface QueryResponse<T> {
+interface QueryResponse<T, E extends string> {
   data?: T;
-  error?: Error;
+  error?: {[K in E]: string[]};
   status: Progress;
 }
 
-export function useQuery<T>(req?: FetchArguments): QueryResponse<T> {
+export function useQuery<T, E extends string>(req?: FetchArguments): QueryResponse<T, E> {
   const [data, setData] = useState<T>();
-  const [error, setError] = useState();
+  const [error, setError] = useState<QueryResponse<T, E>['error']>();
   const [status, setStatus] = useState(Progress.Idle);
 
   useEffect(() => {

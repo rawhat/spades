@@ -1,9 +1,13 @@
 import * as React from 'react';
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
+import { useEffect } from "react";
+import { useHistory } from "react-router-dom";
 import { useState } from "react";
 
-import { createUser } from "./features/user/userSlice";
+import { FetchArguments, postRequest } from "./app/client";
+import { setUsername } from "./features/user/userSlice";
+import { useQuery } from "./useQuery";
 
 import { Button } from "./Button";
 import { Columns, Column, Container, PaddedVerticalLayout } from "./Layout";
@@ -12,13 +16,35 @@ import { HorizontalForm, Input } from "./Form";
 import { Bold } from "./Text";
 
 function CreateAccount() {
-  const [username, setUsername] = useState("");
+  const history = useHistory();
+
+  const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
   const [repeatedPassword, setRepeatedPassword] = useState("");
+  const [request, setRequest] = useState<FetchArguments>();
 
   const dispatch = useDispatch();
-  const onCreate = () =>
-    dispatch(createUser(username, password, repeatedPassword))
+  const onCreate = () => {
+    if (password === repeatedPassword) {
+      setRequest(
+        postRequest(
+          '/api/user',
+          {user: {username, password}}
+        )
+      );
+    }
+  }
+
+  const {data, status: _status, error} = useQuery<
+    string,
+    'username' | 'password'
+  >(request);
+
+  useEffect(() => {
+    if (data) {
+      dispatch(setUsername(data))
+    }
+  }, [data, dispatch, history])
 
   return (
     <Container>
@@ -37,7 +63,7 @@ function CreateAccount() {
                     </Column>
                     <Column width={8}>
                       <Input
-                        onChange={setUsername}
+                        onChange={setUser}
                         value={username}
                       />
                     </Column>
@@ -48,6 +74,7 @@ function CreateAccount() {
                     </Column>
                     <Column width={8}>
                       <Input
+                        error={error?.password?.toString()}
                         onChange={setPassword}
                         type="password"
                         value={password}

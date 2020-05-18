@@ -5,8 +5,17 @@ export enum Progress {
   Error
 }
 
-export function request(request: FetchArguments) {
-  return fetch(...request);
+export async function request(request: FetchArguments) {
+  try {
+    const results = await fetch(...request);
+    if (!results.ok) {
+      const err = await results.json();
+      throw err.error;
+    }
+    return await results.json();
+  } catch (err) {
+    throw err;
+  }
 }
 
 export async function client<T>(
@@ -21,7 +30,6 @@ export async function client<T>(
     ...overrides,
   };
   try {
-    console.log('options are', options);
     const res = await fetch(`/api${path}`, options);
     if (!res.ok) {
       throw res;
@@ -40,6 +48,9 @@ export function makeRequest(
 ): RequestInit {
   return {
     method,
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(body),
     ...overrides
   }
