@@ -45,14 +45,14 @@ interface LoginRequest {
 }
 
 export const login = createAsyncThunk(
-  'user/login',
-  async ({username, password}: LoginRequest, {dispatch, signal}) => {
+  "user/login",
+  async ({ username, password }: LoginRequest, { dispatch, signal }) => {
     dispatch(setLoading());
     try {
-      const response = await post<{data: string}>(
+      const response = await post<{ data: string }>(
         "/session",
-        {session: {username, password}},
-        {signal}
+        { session: { username, password } },
+        { signal }
       );
       dispatch(setUsername(response.data));
     } catch {
@@ -66,18 +66,15 @@ export const createUser = (
   password: string,
   repeatedPassword: string
 ) => async (dispatch: Dispatch) => {
-  await post<undefined>(
-    "/user",
-    {
-      user: {
-        username,
-        password,
-        repeat_password: repeatedPassword
-      }
-    }
-  )
+  await post<undefined>("/user", {
+    user: {
+      username,
+      password,
+      repeat_password: repeatedPassword,
+    },
+  });
   dispatch(setUsername(username));
-}
+};
 
 export const selectUserState = (state: RootState) => state.user;
 

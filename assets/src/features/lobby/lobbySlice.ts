@@ -31,14 +31,16 @@ type GameResponse = {
   id: string;
   name: string;
   players: number;
-}
+};
 
 export const fetchGames = () => async (dispatch: Dispatch) => {
   const data = await get<{ games: GameResponse[] }>("/game/");
   dispatch(loadGames(data.games));
 };
 
-export const createGame = (name: string, history: History) => async (dispatch: Dispatch) => {
+export const createGame = (name: string, history: History) => async (
+  dispatch: Dispatch
+) => {
   const data = await post<GameResponse>("/game", { name });
   dispatch(newGame(data));
   history.push(`/game/${data.id}`);

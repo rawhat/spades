@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
 
-import { FetchArguments, Progress, request } from "./app/client"
+import { FetchArguments, Progress, request } from "./app/client";
 
 interface QueryResponse<T, E extends string> {
   data?: T;
-  error?: {[K in E]: string[]};
+  error?: { [K in E]: string[] };
   status: Progress;
 }
 
-export function useQuery<T, E extends string>(req?: FetchArguments): QueryResponse<T, E> {
+export function useQuery<T, E extends string>(
+  req?: FetchArguments
+): QueryResponse<T, E> {
   const [data, setData] = useState<T>();
-  const [error, setError] = useState<QueryResponse<T, E>['error']>();
+  const [error, setError] = useState<QueryResponse<T, E>["error"]>();
   const [status, setStatus] = useState(Progress.Idle);
 
   useEffect(() => {
     let canceled = false;
     if (req) {
       setStatus(Progress.Loading);
-      request(req)
-        .then(data => data.json())
+      request<T>(req)
         .then((data: T) => {
           if (!canceled) {
             setData(data);
@@ -34,12 +35,12 @@ export function useQuery<T, E extends string>(req?: FetchArguments): QueryRespon
     }
     return () => {
       canceled = true;
-    }
-  }, [req])
+    };
+  }, [req]);
 
   return {
     data,
     error,
-    status
-  }
+    status,
+  };
 }
