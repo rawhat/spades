@@ -15,7 +15,7 @@ const scoreBoxStyle: React.CSSProperties = {
 
 const padding = {
   paddingRight: 5,
-}
+};
 
 function ScoreBox() {
   const scores = useSelector(selectScores);

@@ -8,7 +8,7 @@ interface QueryResponse<T, E extends string> {
   status: Progress;
 }
 
-export function useQuery<T, E extends string>(
+export function useQuery<T, E extends string = any>(
   req?: FetchArguments
 ): QueryResponse<T, E> {
   const [data, setData] = useState<T>();

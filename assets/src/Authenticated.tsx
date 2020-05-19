@@ -4,10 +4,10 @@ import { Route } from "react-router-dom";
 import { RouteProps } from "react-router-dom";
 import { useSelector } from "react-redux";
 
-import { RootState } from "./app/store";
+import { selectUsername } from "./features/user/userSlice";
 
 const Authenticated: React.FC<RouteProps> = ({ children, ...rest }) => {
-  const username = useSelector((state: RootState) => state.user.username);
+  const username = useSelector(selectUsername);
   return (
     <Route
       {...rest}

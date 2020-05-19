@@ -5,9 +5,12 @@ export enum Progress {
   Error,
 }
 
-export async function request<T>(request: FetchArguments): Promise<T> {
+export async function request<T>([path, options]: FetchArguments): Promise<T> {
   try {
-    const results = await fetch(...request);
+    if (path.search("/api") === -1) {
+      path = `/api${path}`;
+    }
+    const results = await fetch(path, options);
     if (!results.ok) {
       const err = await results.json();
       throw err.error;
@@ -19,7 +22,7 @@ export async function request<T>(request: FetchArguments): Promise<T> {
 }
 
 export function makeRequest(
-  method: "GET" | "POST" | "PUT",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   body?: Object,
   overrides?: RequestInit
 ): RequestInit {
@@ -29,6 +32,7 @@ export function makeRequest(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
+    credentials: "include",
     ...overrides,
   };
 }
@@ -52,6 +56,12 @@ export const putRequest = (
   overrides?: RequestInit
 ): FetchArguments => [path, makeRequest("POST", body, overrides)];
 
+export const deleteRequest = (
+  path: string,
+  body?: Object,
+  overrides?: RequestInit
+): FetchArguments => [path, makeRequest("DELETE", body, overrides)];
+
 export async function get<T>(
   path: string,
   overrides?: RequestInit
@@ -73,4 +83,12 @@ export async function put<T>(
   overrides?: RequestInit
 ): Promise<T> {
   return request(putRequest(path, body, overrides));
+}
+
+export async function delete_<T>(
+  path: string,
+  body?: Object,
+  overrides?: RequestInit
+): Promise<T> {
+  return request(deleteRequest(path, body, overrides));
 }

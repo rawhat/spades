@@ -20,7 +20,7 @@ export function PlayerHand({ cards }: PlayerHandProps) {
     [dispatch]
   );
   return (
-    <HorizontalLayout justifyContent='space-between' alignItems='center'>
+    <HorizontalLayout justifyContent="space-between" alignItems="center">
       {cards.map((card) => (
         <PlayerCard
           key={`${card.value}-${card.suit}`}
@@ -74,7 +74,7 @@ function getCardCode(offset: number) {
 }
 
 function suitToOffset(suit: Suit): number {
-  switch(suit) {
+  switch (suit) {
     case Suit.Spades: {
       return 0;
     }
@@ -90,9 +90,9 @@ function suitToOffset(suit: Suit): number {
   }
 }
 
-function getUnicodeAndColorForCard({value, suit}: Card): [string, string] {
+function getUnicodeAndColorForCard({ value, suit }: Card): [string, string] {
   let color;
-  switch(suit) {
+  switch (suit) {
     case Suit.Clubs:
     case Suit.Spades: {
       color = "black";
@@ -114,14 +114,14 @@ export function PlayerCard({ card, onClick }: PlayerCardProps) {
   const [code, color] = getUnicodeAndColorForCard(card);
   const style = useMemo(() => {
     return {
-      cursor: 'pointer',
+      cursor: "pointer",
       color,
-      fontSize: '8em',
-    }
-  }, [color])
+      fontSize: "8em",
+    };
+  }, [color]);
   return (
     <div onClick={onClick} style={style}>
-      <span dangerouslySetInnerHTML={{__html: code}} />
+      <span dangerouslySetInnerHTML={{ __html: code }} />
     </div>
   );
 }
@@ -133,13 +133,13 @@ interface HiddenCardProps {
 export function HiddenCard({ position }: HiddenCardProps) {
   const style = useMemo((): React.CSSProperties => {
     return {
-      fontSize: position === 'top' ? '6em' : '2em',
-      transform: position === 'top' ? undefined : 'rotate(90deg)'
+      fontSize: position === "top" ? "6em" : "2em",
+      transform: position === "top" ? undefined : "rotate(90deg)",
     };
   }, [position]);
   return (
     <div style={style}>
-      <span dangerouslySetInnerHTML={{__html: '&#127136;'}} />
+      <span dangerouslySetInnerHTML={{ __html: "&#127136;" }} />
     </div>
   );
 }

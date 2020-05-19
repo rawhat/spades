@@ -76,39 +76,41 @@ interface PaddedProps extends ContainerProps {
   padding: number;
 }
 
-export const PaddedVerticalLayout: React.FC<PaddedProps> = ({padding, ...props}) => {
+export const PaddedVerticalLayout: React.FC<PaddedProps> = ({
+  padding,
+  ...props
+}) => {
   const style = useMemo(() => {
     return {
       paddingTop: padding,
-    }
-  }, [padding])
+    };
+  }, [padding]);
   return (
     <Container display="flex" flexDirection="column" {...props}>
-      {React.Children.map(props.children, (child, i) => (
-        i === 0 ? child : (
-          <div style={style}>{child}</div>
-        )
-      ))}
+      {React.Children.map(props.children, (child, i) =>
+        i === 0 ? child : <div style={style}>{child}</div>
+      )}
     </Container>
-  )
-}
+  );
+};
 
-export const PaddedHorizontalLayout: React.FC<PaddedProps> = ({padding, ...props}) => {
+export const PaddedHorizontalLayout: React.FC<PaddedProps> = ({
+  padding,
+  ...props
+}) => {
   const style = useMemo(() => {
     return {
       paddingLeft: padding,
-    }
-  }, [padding])
+    };
+  }, [padding]);
   return (
     <Container display="flex" flexDirection="row" {...props}>
-      {React.Children.map(props.children, (child, i) => (
-        i === 0 ? child : (
-          <div style={style}>{child}</div>
-        )
-      ))}
+      {React.Children.map(props.children, (child, i) =>
+        i === 0 ? child : <div style={style}>{child}</div>
+      )}
     </Container>
-  )
-}
+  );
+};
 
 type Align = "stretch" | "flex-start" | "flex-end" | "center" | "space-between";
 
@@ -187,7 +189,16 @@ interface ColumnProps {
   xs?: number | "auto";
 }
 
-export const Column: React.FC<ColumnProps> = ({ children, margin, width, xs, sm, md, lg, xl }) => {
+export const Column: React.FC<ColumnProps> = ({
+  children,
+  margin,
+  width,
+  xs,
+  sm,
+  md,
+  lg,
+  xl,
+}) => {
   return (
     <div
       className={classnames("column", {
@@ -206,7 +217,7 @@ export const Column: React.FC<ColumnProps> = ({ children, margin, width, xs, sm,
       {children}
     </div>
   );
-}
+};
 
 interface DividerProps {
   center?: boolean;

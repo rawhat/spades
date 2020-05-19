@@ -24,9 +24,9 @@ function NewGame() {
   const close = useCallback(() => {
     setOpen(false);
     setName("");
-  }, [])
+  }, []);
 
-  return ( 
+  return (
     <>
       {open ? (
         <PaddedHorizontalLayout padding={10}>
@@ -35,8 +35,12 @@ function NewGame() {
             placeholder="Enter game name..."
             value={name}
           />
-          <Button color="success" onClick={newGame}>Create</Button>
-          <Button color="error" onClick={close}>Cancel</Button>
+          <Button color="success" onClick={newGame}>
+            Create
+          </Button>
+          <Button color="error" onClick={close}>
+            Cancel
+          </Button>
         </PaddedHorizontalLayout>
       ) : (
         <Button color="success" onClick={() => setOpen(true)}>
@@ -44,7 +48,7 @@ function NewGame() {
         </Button>
       )}
     </>
-  )
+  );
 }
 
 export default NewGame;

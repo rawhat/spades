@@ -1,10 +1,16 @@
-import * as React from 'react';
+import * as React from "react";
 import { Link } from "react-router-dom";
-import { useDispatch } from 'react-redux';
+import { useDispatch } from "react-redux";
+import { useEffect } from "react";
+import { useHistory } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useState } from "react";
 
-import { login, selectLoginError } from "./features/user/userSlice";
+import {
+  login,
+  selectLoginError,
+  selectUsername,
+} from "./features/user/userSlice";
 
 import { Button } from "./Button";
 import { Columns, Column, Container, PaddedVerticalLayout } from "./Layout";
@@ -13,16 +19,27 @@ import { HorizontalForm, Input } from "./Form";
 import { Bold } from "./Text";
 
 function Login() {
+  const history = useHistory();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   const dispatch = useDispatch();
   const onLogin = (e: React.SyntheticEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    dispatch(login({username, password}));
-  }
+    dispatch(login({ username, password }));
+  };
 
   const loginError = useSelector(selectLoginError);
+
+  // Redirect on successful login (i.e. session username is populated)
+  // Not wildy fond of this, but should work for now
+  const sessionUsername = useSelector(selectUsername);
+  useEffect(() => {
+    if (sessionUsername) {
+      history.push("/lobby");
+    }
+  }, [history, sessionUsername]);
 
   return (
     <Container>
@@ -40,10 +57,7 @@ function Login() {
                       Username
                     </Column>
                     <Column margin="left" width={6}>
-                      <Input
-                        onChange={setUsername}
-                        value={username}
-                      />
+                      <Input onChange={setUsername} value={username} />
                     </Column>
                   </Columns>
                   <Columns>
@@ -61,7 +75,7 @@ function Login() {
                   <Columns>
                     <Column margin="auto">
                       <Link to="/create_user">
-                        Don't have an account?  Click here to create one.
+                        Don't have an account? Click here to create one.
                       </Link>
                     </Column>
                   </Columns>
@@ -85,7 +99,7 @@ function Login() {
         </Column>
       </Columns>
     </Container>
-  )
+  );
 }
 
 export default Login;

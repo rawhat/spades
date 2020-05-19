@@ -2,9 +2,8 @@ import { Dispatch } from "redux";
 import { createSelector } from "reselect";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import { RootState } from "../../app/store";
-
 import { Progress } from "../../app/client";
+import { RootState } from "../../app/store";
 import { post } from "../../app/client";
 
 interface UserState {
@@ -17,25 +16,55 @@ const initialState: UserState = {
   status: Progress.Idle,
 };
 
+export const login = createAsyncThunk<
+  string,
+  LoginRequest,
+  {
+    rejectValue: string;
+  }
+>(
+  "user/login",
+  async ({ username, password }: LoginRequest, { rejectWithValue, signal }) => {
+    try {
+      const response = await post<{ username: string }>(
+        "/session",
+        { session: { username, password } },
+        { signal }
+      );
+      return response.username;
+    } catch {
+      return rejectWithValue("Invalid username or password");
+    }
+  }
+);
+
 export const slice = createSlice({
   name: "user",
   initialState,
   reducers: {
-    setLoading: (state) => {
-      state.status = Progress.Loading;
-    },
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
-      state.status = Progress.Error;
     },
-    setUsername: (state, action: PayloadAction<string>) => {
-      state.status = Progress.Loaded;
+    setUsername: (state, action: PayloadAction<string | undefined>) => {
       state.username = action.payload;
     },
   },
+  extraReducers: (builder) => {
+    builder.addCase(login.pending, (state) => {
+      state.status = Progress.Loading;
+    });
+    builder.addCase(login.fulfilled, (state, action) => {
+      state.status = Progress.Loaded;
+      state.username = action.payload;
+    });
+    builder.addCase(login.rejected, (state, action) => {
+      state.status = Progress.Error;
+      state.error = action.payload;
+    });
+  },
 });
 
-export const { setLoading, setError, setUsername } = slice.actions;
+export const { setError, setUsername } = slice.actions;
 
 export default slice.reducer;
 
@@ -43,23 +72,6 @@ interface LoginRequest {
   username: string;
   password: string;
 }
-
-export const login = createAsyncThunk(
-  "user/login",
-  async ({ username, password }: LoginRequest, { dispatch, signal }) => {
-    dispatch(setLoading());
-    try {
-      const response = await post<{ data: string }>(
-        "/session",
-        { session: { username, password } },
-        { signal }
-      );
-      dispatch(setUsername(response.data));
-    } catch {
-      dispatch(setError("Invalid username or password"));
-    }
-  }
-);
 
 export const createUser = (
   username: string,

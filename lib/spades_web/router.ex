@@ -12,7 +12,6 @@ defmodule SpadesWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug :fetch_session
-    plug :protect_from_forgery
     plug :put_secure_browser_headers
   end
 
@@ -25,7 +24,8 @@ defmodule SpadesWeb.Router do
     pipe_through :api
 
     resources "/user", UserController, only: [:show, :create, :update]
-    resources "/session", SessionController, only: [:create, :delete]
+    resources "/session", SessionController, only: [:create]
+    resources "/session", SessionController, only: [:show, :delete], singleton: true
 
     scope "/game" do
       get "/", GameController, :list

@@ -1,5 +1,5 @@
 import * as React from "react";
-import classnames from 'classnames';
+import classnames from "classnames";
 
 export const Form: React.FC = ({ children }) => <form>{children}</form>;
 
@@ -14,7 +14,7 @@ interface FormGroupProps {
 }
 
 export const FormGroup: React.FC<FormGroupProps> = ({ children, error }) => (
-  <div className={classnames("form-group", {"has-error": !!error})}>
+  <div className={classnames("form-group", { "has-error": !!error })}>
     {children}
   </div>
 );
@@ -28,7 +28,7 @@ interface InputProps {
   value: string;
 }
 
-export const FormHint: React.FC = ({children}) => (
+export const FormHint: React.FC = ({ children }) => (
   <p className="form-input-hint">{children}</p>
 );
 
@@ -38,7 +38,7 @@ export const Input = ({
   onChange,
   placeholder,
   type = "text",
-  value
+  value,
 }: InputProps) => (
   <FormGroup error={error}>
     {label && <div className="form-label">{label}</div>}
