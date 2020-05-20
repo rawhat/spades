@@ -53,9 +53,14 @@ export const Input = ({
   </FormGroup>
 );
 
+export interface Option {
+  label?: React.ReactNode;
+  value: string;
+}
+
 interface SelectProps {
   onChange: (value: string) => void;
-  options: (string | number)[];
+  options: Option[];
 }
 
 export function Select({ onChange, options }: SelectProps) {
@@ -65,8 +70,10 @@ export function Select({ onChange, options }: SelectProps) {
         className="form-select"
         onChange={(e) => onChange(e.currentTarget.value)}
       >
-        {options.map((option) => (
-          <option key={option}>{option}</option>
+        {options.map(({ label, value }) => (
+          <option key={value} value={value}>
+            {label || value}
+          </option>
         ))}
       </select>
     </FormGroup>

@@ -19,21 +19,21 @@ const padding = {
 
 function ScoreBox() {
   const scores = useSelector(selectScores);
-  const team_one = get(scores, Team.One);
-  const team_two = get(scores, Team.Two);
+  const team_one = get(scores, Team.NorthSouth);
+  const team_two = get(scores, Team.EastWest);
   return (
     <div style={scoreBoxStyle}>
       <VerticalLayout>
         <SubHeader>Scores</SubHeader>
         <HorizontalLayout justifyContent="space-between">
           <span style={padding}>
-            <b>Team One</b>
+            <b>North/South</b>
           </span>
           <span>{team_one}</span>
         </HorizontalLayout>
         <HorizontalLayout justifyContent="space-between">
           <span style={padding}>
-            <b>Team Two</b>
+            <b>East/West</b>
           </span>
           <span>{team_two}</span>
         </HorizontalLayout>

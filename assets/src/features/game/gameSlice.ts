@@ -14,8 +14,8 @@ interface GameState {
 }
 
 export enum Team {
-  One = "0",
-  Two = "1",
+  NorthSouth = "north_south",
+  EastWest = "east_west",
 }
 
 export interface GameStatus {
@@ -134,13 +134,18 @@ export const selectGameLoaded = createSelector(
 export const selectAvailableTeams = createSelector(
   getGameState,
   getPlayerState,
-  (gameState, playerState): Team[] => {
+  (gameState, playerState) => {
     const players = playerState?.players || gameState?.players || [];
     const invalidTeams = Object.entries(groupBy(players, "team"))
       .map(([key, value]) => ({ count: value.length, team: key }))
       .filter(({ count }) => count === 2)
       .map(({ team }) => team as Team);
-    return [Team.One, Team.Two].filter((team) => !invalidTeams.includes(team));
+    return [Team.NorthSouth, Team.EastWest]
+      .filter((team) => !invalidTeams.includes(team))
+      .map((team) => ({
+        label: team === Team.NorthSouth ? "North/South" : "East/West",
+        value: team,
+      }));
   }
 );
 

@@ -13,19 +13,19 @@ defmodule Spades.Game.PlayerTest do
     all_cards = [ace_of_spades, three_of_diamonds, queen_of_hearts]
 
     alex =
-      Player.new("alex", 0)
+      Player.new("0", "alex", :north_south)
       |> Player.receive_cards(only_spades)
 
     jon =
-      Player.new("jon", 0)
+      Player.new("1", "jon", :north_south)
       |> Player.receive_cards(all_cards)
 
     jake =
-      Player.new("jake", 1)
+      Player.new("2", "jake", :east_west)
       |> Player.receive_cards(only_spades)
 
     gopal =
-      Player.new("gopal", 1)
+      Player.new("e", "gopal", :east_west)
       |> Player.receive_cards(all_cards)
 
     player_map = %{"alex" => alex, "jon" => jon, "jake" => jake, "gopal" => gopal}
@@ -42,7 +42,7 @@ defmodule Spades.Game.PlayerTest do
   end
 
   test "get team hands", %{player_map: player_map, alex: alex, jon: jon} do
-    assert Player.get_team_players(player_map, 0) == [alex, jon]
+    assert Player.get_team_players(player_map, :north_south) == [alex, jon]
   end
 
   test "when only spades in hand, can play spades", %{alex: alex, ace_of_spades: ace_of_spades} do

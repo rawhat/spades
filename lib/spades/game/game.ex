@@ -13,7 +13,7 @@ defmodule Spades.Game do
       name: name,
       players: %{},
       play_order: [],
-      scores: %{0 => 0, 1 => 0},
+      scores: %{:north_south => 0, :east_west => 0},
       spades_broken: false,
       state: :waiting,
       trick: []
@@ -30,8 +30,8 @@ defmodule Spades.Game do
     |> maybe_start_bidding()
   end
 
-  def state_for_player(%__MODULE__{} = game, name) do
-    player = Map.get(game.players, name)
+  def state_for_player(%__MODULE__{} = game, id) do
+    player = Map.get(game.players, id)
 
     if player == nil do
       state(game)
@@ -41,10 +41,10 @@ defmodule Spades.Game do
       %{
         id: game.id,
         cards: Player.sorted_hand(player),
-        call: if(player.hand == nil, do: -2, else: player.hand.call),
+        call: if(player.hand != nil, do: player.hand.call, else: nil),
         current_player: game.current_player,
         name: game.name,
-        tricks: if(player.hand == nil, do: -1, else: player.hand.tricks),
+        tricks: if(player.hand != nil, do: player.hand.tricks, else: nil),
         team: player.team,
         scores: game.scores,
         players: get_player_list(game),
@@ -90,12 +90,12 @@ defmodule Spades.Game do
 
   def make_call(
         %__MODULE__{state: :bidding} = game,
-        name,
+        id,
         call
       ) do
-    if can_play?(game, name) do
+    if can_play?(game, id) do
       game
-      |> maybe_make_call(name, call)
+      |> maybe_make_call(id, call)
       |> next_player()
       |> maybe_start_game()
     else
@@ -107,12 +107,12 @@ defmodule Spades.Game do
 
   def play_card(
         %__MODULE__{state: :playing} = game,
-        name,
+        id,
         %Card{} = card
       ) do
-    if can_play?(game, name) do
+    if can_play?(game, id) do
       game
-      |> maybe_play_card(name, card)
+      |> maybe_play_card(id, card)
       |> next_player()
       |> maybe_award_trick()
       |> maybe_end_hand()
@@ -125,15 +125,15 @@ defmodule Spades.Game do
   def play_card(game, _name, _card), do: game
 
   defp maybe_put_player(%__MODULE__{players: players} = game, player) do
-    if map_size(players) == 4 || Map.has_key?(players, player.name) ||
+    if map_size(players) == 4 || Map.has_key?(players, player.id) ||
          Enum.count(players, fn {_, p} -> p.team == player.team end) == 2 do
       game
     else
-      new_players = Map.put(players, player.name, player)
+      new_players = Map.put(players, player.id, player)
 
       play_order =
-        Enum.concat(game.play_order, [player.name])
-        |> Enum.split_with(fn p -> Map.get(new_players, p).team == 0 end)
+        Enum.concat(game.play_order, [player.id])
+        |> Enum.split_with(&(Map.get(new_players, &1).team == :north_south))
         |> Tuple.to_list()
         |> zip()
 
@@ -162,11 +162,12 @@ defmodule Spades.Game do
 
   defp maybe_start_bidding(game), do: game
 
-  defp can_play?(game, name) do
-    Enum.at(game.play_order, game.current_player) == name
+  defp can_play?(game, id) do
+    Enum.at(game.play_order, game.current_player) == id
   end
 
   defp next_player(%__MODULE__{advance: true} = game) do
+    # TODO
     %{game | current_player: rem(game.current_player + 1, 4), advance: false}
   end
 
@@ -174,21 +175,21 @@ defmodule Spades.Game do
 
   def maybe_make_call(
         %__MODULE__{} = game,
-        name,
+        id,
         call
       ) do
-    if can_play?(game, name) do
-      %{game | players: Map.update!(game.players, name, &Player.make_call(&1, call))}
+    if can_play?(game, id) do
+      %{game | players: Map.update!(game.players, id, &Player.make_call(&1, call))}
       |> advance()
     else
       game
     end
   end
 
-  defp maybe_play_card(%__MODULE__{trick: [], players: players} = game, name, card) do
-    if Player.can_play?(players[name], card, nil, game.spades_broken) do
-      %{game | trick: [%{name: name, card: card}]}
-      |> take_card_from_hand(name, card)
+  defp maybe_play_card(%__MODULE__{trick: [], players: players} = game, id, card) do
+    if Player.can_play?(players[id], card, nil, game.spades_broken) do
+      %{game | trick: [%{id: id, card: card}]}
+      |> take_card_from_hand(id, card)
       |> spades_broken(card)
       |> advance()
     else
@@ -198,12 +199,12 @@ defmodule Spades.Game do
 
   defp maybe_play_card(
          %__MODULE__{trick: [%{card: lead} | _] = trick, players: players} = game,
-         name,
+         id,
          card
        ) do
-    if Player.can_play?(players[name], card, lead, game.spades_broken) do
-      %{game | trick: Enum.concat(trick, [%{name: name, card: card}])}
-      |> take_card_from_hand(name, card)
+    if Player.can_play?(players[id], card, lead, game.spades_broken) do
+      %{game | trick: Enum.concat(trick, [%{id: id, card: card}])}
+      |> take_card_from_hand(id, card)
       |> spades_broken(card)
       |> advance()
     else
@@ -215,8 +216,8 @@ defmodule Spades.Game do
     %{game | spades_broken: card.suit == :spades || game.spades_broken}
   end
 
-  defp take_card_from_hand(game, name, card) do
-    %{game | players: Map.update!(game.players, name, &Player.play_card(&1, card))}
+  defp take_card_from_hand(game, id, card) do
+    %{game | players: Map.update!(game.players, id, &Player.play_card(&1, card))}
   end
 
   defp maybe_award_trick(%__MODULE__{trick: trick} = game) when length(trick) == 4 do
@@ -224,21 +225,21 @@ defmodule Spades.Game do
 
     max_spade = Card.max_spade(trick)
 
-    name =
+    id =
       cond do
         lead.suit == :spade || max_spade != nil ->
-          Map.get(max_spade, :name)
+          Map.get(max_spade, :id)
 
         true ->
           Card.max_of_suit(trick, lead.suit)
-          |> Map.get(:name)
+          |> Map.get(:id)
       end
 
-    winner = Enum.find_index(game.play_order, &(&1 == name))
+    winner = Enum.find_index(game.play_order, &(&1 == id))
 
     %{
       game
-      | players: Map.update!(game.players, name, &Player.take(&1)),
+      | players: Map.update!(game.players, id, &Player.take(&1)),
         current_player: winner
     }
   end
@@ -276,26 +277,31 @@ defmodule Spades.Game do
     end
   end
 
-  defp reveal_player_card(game, name) do
-    player = Map.get(game.players, name)
+  defp reveal_player_card(game, id) do
+    player = Map.get(game.players, id)
 
     if player == nil do
       game
     else
-      %{game | players: Map.put(game.players, name, Player.reveal(player))}
+      %{game | players: Map.put(game.players, id, Player.reveal(player))}
     end
   end
 
   defp award_points(%__MODULE__{scores: scores, players: players} = game) do
     team_one_score =
-      Player.get_team_players(players, 0)
+      Player.get_team_players(players, :north_south)
       |> Player.get_score()
 
     team_two_score =
-      Player.get_team_players(players, 1)
+      Player.get_team_players(players, :east_west)
       |> Player.get_score()
 
-    %{game | scores: %{0 => scores[0] + team_one_score, 1 => scores[1] + team_two_score}}
+    %{
+      game
+      | scores:
+          Map.update!(scores, :north_south, &(&1 + team_one_score))
+          |> Map.update!(:east_west, &(&1 + team_two_score))
+    }
   end
 
   defp increment_play_order(%__MODULE__{play_order: [last | rest]} = game) do
@@ -309,13 +315,13 @@ defmodule Spades.Game do
       Enum.chunk_every(deck, 4)
       |> Enum.zip()
       |> Enum.zip(play_order)
-      |> Enum.map(fn {hand, player} ->
-        Player.receive_cards(players[player], Tuple.to_list(hand))
+      |> Enum.map(fn {hand, id} ->
+        Player.receive_cards(players[id], Tuple.to_list(hand))
       end)
 
     %{
       game
-      | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.name, &1))
+      | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.id, &1))
     }
   end
 

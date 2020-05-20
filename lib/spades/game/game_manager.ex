@@ -49,28 +49,28 @@ defmodule Spades.Game.GameManager do
     end
   end
 
-  def add_player(id, name: name, team: team) do
-    GenServer.call(via_tuple(id), {:add_player, name, team})
+  def add_player(id, id: player_id, name: name, team: team) do
+    GenServer.call(via_tuple(id), {:add_player, player_id, name, team})
   end
 
   def get_game_state(id) do
     GenServer.call(via_tuple(id), :get_state)
   end
 
-  def get_game_state_for_player(id, name) do
-    GenServer.call(via_tuple(id), {:get_state, name})
+  def get_game_state_for_player(id, player_id) do
+    GenServer.call(via_tuple(id), {:get_state, player_id})
   end
 
-  def reveal_cards(id, name) do
-    GenServer.call(via_tuple(id), {:reveal_cards, name})
+  def reveal_cards(id, player_id) do
+    GenServer.call(via_tuple(id), {:reveal_cards, player_id})
   end
 
-  def make_call(id, name, value) do
-    GenServer.call(via_tuple(id), {:make_call, name, value})
+  def make_call(id, player_id, value) do
+    GenServer.call(via_tuple(id), {:make_call, player_id, value})
   end
 
-  def play_card(id, name, card) do
-    GenServer.call(via_tuple(id), {:play_card, name, card})
+  def play_card(id, player_id, card) do
+    GenServer.call(via_tuple(id), {:play_card, player_id, card})
   end
 
   defp via_tuple(game_id) do
@@ -85,8 +85,8 @@ defmodule Spades.Game.GameManager do
   end
 
   @impl true
-  def handle_call({:add_player, name, team}, _from, game) do
-    player = Player.new(name, team)
+  def handle_call({:add_player, player_id, name, team}, _from, game) do
+    player = Player.new(player_id, name, team)
     {:reply, player, Game.add_player(game, player)}
   end
 
@@ -96,22 +96,22 @@ defmodule Spades.Game.GameManager do
   end
 
   @impl true
-  def handle_call({:get_state, name}, _from, game) do
-    {:reply, Game.state_for_player(game, name), game}
+  def handle_call({:get_state, player_id}, _from, game) do
+    {:reply, Game.state_for_player(game, player_id), game}
   end
 
   @impl true
-  def handle_call({:reveal_cards, name}, _from, game) do
-    {:reply, :ok, Game.reveal_cards(game, name)}
+  def handle_call({:reveal_cards, player_id}, _from, game) do
+    {:reply, :ok, Game.reveal_cards(game, player_id)}
   end
 
   @impl true
-  def handle_call({:make_call, name, value}, _from, game) do
-    {:reply, :ok, Game.make_call(game, name, value)}
+  def handle_call({:make_call, player_id, value}, _from, game) do
+    {:reply, :ok, Game.make_call(game, player_id, value)}
   end
 
   @impl true
-  def handle_call({:play_card, name, card}, _from, game) do
-    {:reply, :ok, Game.play_card(game, name, card)}
+  def handle_call({:play_card, player_id, card}, _from, game) do
+    {:reply, :ok, Game.play_card(game, player_id, card)}
   end
 end

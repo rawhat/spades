@@ -1,12 +1,13 @@
 defmodule Spades.Game.Player do
-  @enforce_keys [:name, :team]
-  defstruct ~w(hand name team)a
+  @enforce_keys [:id, :name, :team]
+  defstruct ~w(hand id name team)a
 
   alias Spades.Game.Card
   alias Spades.Game.Hand
 
-  def new(name, team) do
+  def new(id, name, team) do
     %__MODULE__{
+      id: id,
       name: name,
       team: team
     }
@@ -17,6 +18,7 @@ defmodule Spades.Game.Player do
       %{
         cards: Enum.count(player.hand.cards),
         call: player.hand.call,
+        id: player.id,
         name: player.name,
         team: player.team,
         tricks: player.hand.tricks,
@@ -24,6 +26,7 @@ defmodule Spades.Game.Player do
       }
     else
       %{
+        id: player.id,
         name: player.name,
         team: player.team,
         cards: 0,

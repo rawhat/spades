@@ -31,13 +31,14 @@ function CreateAccount() {
   };
 
   const { data, status: _status, error } = useQuery<
-    string,
+    { username: string },
     "username" | "password"
   >(request);
 
   useEffect(() => {
     if (data) {
-      dispatch(setUsername(data));
+      dispatch(setUsername(data.username));
+      history.push("/lobby");
     }
   }, [data, dispatch, history]);
 

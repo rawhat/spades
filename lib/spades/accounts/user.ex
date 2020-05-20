@@ -25,6 +25,7 @@ defmodule Spades.Accounts.User do
     |> cast(attrs, [:password])
     |> validate_required([:password])
     |> validate_length(:password, min: 6, max: 25)
+    |> unique_constraint(:username)
     |> put_pass_hash()
   end
 

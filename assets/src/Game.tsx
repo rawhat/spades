@@ -69,10 +69,10 @@ interface JoinButtonProps {
 
 const JoinButton = ({ onJoin }: JoinButtonProps) => {
   const availableTeams = useSelector(selectAvailableTeams);
-  const [team, setTeam] = useState<Team>(availableTeams[0]);
+  const [team, setTeam] = useState<Team>(availableTeams[0]?.value);
 
   useEffect(() => {
-    setTeam(availableTeams[0]);
+    setTeam(availableTeams[0]?.value);
   }, [availableTeams]);
 
   const onChange = (value: string) => {
