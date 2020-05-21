@@ -1,10 +1,17 @@
 defmodule Spades.Game.Player do
+  @type team :: :north_south | :east_west
+
   @enforce_keys [:id, :name, :team]
   defstruct ~w(hand id name team)a
 
   alias Spades.Game.Card
   alias Spades.Game.Hand
 
+  @spec new(String.t(), String.t(), team()) :: %__MODULE__{
+          id: String.t(),
+          name: String.t(),
+          team: team()
+        }
   def new(id, name, team) do
     %__MODULE__{
       id: id,
@@ -13,6 +20,16 @@ defmodule Spades.Game.Player do
     }
   end
 
+  @spec to_public(%__MODULE__{}) :: %{
+          cards: integer(),
+          call: integer() | nil,
+          id: String.t(),
+          id: String.t(),
+          name: String.t(),
+          team: team(),
+          tricks: integer() | nil,
+          revealed: boolean()
+        }
   def to_public(%__MODULE__{} = player) do
     if player.hand != nil do
       %{
