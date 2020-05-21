@@ -3,8 +3,53 @@ defmodule Spades.Game do
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
+  alias Spades.Game.Hand
   alias Spades.Game.Player
 
+  @type scores :: %{:north_south => integer(), :east_west => integer()}
+  @type trick :: %{:id => String.t(), :card => Card.card()}
+  @type state :: :waiting | :bidding | :playing
+  @type player_map :: %{String.t() => Player.player()}
+  @type game :: %__MODULE__{
+          advance: boolean() | nil,
+          current_player: integer(),
+          deck: list(Card.card()),
+          id: String.t(),
+          name: String.t(),
+          play_order: list(String.t()),
+          players: player_map(),
+          scores: scores(),
+          spades_broken: boolean(),
+          state: state(),
+          trick: list(trick())
+        }
+  @type player_state :: %{
+          call: Hand.call() | nil,
+          cards: list(Card.card()),
+          current_player: integer(),
+          id: String.t(),
+          name: String.t(),
+          players: list(Player.public_player()),
+          revealed: boolean(),
+          scores: scores(),
+          spades_broken: boolean(),
+          state: state(),
+          team: Player.team(),
+          trick: list(trick()),
+          tricks: integer() | nil
+        }
+  @type public_state :: %{
+          current_player: integer(),
+          id: String.t(),
+          name: String.t(),
+          players: list(Player.public_player()),
+          scores: scores(),
+          spades_broken: boolean(),
+          state: state(),
+          trick: list(trick())
+        }
+
+  @spec new(String.t(), String.t(), list(Card.card()) | nil) :: game()
   def new(id, name, deck \\ Deck.new()) when is_binary(id) do
     %__MODULE__{
       current_player: 0,
@@ -20,6 +65,7 @@ defmodule Spades.Game do
     }
   end
 
+  @spec add_player(game(), Player.player()) :: game()
   def add_player(
         %__MODULE__{} = game,
         %Player{} = player
@@ -30,6 +76,7 @@ defmodule Spades.Game do
     |> maybe_start_bidding()
   end
 
+  @spec state_for_player(game(), String.t()) :: state() | public_state()
   def state_for_player(%__MODULE__{} = game, id) do
     player = Map.get(game.players, id)
 
@@ -39,48 +86,51 @@ defmodule Spades.Game do
       revealed = player.hand != nil && player.hand.revealed
 
       %{
-        id: game.id,
-        cards: Player.sorted_hand(player),
         call: if(player.hand != nil, do: player.hand.call, else: nil),
+        cards: Player.sorted_hand(player),
         current_player: game.current_player,
+        id: game.id,
         name: game.name,
-        tricks: if(player.hand != nil, do: player.hand.tricks, else: nil),
-        team: player.team,
-        scores: game.scores,
         players: get_player_list(game),
+        revealed: revealed,
+        scores: game.scores,
         spades_broken: game.spades_broken,
         state: game.state,
+        team: player.team,
         trick: game.trick,
-        revealed: revealed
+        tricks: if(player.hand != nil, do: player.hand.tricks, else: nil)
       }
     end
   end
 
+  @spec state(game()) :: public_state()
   def state(%__MODULE__{} = game) do
     %{
-      id: game.id,
       current_player: game.current_player,
-      scores: game.scores,
+      id: game.id,
       name: game.name,
       players: get_player_list(game),
+      scores: game.scores,
       spades_broken: game.spades_broken,
       state: game.state,
       trick: game.trick
     }
   end
 
+  @spec get_player_list(game()) :: list(Player.public_player())
   defp get_player_list(game) do
     Stream.map(game.play_order, &Map.get(game.players, &1))
     |> Stream.map(&Player.to_public/1)
     |> Enum.to_list()
   end
 
+  @spec reveal_cards(game(), String.t()) :: game()
   def reveal_cards(
         %__MODULE__{state: :bidding} = game,
-        name
+        id
       ) do
-    if can_play?(game, name) do
-      reveal_player_card(game, name)
+    if can_play?(game, id) do
+      reveal_player_card(game, id)
     else
       game
     end
@@ -88,6 +138,7 @@ defmodule Spades.Game do
 
   def reveal_cards(game, _name), do: game
 
+  @spec make_call(game(), String.t(), Hand.call()) :: game()
   def make_call(
         %__MODULE__{state: :bidding} = game,
         id,
@@ -105,6 +156,7 @@ defmodule Spades.Game do
 
   def make_call(game, _name, _call), do: game
 
+  @spec play_card(game(), String.t(), Card.card()) :: game()
   def play_card(
         %__MODULE__{state: :playing} = game,
         id,
@@ -124,6 +176,7 @@ defmodule Spades.Game do
 
   def play_card(game, _name, _card), do: game
 
+  @spec maybe_put_player(game(), Player.player()) :: game()
   defp maybe_put_player(%__MODULE__{players: players} = game, player) do
     if map_size(players) == 4 || Map.has_key?(players, player.id) ||
          Enum.count(players, fn {_, p} -> p.team == player.team end) == 2 do
@@ -145,16 +198,19 @@ defmodule Spades.Game do
     end
   end
 
+  @spec advance(game()) :: game()
   defp advance(game) do
     %{game | advance: true}
   end
 
+  @spec maybe_deal_cards(game()) :: game()
   defp maybe_deal_cards(%__MODULE__{players: players} = game) when map_size(players) == 4 do
     deal_cards(game)
   end
 
   defp maybe_deal_cards(game), do: game
 
+  @spec maybe_start_bidding(game()) :: game()
   defp maybe_start_bidding(%__MODULE__{players: players, state: :waiting} = game)
        when map_size(players) == 4 do
     %{game | state: :bidding}
@@ -162,10 +218,12 @@ defmodule Spades.Game do
 
   defp maybe_start_bidding(game), do: game
 
+  @spec can_play?(game(), String.t()) :: boolean()
   defp can_play?(game, id) do
     Enum.at(game.play_order, game.current_player) == id
   end
 
+  @spec next_player(game()) :: game()
   defp next_player(%__MODULE__{advance: true} = game) do
     # TODO
     %{game | current_player: rem(game.current_player + 1, 4), advance: false}
@@ -173,6 +231,7 @@ defmodule Spades.Game do
 
   defp next_player(game), do: game
 
+  @spec maybe_make_call(game(), String.t(), Hand.call()) :: game()
   def maybe_make_call(
         %__MODULE__{} = game,
         id,
@@ -186,6 +245,7 @@ defmodule Spades.Game do
     end
   end
 
+  @spec maybe_play_card(game(), String.t(), Card.card()) :: game()
   defp maybe_play_card(%__MODULE__{trick: [], players: players} = game, id, card) do
     if Player.can_play?(players[id], card, nil, game.spades_broken) do
       %{game | trick: [%{id: id, card: card}]}
@@ -212,14 +272,19 @@ defmodule Spades.Game do
     end
   end
 
+  defp maybe_play_card(game, _id, _card), do: game
+
+  @spec spades_broken(game(), Card.card()) :: game()
   defp spades_broken(game, card) do
     %{game | spades_broken: card.suit == :spades || game.spades_broken}
   end
 
+  @spec take_card_from_hand(game(), String.t(), Card.card()) :: game()
   defp take_card_from_hand(game, id, card) do
     %{game | players: Map.update!(game.players, id, &Player.play_card(&1, card))}
   end
 
+  @spec maybe_award_trick(game()) :: game()
   defp maybe_award_trick(%__MODULE__{trick: trick} = game) when length(trick) == 4 do
     [%{card: lead} | _] = trick
 
@@ -246,6 +311,7 @@ defmodule Spades.Game do
 
   defp maybe_award_trick(game), do: next_player(game)
 
+  @spec maybe_start_game(game()) :: game()
   defp maybe_start_game(game) do
     if Enum.all?(game.players, &(elem(&1, 1).hand.call != nil)) do
       %{game | state: :playing}
@@ -254,12 +320,14 @@ defmodule Spades.Game do
     end
   end
 
+  @spec maybe_end_hand(game()) :: game()
   defp maybe_end_hand(%__MODULE__{trick: trick} = game) when length(trick) == 4 do
     %{game | trick: []}
   end
 
   defp maybe_end_hand(game), do: game
 
+  @spec maybe_end_round(game()) :: game()
   defp maybe_end_round(%__MODULE__{players: players} = game) do
     all_empty =
       Enum.all?(players, fn {_, player} ->
@@ -277,6 +345,7 @@ defmodule Spades.Game do
     end
   end
 
+  @spec reveal_player_card(game(), String.t()) :: game()
   defp reveal_player_card(game, id) do
     player = Map.get(game.players, id)
 
@@ -287,6 +356,7 @@ defmodule Spades.Game do
     end
   end
 
+  @spec award_points(game()) :: game()
   defp award_points(%__MODULE__{scores: scores, players: players} = game) do
     team_one_score =
       Player.get_team_players(players, :north_south)
@@ -304,10 +374,12 @@ defmodule Spades.Game do
     }
   end
 
+  @spec increment_play_order(game()) :: game()
   defp increment_play_order(%__MODULE__{play_order: [last | rest]} = game) do
     %{game | play_order: Enum.concat(rest, [last]), current_player: 0}
   end
 
+  @spec deal_cards(game()) :: game()
   defp deal_cards(%__MODULE__{players: players, play_order: play_order} = game, shuffle \\ false) do
     deck = if shuffle, do: Enum.shuffle(game.deck), else: game.deck
 
@@ -325,6 +397,7 @@ defmodule Spades.Game do
     }
   end
 
+  @spec start_bidding(game()) :: game()
   defp start_bidding(game) do
     %{game | state: :bidding}
   end
@@ -333,6 +406,7 @@ defmodule Spades.Game do
   defp zip([[], team_two], players), do: Enum.concat(players, team_two)
   defp zip([team_one, []], players), do: Enum.concat(players, team_one)
 
+  @spec zip(list(list(Player.player())), list(Player.player())) :: list(Player.player())
   defp zip([[one | team_one], [two | team_two]], players) do
     zip([team_one, team_two], Enum.concat(players, [one, two]))
   end
