@@ -105,7 +105,11 @@ export const loadGameState = (id: string) => async (dispatch: Dispatch) => {
 
 export const socketError = createAction<string>("game/socketError");
 
-type JoinGamePayload = { id: string; team: Team; username: string };
+interface JoinGamePayload {
+  id: string;
+  team: Team;
+  username: string
+};
 export const joinGame = createAction<JoinGamePayload>("game/join");
 
 export const revealCards = createAction("game/reveal");

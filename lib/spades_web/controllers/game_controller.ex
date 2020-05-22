@@ -18,7 +18,10 @@ defmodule SpadesWeb.GameController do
 
     GameManager.add_player(id, id: user_id, name: creator.username, team: :north_south)
 
-    json(conn, %{id: id, name: name, players: 1})
+    game_state = %{id: id, name: name, players: 1}
+    SpadesWeb.Endpoint.broadcast!("lobby:*", "update_game", game_state)
+
+    json(conn, game_state)
   end
 
   def show(conn, %{"id" => id}) do

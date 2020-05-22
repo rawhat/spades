@@ -5,12 +5,12 @@ import {
   Action,
 } from "@reduxjs/toolkit";
 
-import { socketMiddleware } from "../features/game/socket";
+import { gameSocketMiddleware } from "../features/game/socket";
 
 import rootReducer, { RootState } from "./rootReducer";
 
 export const store = configureStore({
-  middleware: [...getDefaultMiddleware(), socketMiddleware],
+  middleware: [...getDefaultMiddleware(), gameSocketMiddleware],
   reducer: rootReducer,
 });
 

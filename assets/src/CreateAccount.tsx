@@ -30,7 +30,7 @@ function CreateAccount() {
     }
   };
 
-  const { data, status: _status, error } = useQuery<
+  const { data, error } = useQuery<
     { username: string },
     "username" | "password"
   >(request);

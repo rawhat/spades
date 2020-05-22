@@ -16,7 +16,7 @@ import {
   playCard,
 } from "./gameSlice";
 
-export const socketMiddleware = (_store: any) => (next: Dispatch) => {
+export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
   let socket = new Socket("/socket/game");
   socket.connect();
 

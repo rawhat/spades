@@ -9,7 +9,8 @@ defmodule SpadesWeb.GamePlayerController do
   end
 
   def create(conn, %{"id" => id, "name" => name, "team" => team}) do
-    GameManager.add_player(id, name: name, team: team)
+    user_id = get_session(conn, :user_id)
+    GameManager.add_player(id, id: user_id, name: name, team: team)
     state = GameManager.get_game_state_for_player(id, name)
     json(conn, %{game: state})
   end

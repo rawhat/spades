@@ -14,10 +14,10 @@ defmodule SpadesWeb.UserController do
 
     case Accounts.register_user(user_params) do
       {:ok, user} ->
-        IO.puts("hi")
 
         conn
         |> put_status(203)
+        |> SpadesWeb.Auth.login(user)
         |> json(%{username: user.username})
 
       {:error, %Ecto.Changeset{} = changeset} ->

@@ -1,11 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { useEffect } from "react";
-import { useSelector } from "react-redux";
 
-import { RootState } from "./app/store";
-import { fetchGames } from "./features/lobby/lobbySlice";
+import { useLobbySocket } from "./features/lobby/hook";
 
 import { Columns, Column, Container, Divider, Header } from "./Layout";
 import {
@@ -17,15 +13,11 @@ import {
   TableRow,
 } from "./Table";
 import NewGame from "./NewGame";
+import { Toast } from "./Toast";
 
 function Lobby() {
-  const dispatch = useDispatch();
 
-  useEffect(() => {
-    dispatch(fetchGames());
-  }, [dispatch]);
-
-  const games = useSelector((state: RootState) => state.lobby.games);
+  const [games, error] = useLobbySocket();
 
   return (
     <Container width="100%">
@@ -40,6 +32,15 @@ function Lobby() {
           <NewGame />
         </Column>
       </Columns>
+      {error && (
+        <Columns>
+          <Column width={6} margin="auto">
+            <Toast color="error">
+              {error}
+            </Toast>
+          </Column>
+        </Columns>
+      )}
       {games.length > 0 && (
         <Table>
           <TableHeader>

@@ -1,44 +1,67 @@
 import * as React from "react";
 import { useCallback } from "react";
-import { useDispatch } from "react-redux";
+import { useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import { useState } from "react";
 
-import { createGame } from "./features/lobby/lobbySlice";
+import { FetchArguments, Progress, postRequest } from "./app/client";
+import { GameResponse } from "./features/lobby/hook";
+import { useQuery } from "./useQuery";
 
 import { Button } from "./Button";
 import { Input } from "./Form";
 import { PaddedHorizontalLayout } from "./Layout";
 
 function NewGame() {
-  const dispatch = useDispatch();
   const history = useHistory();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
 
+  const [request, setRequest] = useState<FetchArguments>();
+
+  const { data, status, error } = useQuery<
+    GameResponse,
+    "name"
+  >(request);
+
   const newGame = useCallback(() => {
-    dispatch(createGame(name, history));
-  }, [dispatch, history, name]);
+    setRequest(postRequest("/api/game", { name }))
+  }, [name]);
 
   const close = useCallback(() => {
     setOpen(false);
     setName("");
   }, []);
 
+  useEffect(() => {
+    if (data) {
+      history.push(`/game/${data.id}`)
+    }
+  }, [data, history])
+
   return (
     <>
       {open ? (
         <PaddedHorizontalLayout padding={10}>
           <Input
+            error={error?.name.join(', ')}
             onChange={setName}
             placeholder="Enter game name..."
             value={name}
           />
-          <Button color="success" onClick={newGame}>
+          <Button
+            color="success"
+            loading={status === Progress.Loading}
+            onClick={newGame}
+          >
             Create
           </Button>
-          <Button color="error" onClick={close}>
+          <Button
+            color="error"
+            loading={status === Progress.Loading}
+            onClick={close}
+          >
             Cancel
           </Button>
         </PaddedHorizontalLayout>
