@@ -12,8 +12,7 @@ import Game from "./Game";
 import Lobby from "./Lobby";
 import Login from "./Login";
 
-import "spectre.css";
-import "./App.css";
+import "./tailwind.generated.css";
 
 import TopNav from "./TopNav";
 import { Divider, VerticalLayout } from "./Layout";
