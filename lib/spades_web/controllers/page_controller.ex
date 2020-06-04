@@ -2,6 +2,8 @@ defmodule SpadesWeb.PageController do
   use SpadesWeb, :controller
 
   def index(conn, _params) do
+    :spades_game.hello()
+
     file =
       Path.join(:code.priv_dir(:spades), "index.html")
       |> File.read()

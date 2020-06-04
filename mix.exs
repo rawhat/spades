@@ -7,7 +7,8 @@ defmodule Spades.MixProject do
       version: "0.1.0",
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      erlc_paths: ["src", "gen"],
+      compilers: [:phoenix, :gettext, :gleam] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps()
@@ -46,7 +47,9 @@ defmodule Spades.MixProject do
       {:pbkdf2_elixir, "~> 1.0"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:typed_struct, "~> 0.2"},
-      {:credo, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:mix_gleam, git: "https://github.com/Jwsonic/mix_gleam.git", tag: "0.4"},
+      {:gleam_stdlib, "~> 0.9.0"}
     ]
   end
 
