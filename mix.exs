@@ -8,7 +8,9 @@ defmodule Spades.MixProject do
       elixir: "~> 1.9",
       elixirc_paths: elixirc_paths(Mix.env()),
       erlc_paths: ["src", "gen"],
-      compilers: [:phoenix, :gettext, :gleam] ++ Mix.compilers(),
+      compilers:
+        [:phoenix, :gettext] ++
+          ((Mix.env() == :elixirls && []) || [:gleam]) ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps()
@@ -49,7 +51,7 @@ defmodule Spades.MixProject do
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:mix_gleam, git: "https://github.com/Jwsonic/mix_gleam.git", tag: "0.4"},
       {:gleam_stdlib, "~> 0.11.0"},
-      {:typed_struct, "~> 0.2"}
+      {:rec_struct, "~> 0.2.0"}
     ]
   end
 

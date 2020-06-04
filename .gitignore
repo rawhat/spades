@@ -38,3 +38,6 @@ npm-debug.log
 /priv/repo/structure.sql
 /gen/
 /priv/repo/structure.sql
+
+# Gleam generated files
+/gen/
