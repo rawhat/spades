@@ -10,6 +10,8 @@ defmodule SpadesWeb.Endpoint do
     signing_salt: "44ckgjK9"
   ]
 
+  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+
   socket "/socket/game", SpadesWeb.GameSocket,
     websocket: true,
     longpoll: false

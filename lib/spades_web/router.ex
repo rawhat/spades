@@ -4,7 +4,8 @@ defmodule SpadesWeb.Router do
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
-    plug :fetch_flash
+    plug :fetch_live_flash
+    plug :put_root_layout, {SpadesWeb.LayoutView, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
   end
@@ -46,7 +47,8 @@ defmodule SpadesWeb.Router do
   scope "/", SpadesWeb do
     pipe_through :browser
 
-    get "/*path", PageController, :index
+    live "/", LoginLive
+    live "/create_account", CreateAccountLive
   end
 
   defp game_exists(conn, _) do
