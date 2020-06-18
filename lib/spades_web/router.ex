@@ -21,6 +21,10 @@ defmodule SpadesWeb.Router do
     plug SpadesWeb.Auth
   end
 
+  pipeline :auth do
+    plug SpadesWeb.Auth
+  end
+
   scope "/api", SpadesWeb do
     pipe_through :api
 
@@ -49,6 +53,10 @@ defmodule SpadesWeb.Router do
 
     live "/", LoginLive
     live "/create_account", CreateAccountLive
+
+    # pipe_through :auth
+
+    live "/lobby", LobbyLive
   end
 
   defp game_exists(conn, _) do

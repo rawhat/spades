@@ -1,18 +1,18 @@
 defmodule Spades.Game.Hand do
-  @enforce_keys [:cards]
-
-  defstruct ~w(cards tricks call revealed)a
+  use TypedStruct
 
   alias Spades.Game.Card
 
   @type call :: 0..13 | -1
-  @type hand :: %__MODULE__{
-          cards: list(Card.card()),
-          tricks: integer(),
-          revealed: boolean()
-        }
 
-  @spec new(list(Card.card())) :: hand()
+  typedstruct do
+    field :cards, list(Card.t()), enforce: true
+    field :tricks, integer()
+    field :revealed, boolean()
+    field :call, call()
+  end
+
+  @spec new(list(Card.t())) :: t()
   def new(cards) do
     %__MODULE__{
       cards: cards,
@@ -21,7 +21,7 @@ defmodule Spades.Game.Hand do
     }
   end
 
-  @spec call(hand(), call()) :: hand()
+  @spec call(t(), call()) :: t()
   def call(%__MODULE__{revealed: revealed} = hand, value) do
     if revealed && value == -1 do
       hand
@@ -30,27 +30,27 @@ defmodule Spades.Game.Hand do
     end
   end
 
-  @spec take(hand()) :: hand()
+  @spec take(t()) :: t()
   def take(%__MODULE__{tricks: tricks} = hand) do
     %{hand | tricks: tricks + 1}
   end
 
-  @spec play(hand(), Card.card()) :: hand()
+  @spec play(t(), Card.card()) :: t()
   def play(%__MODULE__{cards: cards} = hand, %Card{} = card) do
     %{hand | cards: Enum.filter(cards, &(&1 != card))}
   end
 
-  @spec reveal(hand()) :: hand()
+  @spec reveal(t()) :: t()
   def reveal(%__MODULE__{} = hand) do
     %{hand | revealed: true}
   end
 
-  @spec is_nil?(hand()) :: boolean()
+  @spec is_nil?(t()) :: boolean()
   def is_nil?(%__MODULE__{call: 0}), do: true
   def is_nil?(%__MODULE__{call: -1}), do: true
   def is_nil?(%__MODULE__{call: _}), do: false
 
-  @spec score(hand()) :: integer()
+  @spec score(t()) :: integer()
   def score(%__MODULE__{call: 0, tricks: 0}), do: 50
   def score(%__MODULE__{call: 0, tricks: n}), do: -50 + n
   def score(%__MODULE__{call: -1, tricks: 0}), do: 100

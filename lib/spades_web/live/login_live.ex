@@ -1,5 +1,7 @@
 defmodule SpadesWeb.LoginLive do
-  use Phoenix.LiveView
+  use SpadesWeb, :live_view
+
+  alias Spades.Accounts
 
   def mount(_params, _map, socket) do
     {:ok, socket}
@@ -8,7 +10,7 @@ defmodule SpadesWeb.LoginLive do
   def render(assigns) do
     ~L"""
     <div class="container mx-auto">
-      <form phx-change="change" phx-submit="submit">
+      <form phx-submit="submit">
         <div class="flex flex-col justify-end">
           <div class="flex py-5">
             <label class="px-5" for="username">Username</label>
@@ -27,8 +29,18 @@ defmodule SpadesWeb.LoginLive do
     """
   end
 
-  def handle_event("change", %{"username" => username, "password" => password}, socket) do
-    IO.puts("username: #{username}, password: #{password}")
-    {:noreply, socket}
+  def handle_event("submit", %{"username" => username, "password" => password}, socket) do
+    case Accounts.authenticate_by_username_and_pass(username, password) do
+      {:ok, user} ->
+        IO.puts("woo! #{inspect(user)}")
+
+        {:noreply,
+         socket
+         |> put_flash(:success, "Logged in!")
+         |> push_redirect(to: Routes.live_path(socket, SpadesWeb.LobbyLive))}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Invalid username or password")}
+    end
   end
 end

@@ -1,17 +1,11 @@
 defmodule Spades.Game.Player do
-  @enforce_keys [:id, :name, :team]
-  defstruct ~w(hand id name team)a
+  use TypedStruct
 
   alias Spades.Game
   alias Spades.Game.Card
   alias Spades.Game.Hand
 
   @type team :: :north_south | :east_west
-  @type player :: %__MODULE__{
-          id: String.t(),
-          name: String.t(),
-          team: team()
-        }
   @type public_player :: %{
           cards: integer(),
           call: integer() | nil,
@@ -23,7 +17,14 @@ defmodule Spades.Game.Player do
           revealed: boolean()
         }
 
-  @spec new(String.t(), String.t(), team()) :: player()
+  typedstruct do
+    field :hand, Hand.t()
+    field :id, String.t(), enforce: true
+    field :name, String.t(), enforce: true
+    field :team, team(), enforce: true
+  end
+
+  @spec new(String.t(), String.t(), team()) :: t()
   def new(id, name, team) do
     %__MODULE__{
       id: id,
@@ -32,7 +33,7 @@ defmodule Spades.Game.Player do
     }
   end
 
-  @spec to_public(player()) :: public_player()
+  @spec to_public(t()) :: public_player()
   def to_public(%__MODULE__{} = player) do
     if player.hand != nil do
       %{
@@ -57,27 +58,27 @@ defmodule Spades.Game.Player do
     end
   end
 
-  @spec receive_cards(player(), list(Card.card())) :: player()
+  @spec receive_cards(t(), list(Card.card())) :: t()
   def receive_cards(%__MODULE__{} = player, cards) when is_list(cards) do
     %{player | hand: Hand.new(cards)}
   end
 
-  @spec reveal(player()) :: player()
+  @spec reveal(t()) :: t()
   def reveal(%__MODULE__{hand: hand} = player) do
     %{player | hand: Hand.reveal(hand)}
   end
 
-  @spec make_call(player(), Hand.call()) :: player()
+  @spec make_call(t(), Hand.call()) :: t()
   def make_call(%__MODULE__{hand: hand} = player, call) do
     %{player | hand: Hand.call(hand, call)}
   end
 
-  @spec take(player()) :: player()
+  @spec take(t()) :: t()
   def take(%__MODULE__{hand: hand} = player) do
     %{player | hand: Hand.take(hand)}
   end
 
-  @spec get_score(list(player())) :: integer()
+  @spec get_score(list(t())) :: integer()
   def get_score([%__MODULE__{hand: hand1}, %__MODULE__{hand: hand2}]) do
     exists_nil = Hand.is_nil?(hand1) || Hand.is_nil?(hand2)
 
@@ -98,7 +99,7 @@ defmodule Spades.Game.Player do
 
   def sorted_hand(%__MODULE__{hand: nil}), do: []
 
-  @spec sorted_hand(player()) :: list(Card.card())
+  @spec sorted_hand(t()) :: list(Card.card())
   def sorted_hand(%__MODULE__{hand: hand}) do
     if hand.revealed do
       Enum.sort(hand.cards, &Card.compare/2)
@@ -107,7 +108,7 @@ defmodule Spades.Game.Player do
     end
   end
 
-  @spec get_team_players(%{String.t() => player()}, team()) :: list(player())
+  @spec get_team_players(%{String.t() => t()}, team()) :: list(t())
   def get_team_players(players, team) do
     Map.values(players)
     |> Enum.filter(&(&1.team == team))
@@ -119,7 +120,7 @@ defmodule Spades.Game.Player do
 
   def can_play?(_player, _card, nil, _broken), do: true
 
-  @spec can_play?(player(), Card.card(), Game.trick() | nil, boolean()) :: boolean()
+  @spec can_play?(t(), Card.card(), Game.trick() | nil, boolean()) :: boolean()
   def can_play?(%__MODULE__{hand: hand}, card, lead, broken) do
     Enum.member?(hand.cards, card) &&
       (card.suit == lead.suit ||
@@ -127,7 +128,7 @@ defmodule Spades.Game.Player do
          (card.suit == :spades && broken))
   end
 
-  @spec play_card(player(), Card.card()) :: player()
+  @spec play_card(t(), Card.card()) :: t()
   def play_card(%__MODULE__{hand: hand} = player, card) do
     %{player | hand: Hand.play(hand, card)}
   end

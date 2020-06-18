@@ -45,7 +45,8 @@ defmodule Spades.MixProject do
       {:plug_cowboy, "~> 2.2"},
       {:pbkdf2_elixir, "~> 1.0"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:phoenix_live_view, "~> 0.13.0"}
+      {:phoenix_live_view, "~> 0.13.0"},
+      {:typed_struct, "~> 0.2.0"}
     ]
   end
 

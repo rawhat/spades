@@ -1,16 +1,19 @@
 defmodule Spades.Game.Card do
+  use TypedStruct
+
   @type suit :: :spades | :diamonds | :clubs | :hearts
   @type value :: 1..14
   @type card :: %__MODULE__{suit: suit(), value: value()}
 
   @suit_value %{:spades => 0, :diamonds => 1, :clubs => 2, :hearts => 3}
 
-  @enforce_keys [:suit, :value]
-
   @derive Jason.Encoder
-  defstruct ~w(suit value)a
+  typedstruct do
+    field :suit, suit(), enforce: true
+    field :value, value(), enforce: true
+  end
 
-  @spec new(suit(), value()) :: card()
+  @spec new(suit(), value()) :: t()
   def new(suit, value) do
     %__MODULE__{suit: suit, value: value}
   end
@@ -19,7 +22,7 @@ defmodule Spades.Game.Card do
     max_of_suit(cards, :spades)
   end
 
-  @spec max_of_suit(list(card()), suit()) :: card() | nil
+  @spec max_of_suit(list(t()), suit()) :: t() | nil
   def max_of_suit(cards, suit) when is_list(cards) do
     cards
     |> Enum.filter(fn %{card: card} -> card.suit == suit end)
@@ -28,11 +31,11 @@ defmodule Spades.Game.Card do
     end)
   end
 
-  @spec get_value(card()) :: value()
+  @spec get_value(t()) :: value()
   def get_value(%__MODULE__{value: 1}), do: 14
   def get_value(%__MODULE__{value: value}), do: value
 
-  @spec compare(card(), card()) :: boolean()
+  @spec compare(t(), t()) :: boolean()
   def compare(%__MODULE__{} = card1, %__MODULE__{} = card2) do
     if card1.suit != card2.suit do
       Map.get(@suit_value, card1.suit) <= Map.get(@suit_value, card2.suit)
