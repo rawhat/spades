@@ -27,7 +27,7 @@ defmodule SpadesWeb.GameChannel do
     username = socket.assigns[:username]
     player_id = socket.assigns[:user_id]
     player = GameManager.add_player(game_id, id: player_id, name: username, team: team)
-    state = GameManager.get_game_state_for_player(game_id, player.name)
+    state = GameManager.get_game_state_for_player(game_id, player.id)
 
     push(socket, "game_state", state)
     broadcast!(socket, "join_game", body)
@@ -43,11 +43,11 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_in("reveal", _params, socket) do
     game_id = socket.assigns[:game_id]
-    username = socket.assigns[:username]
+    player_id = socket.assigns[:user_id]
 
-    GameManager.reveal_cards(game_id, username)
+    GameManager.reveal_cards(game_id, player_id)
 
-    state = GameManager.get_game_state_for_player(game_id, username)
+    state = GameManager.get_game_state_for_player(game_id, player_id)
 
     push(socket, "game_state", state)
 
@@ -56,9 +56,9 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_in("make_call", %{"body" => call}, socket) do
     game_id = socket.assigns[:game_id]
-    username = socket.assigns[:username]
+    player_id = socket.assigns[:user_id]
 
-    GameManager.make_call(game_id, username, call)
+    GameManager.make_call(game_id, player_id, call)
     broadcast!(socket, "make_call", %{})
 
     {:noreply, socket}
@@ -66,13 +66,13 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_in("play_card", %{"body" => %{"suit" => suit, "value" => value}}, socket) do
     game_id = socket.assigns[:game_id]
-    username = socket.assigns[:username]
+    player_id = socket.assigns[:user_id]
 
     card =
       String.to_existing_atom(suit)
       |> Card.new(value)
 
-    GameManager.play_card(game_id, username, card)
+    GameManager.play_card(game_id, player_id, card)
 
     broadcast!(socket, "play_card", %{})
 
@@ -83,9 +83,9 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_out("join_game", _body, socket) do
     game_id = socket.assigns[:game_id]
-    username = socket.assigns[:username]
+    player_id = socket.assigns[:user_id]
 
-    state = GameManager.get_game_state_for_player(game_id, username)
+    state = GameManager.get_game_state_for_player(game_id, player_id)
     push(socket, "game_state", state)
 
     {:noreply, socket}
@@ -93,9 +93,9 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_out("make_call", _body, socket) do
     game_id = socket.assigns[:game_id]
-    username = socket.assigns[:username]
+    player_id = socket.assigns[:user_id]
 
-    state = GameManager.get_game_state_for_player(game_id, username)
+    state = GameManager.get_game_state_for_player(game_id, player_id)
     push(socket, "game_state", state)
 
     {:noreply, socket}
@@ -103,9 +103,9 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_out("play_card", _body, socket) do
     game_id = socket.assigns[:game_id]
-    username = socket.assigns[:username]
+    player_id = socket.assigns[:user_id]
 
-    state = GameManager.get_game_state_for_player(game_id, username)
+    state = GameManager.get_game_state_for_player(game_id, player_id)
     push(socket, "game_state", state)
 
     {:noreply, socket}

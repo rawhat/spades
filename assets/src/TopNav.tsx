@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useHistory } from "react-router-dom";
@@ -26,7 +27,9 @@ function TopNav() {
   return (
     <Navbar>
       <NavbarSection>
-        <Header>Spades</Header>
+        <Link to="/">
+          <Header>Spades</Header>
+        </Link>
       </NavbarSection>
       {username && (
         <NavbarSection>

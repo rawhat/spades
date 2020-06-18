@@ -7,16 +7,16 @@ defmodule Spades.Game do
   alias Spades.Game.Player
 
   @type scores :: %{:north_south => integer(), :east_west => integer()}
-  @type trick :: %{:id => String.t(), :card => Card.card()}
+  @type trick :: %{:id => integer(), :card => Card.card()}
   @type state :: :waiting | :bidding | :playing
-  @type player_map :: %{String.t() => Player.player()}
+  @type player_map :: %{integer() => Player.player()}
   @type game :: %__MODULE__{
           advance: boolean() | nil,
           current_player: integer(),
           deck: list(Card.card()),
           id: String.t(),
           name: String.t(),
-          play_order: list(String.t()),
+          play_order: list(integer()),
           players: player_map(),
           scores: scores(),
           spades_broken: boolean(),
@@ -76,7 +76,7 @@ defmodule Spades.Game do
     |> maybe_start_bidding()
   end
 
-  @spec state_for_player(game(), String.t()) :: state() | public_state()
+  @spec state_for_player(game(), integer()) :: state() | public_state()
   def state_for_player(%__MODULE__{} = game, id) do
     player = Map.get(game.players, id)
 

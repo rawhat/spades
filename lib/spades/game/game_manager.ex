@@ -73,6 +73,10 @@ defmodule Spades.Game.GameManager do
     GenServer.call(via_tuple(id), {:play_card, player_id, card})
   end
 
+  def read_state(id) do
+    GenServer.call(via_tuple(id), :read_state)
+  end
+
   defp via_tuple(game_id) do
     {:via, Registry, {Spades.Game.Registry, game_id}}
   end
@@ -82,6 +86,11 @@ defmodule Spades.Game.GameManager do
   @impl true
   def init(game) do
     {:ok, game}
+  end
+
+  @impl true
+  def handle_call(:read_state, _from, game) do
+    {:reply, game, game}
   end
 
   @impl true
