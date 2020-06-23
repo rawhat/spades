@@ -49,7 +49,8 @@ defmodule Spades.MixProject do
       {:typed_struct, "~> 0.2"},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:mix_gleam, git: "https://github.com/Jwsonic/mix_gleam.git", tag: "0.4"},
-      {:gleam_stdlib, "~> 0.9.0"}
+      {:gleam_stdlib, "~> 0.11.0"},
+      {:typed_struct, "~> 0.2"}
     ]
   end
 

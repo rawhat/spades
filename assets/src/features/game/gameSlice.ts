@@ -349,3 +349,19 @@ export const selectEvents = createSelector(
   (state: RootState) => state.game,
   (gameState: GameState) => gameState.events ?? []
 );
+
+export const selectError = createSelector(
+  (state: RootState) => state.game,
+  (state) => state.error
+);
+
+export const selectPlayersById = createSelector(
+  getPlayerState,
+  getGameState,
+  (playerState, gameState) =>
+    Object.fromEntries(
+      Object.values(
+        (playerState || gameState)?.players ?? {}
+      ).map(({ id, name }) => [id, name])
+    )
+);

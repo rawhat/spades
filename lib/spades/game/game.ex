@@ -369,7 +369,7 @@ defmodule Spades.Game do
       %__MODULE__{game | state: :playing}
       |> add_event(:state_changed, %{old: :bidding, new: :playing})
     else
-      game
+      {:ok, game}
     end
     |> ok()
   end

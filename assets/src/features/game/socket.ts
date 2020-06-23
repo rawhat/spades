@@ -43,6 +43,7 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
       channel
         .join()
         .receive("ok", (msg: PlayerStatus) => {
+          console.log("received ok", msg);
           if (msg.team !== undefined) {
             next(setPlayerState(msg));
           } else {
