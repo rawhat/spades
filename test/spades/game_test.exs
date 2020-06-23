@@ -13,10 +13,10 @@ defmodule Spades.Game.GameTest do
 
     deck = [
       # First hand
-      Card.new(:diamond, 1),
-      Card.new(:diamond, 6),
-      Card.new(:diamond, 5),
-      Card.new(:diamond, 4),
+      Card.new(:diamonds, 1),
+      Card.new(:diamonds, 6),
+      Card.new(:diamonds, 5),
+      Card.new(:diamonds, 4),
 
       # Second hand
       Card.new(:hearts, 10),
@@ -77,13 +77,13 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.id, Enum.at(deck, 6))
       |> Game.play_card(p4.id, Enum.at(deck, 7))
 
-    assert g.scores == %{:north_south => -79, :east_west => -70}
+    assert g.scores == %{:north_south => -80, :east_west => -70}
     assert g.current_player == 0
     assert Enum.at(g.play_order, 0) == p2.id
   end
 
   test "can't play non-matching card", %{game: game, deck: deck, p1: p1, p2: p2} do
-    g =
+    {:error, g, _reason} =
       Game.play_card(game, p1.id, Enum.at(deck, 0))
       |> Game.play_card(p2.id, Enum.at(deck, 5))
 
@@ -92,17 +92,17 @@ defmodule Spades.Game.GameTest do
 
   test "spades not broken, can't lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
     deck = [
-      Card.new(:diamond, 2),
-      Card.new(:diamond, 3),
-      Card.new(:diamond, 4),
-      Card.new(:diamond, 5),
+      Card.new(:diamonds, 2),
+      Card.new(:diamonds, 3),
+      Card.new(:diamonds, 4),
+      Card.new(:diamonds, 5),
       Card.new(:spades, 2),
       Card.new(:hearts, 2),
       Card.new(:hearts, 3),
       Card.new(:hearts, 4)
     ]
 
-    game =
+    {:error, game, reason} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -115,14 +115,15 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p1.id, Card.new(:spades, 2))
 
     assert game.trick == []
+    assert String.contains?(reason, "2S")
   end
 
   test "only have spades, can lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
     deck = [
       Card.new(:spades, 2),
-      Card.new(:diamond, 3),
-      Card.new(:diamond, 4),
-      Card.new(:diamond, 5)
+      Card.new(:diamonds, 3),
+      Card.new(:diamonds, 4),
+      Card.new(:diamonds, 5)
     ]
 
     game =
@@ -142,18 +143,18 @@ defmodule Spades.Game.GameTest do
 
   test "once spades are broken, they can be lead", %{p1: p1, p2: p2, p3: p3, p4: p4} do
     deck = [
-      Card.new(:diamond, 2),
-      Card.new(:diamond, 3),
+      Card.new(:diamonds, 2),
+      Card.new(:diamonds, 3),
       Card.new(:hearts, 4),
       Card.new(:hearts, 5),
       #
-      Card.new(:diamond, 4),
-      Card.new(:diamond, 5),
+      Card.new(:diamonds, 4),
+      Card.new(:diamonds, 5),
       Card.new(:spades, 4),
       Card.new(:spades, 5),
       #
-      Card.new(:diamond, 6),
-      Card.new(:diamond, 7),
+      Card.new(:diamonds, 6),
+      Card.new(:diamonds, 7),
       Card.new(:spades, 6),
       Card.new(:spades, 7)
     ]
@@ -179,8 +180,8 @@ defmodule Spades.Game.GameTest do
 
   test "leading suit with all offsuit wins", %{p1: p1, p2: p2, p3: p3, p4: p4} do
     deck = [
-      Card.new(:diamond, 13),
-      Card.new(:diamond, 4),
+      Card.new(:diamonds, 13),
+      Card.new(:diamonds, 4),
       Card.new(:hearts, 10),
       Card.new(:clubs, 5),
       #

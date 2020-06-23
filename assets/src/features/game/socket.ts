@@ -6,15 +6,22 @@ import { Socket } from "phoenix";
 import {
   GameStatus,
   PlayerStatus,
+  clearError,
   joinGame,
+  makeCall,
+  observeGame,
+  playCard,
+  revealCards,
   setConnected,
+  setError,
   setGameState,
   setPlayerState,
   socketError,
-  revealCards,
-  makeCall,
-  playCard,
 } from "./gameSlice";
+
+interface ErrorPayload {
+  reason: string;
+}
 
 export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
   let socket = new Socket("/socket/game");
@@ -23,13 +30,14 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
   let channel: Channel;
 
   return (action: AnyAction) => {
-    if (joinGame.match(action)) {
+    if (observeGame.match(action)) {
       const params = action.payload;
       channel = socket.channel(`game:${params.id}`, { params });
 
       channel
         .join()
         .receive("ok", (msg: PlayerStatus) => {
+          console.log("received ok", msg)
           if (msg.team !== undefined) {
             next(setPlayerState(msg));
           } else {
@@ -48,14 +56,26 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
         }
       });
 
-      channel.push("join_game", { body: action.payload });
       next(setConnected());
+    } else if (joinGame.match(action)) {
+      channel
+        .push("join_game", { body: action.payload })
+        .receive("error", ({reason}: ErrorPayload) => next(setError(reason)));
     } else if (revealCards.match(action)) {
-      channel.push("reveal", { body: {} });
+      next(clearError());
+      channel
+        .push("reveal", { body: {} })
+        .receive("error", ({reason}: ErrorPayload) => next(setError(reason)));
     } else if (makeCall.match(action)) {
-      channel.push("make_call", { body: action.payload });
+      next(clearError());
+      channel
+        .push("make_call", { body: action.payload })
+        .receive("error", ({reason}: ErrorPayload) => next(setError(reason)));
     } else if (playCard.match(action)) {
-      channel.push("play_card", { body: action.payload });
+      next(clearError());
+      channel
+        .push("play_card", { body: action.payload })
+        .receive("error", ({reason}: ErrorPayload) => next(setError(reason)));
     }
 
     next(action);

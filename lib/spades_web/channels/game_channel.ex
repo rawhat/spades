@@ -23,45 +23,61 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_in("join_game", %{"body" => body}, socket) do
     game_id = socket.assigns[:game_id]
-    team = body["team"]
+    # convert "north_south" to :north_south
+    team = String.to_atom(body["team"])
     username = socket.assigns[:username]
     player_id = socket.assigns[:user_id]
-    player = GameManager.add_player(game_id, id: player_id, name: username, team: team)
-    state = GameManager.get_game_state_for_player(game_id, player.id)
 
-    push(socket, "game_state", state)
-    broadcast!(socket, "join_game", body)
+    case GameManager.add_player(game_id, id: player_id, name: username, team: team) do
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
 
-    SpadesWeb.Endpoint.broadcast("lobby:*", "update_game", %{
-      id: state.id,
-      name: state.name,
-      players: Enum.count(state.players)
-    })
+      _ ->
+        state = GameManager.get_game_state_for_player(game_id, player_id)
 
-    {:noreply, socket}
+        push(socket, "game_state", state)
+        broadcast!(socket, "join_game", body)
+
+        SpadesWeb.Endpoint.broadcast("lobby:*", "update_game", %{
+          id: state.id,
+          name: state.name,
+          players: Enum.count(state.players)
+        })
+
+        {:noreply, socket}
+    end
   end
 
   def handle_in("reveal", _params, socket) do
     game_id = socket.assigns[:game_id]
     player_id = socket.assigns[:user_id]
 
-    GameManager.reveal_cards(game_id, player_id)
+    case GameManager.reveal_cards(game_id, player_id) do
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
 
-    state = GameManager.get_game_state_for_player(game_id, player_id)
+      _ ->
+        state = GameManager.get_game_state_for_player(game_id, player_id)
 
-    push(socket, "game_state", state)
+        push(socket, "game_state", state)
 
-    {:noreply, socket}
+        {:noreply, socket}
+    end
   end
 
   def handle_in("make_call", %{"body" => call}, socket) do
     game_id = socket.assigns[:game_id]
     player_id = socket.assigns[:user_id]
 
-    GameManager.make_call(game_id, player_id, call)
-    broadcast!(socket, "make_call", %{})
+    case GameManager.make_call(game_id, player_id, call) do
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
 
-    {:noreply, socket}
+      _ ->
+        broadcast!(socket, "make_call", %{})
+
+        {:noreply, socket}
+    end
   end
 
   def handle_in("play_card", %{"body" => %{"suit" => suit, "value" => value}}, socket) do
@@ -72,11 +88,15 @@ defmodule SpadesWeb.GameChannel do
       String.to_existing_atom(suit)
       |> Card.new(value)
 
-    GameManager.play_card(game_id, player_id, card)
+    case GameManager.play_card(game_id, player_id, card) do
+      {:error, reason} ->
+        {:reply, {:error, %{reason: reason}}, socket}
 
-    broadcast!(socket, "play_card", %{})
+      _ ->
+        broadcast!(socket, "play_card", %{})
 
-    {:noreply, socket}
+        {:noreply, socket}
+    end
   end
 
   intercept ["join_game", "make_call", "play_card"]

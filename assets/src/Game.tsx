@@ -10,8 +10,8 @@ import {
   Team,
   joinGame,
   loadGameState,
+  observeGame,
   selectAvailableTeams,
-  selectConnected,
   selectGameLoaded,
   selectSelf,
 } from "./features/game/gameSlice";
@@ -27,7 +27,6 @@ function Game() {
   const { id } = useParams();
 
   const availableTeams = useSelector(selectAvailableTeams);
-  const connected = useSelector(selectConnected);
   const gameLoaded = useSelector(selectGameLoaded);
   const self = useSelector(selectSelf);
   const username = useSelector(selectUsername);
@@ -35,8 +34,9 @@ function Game() {
   useEffect(() => {
     if (id) {
       dispatch(loadGameState(id));
+      dispatch(observeGame({id, username}));
     }
-  }, [dispatch, id]);
+  }, [dispatch, id, username]);
 
   const onJoin = useCallback(
     (team: Team) => {
@@ -47,15 +47,9 @@ function Game() {
     [dispatch, id, username]
   );
 
-  useEffect(() => {
-    if (self && !connected && id && username) {
-      dispatch(joinGame({ id, team: self.team, username }));
-    }
-  }, [connected, dispatch, id, self, username]);
-
   return (
     <VerticalLayout flexGrow={1}>
-      {!connected && gameLoaded && availableTeams.length > 0 && (
+      {!self?.team && gameLoaded && availableTeams.length > 0 && (
         <JoinButton onJoin={onJoin} />
       )}
       <GameView />

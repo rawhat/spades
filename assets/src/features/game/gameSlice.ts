@@ -8,9 +8,10 @@ import { RootState } from "../../app/store";
 import { selectUsername } from "../user/userSlice";
 
 interface GameState {
+  connected: boolean;
+  error?: string;
   game?: GameStatus;
   playerState?: PlayerStatus;
-  connected: boolean;
 }
 
 export enum Team {
@@ -56,13 +57,14 @@ export interface Card {
 }
 
 interface PlayedCard {
-  name: string;
+  id: string;
   card: Card;
 }
 
 export interface PublicPlayer {
   call: number;
   cards: number;
+  id: string;
   name: string;
   revealed: boolean;
   team: Team;
@@ -83,6 +85,12 @@ export const gameSlice = createSlice({
     setDisconnected: (state) => {
       state.connected = false;
     },
+    setError: (state, action: PayloadAction<string>) => {
+      state.error = action.payload;
+    },
+    clearError: (state) => {
+      delete state.error;
+    },
     setGameState: (state, action: PayloadAction<GameStatus>) => {
       state.game = action.payload;
     },
@@ -93,8 +101,10 @@ export const gameSlice = createSlice({
 });
 
 export const {
+  clearError,
   setConnected,
   setDisconnected,
+  setError,
   setGameState,
 } = gameSlice.actions;
 
@@ -111,6 +121,7 @@ interface JoinGamePayload {
   username: string
 };
 export const joinGame = createAction<JoinGamePayload>("game/join");
+export const observeGame = createAction<{id: string, username?: string}>("game/observe");
 
 export const revealCards = createAction("game/reveal");
 export const makeCall = createAction<number>("game/makeCall");
@@ -139,7 +150,7 @@ export const selectAvailableTeams = createSelector(
   getGameState,
   getPlayerState,
   (gameState, playerState) => {
-    const players = playerState?.players || gameState?.players || [];
+    const players = (playerState || gameState)?.players ?? [];
     const invalidTeams = Object.entries(groupBy(players, "team"))
       .map(([key, value]) => ({ count: value.length, team: key }))
       .filter(({ count }) => count === 2)
@@ -203,6 +214,23 @@ export const selectConnected = createSelector(
 
 export const selectSelf = createSelector(
   getGameState,
+  getPlayerState,
   selectUsername,
-  (gameState, username) => gameState?.players.find((p) => p.name === username)
+  (gameState, playerState, username) =>
+    (playerState || gameState)?.players.find((p) => p.name === username)
 );
+
+export const selectError = createSelector(
+  (state: RootState) => state.game,
+  (state) => state.error
+)
+
+export const selectPlayersById = createSelector(
+  getPlayerState,
+  getGameState,
+  (playerState, gameState) =>
+    Object.fromEntries(
+      Object.values((playerState || gameState)?.players ?? {})
+        .map(({id, name}) => [id, name])
+    )
+)

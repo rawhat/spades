@@ -6,6 +6,7 @@ import {
   selectCurrentPlayer,
   selectGameState,
   selectPlayerCardsRevealed,
+  selectPlayersById,
   selectTrick,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
@@ -21,6 +22,7 @@ function PlayArea() {
   const cardsRevealed = useSelector(selectPlayerCardsRevealed);
   const gameState = useSelector(selectGameState);
   const trick = useSelector(selectTrick);
+  const playersById = useSelector(selectPlayersById);
 
   const isBidding =
     gameState === State.Bidding && currentPlayer?.name === username;
@@ -33,9 +35,9 @@ function PlayArea() {
         {gameState === State.Playing && (
           <div>
             <div>Current trick:</div>
-            {trick.map(({ name, card }) => (
+            {trick.map(({ id, card }) => (
               <div key={JSON.stringify(card)}>
-                {name}: {cardValue(card.value)} {card.suit}
+                {playersById[id] ?? id}: {cardValue(card.value)} {card.suit}
               </div>
             ))}
           </div>

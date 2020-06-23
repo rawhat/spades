@@ -96,7 +96,10 @@ defmodule Spades.Game.GameManager do
   @impl true
   def handle_call({:add_player, player_id, name, team}, _from, game) do
     player = Player.new(player_id, name, team)
-    {:reply, player, Game.add_player(game, player)}
+
+    game
+    |> Game.add_player(player)
+    |> handle_error()
   end
 
   @impl true
@@ -111,16 +114,25 @@ defmodule Spades.Game.GameManager do
 
   @impl true
   def handle_call({:reveal_cards, player_id}, _from, game) do
-    {:reply, :ok, Game.reveal_cards(game, player_id)}
+    game
+    |> Game.reveal_cards(player_id)
+    |> handle_error()
   end
 
   @impl true
   def handle_call({:make_call, player_id, value}, _from, game) do
-    {:reply, :ok, Game.make_call(game, player_id, value)}
+    game
+    |> Game.make_call(player_id, value)
+    |> handle_error()
   end
 
   @impl true
   def handle_call({:play_card, player_id, card}, _from, game) do
-    {:reply, :ok, Game.play_card(game, player_id, card)}
+    game
+    |> Game.play_card(player_id, card)
+    |> handle_error()
   end
+
+  defp handle_error({:error, game, reason}), do: {:reply, {:error, reason}, game}
+  defp handle_error(game), do: {:reply, :ok, game}
 end

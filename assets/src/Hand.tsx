@@ -20,7 +20,7 @@ export function PlayerHand({ cards }: PlayerHandProps) {
     [dispatch]
   );
   return (
-    <HorizontalLayout justifyContent="space-between" alignItems="center">
+    <HorizontalLayout justifyContent="center" alignItems="center">
       {cards.map((card) => (
         <PlayerCard
           key={`${card.value}-${card.suit}`}
@@ -40,7 +40,7 @@ interface HiddenHandProps {
 export function HiddenHand({ cards, position }: HiddenHandProps) {
   const Component = position === "top" ? HorizontalLayout : VerticalLayout;
   return (
-    <Component justifyContent="space-between" alignItems="stretch">
+    <Component justifyContent="center" alignItems="stretch">
       {Array.from(Array(cards)).map((_, i) => (
         <HiddenCard key={`${position}-${i}`} position={position} />
       ))}
@@ -106,7 +106,12 @@ function getUnicodeAndColorForCard({ value, suit }: Card): [string, string] {
   }
 
   const offset = suitToOffset(suit);
-  const code = getCardCode(offset + value - 1);
+
+  // The unicode character set contains the "Knight" card, between Jack and
+  // Queen.  So we need to add an additional index here to skip over it.
+  let v = value === 12 || value === 13 ? value + 1 : value;
+
+  const code = getCardCode(offset + v - 1);
   return [code, color];
 }
 

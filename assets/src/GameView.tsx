@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import {
   Card,
   selectCurrentPlayer,
+  selectError,
   selectPlayers,
   selectPlayerCards,
   selectPlayerCardsRevealed,
@@ -26,6 +27,7 @@ function GameView() {
   const playerCards = useSelector(selectPlayerCards);
   const playerCardsRevealed = useSelector(selectPlayerCardsRevealed);
   const currentPlayer = useSelector(selectCurrentPlayer);
+  const error = useSelector(selectError);
 
   const [self, leftPlayer, teammate, rightPlayer] = useMemo(() => {
     const after = takeWhile(players, (p) => p.name !== username);
@@ -85,15 +87,24 @@ function GameView() {
         )}
       </Column>
       <Column width={2}>
-        <Panel>
-          <PanelHeader>
-            <SubHeader>Chat</SubHeader>
-          </PanelHeader>
-          <PanelBody>
-            <div>This is the chat text.</div>
-          </PanelBody>
-          <PanelFooter>This will be an input.</PanelFooter>
-        </Panel>
+        <VerticalLayout>
+          <Panel>
+            <PanelHeader>
+              <SubHeader>Chat</SubHeader>
+            </PanelHeader>
+            <PanelBody>
+              <div>This is the chat text.</div>
+            </PanelBody>
+            <PanelFooter>This will be an input.</PanelFooter>
+          </Panel>
+          {error && (
+            <Panel>
+              <PanelBody>
+                <span><strong>Error:  </strong>{error}</span>
+              </PanelBody>
+            </Panel>
+          )}
+        </VerticalLayout>
       </Column>
     </HorizontalLayout>
   );
@@ -124,10 +135,10 @@ const Self = ({ call, cards, current, name, revealed, tricks }: SelfProps) => (
           <>{name}</>
           {current && <Marker />}
         </HorizontalLayout>
-        {call !== null && (
-          <span>
-            Call: {call} {tricks !== undefined && <span>({tricks})</span>}
-          </span>
+        {call !== null && tricks !== undefined && (
+          <div style={{flexShrink: 0}}>
+            {`${tricks} of ${call}`}
+          </div>
         )}
       </HorizontalLayout>
       {revealed ? (
@@ -150,17 +161,20 @@ const Player = ({
   const Component = position === "top" ? VerticalLayout : HorizontalLayout;
   const NameComponent = position === "top" ? HorizontalLayout : VerticalLayout;
   return (
-    <Component>
+    <Component
+      height={position !== "top" ? "100%" : undefined}
+      width={position === "top" ? "100%" : undefined}
+    >
       <HiddenHand cards={cards} position={position} />
       <NameComponent>
         <HorizontalLayout alignItems="center">
           <>{name}</>
           {current && <Marker />}
         </HorizontalLayout>
-        {call !== null && (
-          <span>
-            Call: {call} {tricks !== undefined && <span>({tricks})</span>}
-          </span>
+        {call !== null && tricks !== undefined && (
+          <div style={{flexShrink: 0}}>
+            {`${tricks} of ${call}`}
+          </div>
         )}
       </NameComponent>
     </Component>
