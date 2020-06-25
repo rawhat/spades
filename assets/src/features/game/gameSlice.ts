@@ -1,4 +1,6 @@
+import dropWhile from "lodash/dropWhile";
 import groupBy from "lodash/groupBy";
+import takeWhile from "lodash/takeWhile";
 import { Dispatch } from "redux";
 import { createSelector } from "reselect";
 import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
@@ -56,7 +58,7 @@ export interface Card {
   value: number;
 }
 
-interface PlayedCard {
+export interface PlayedCard {
   id: string;
   card: Card;
 }
@@ -233,4 +235,21 @@ export const selectPlayersById = createSelector(
       Object.values((playerState || gameState)?.players ?? {})
         .map(({id, name}) => [id, name])
     )
+)
+
+export const selectOrderedPlayers = createSelector(
+  selectPlayers,
+  selectUsername,
+  (players, username) => {
+    const after = takeWhile(players, (p) => p.name !== username);
+    return dropWhile(players, (p) => p.name !== username).concat(after);
+  }
+)
+
+type TrickByPlayerId = { [playerId: string]: PlayedCard }
+
+export const selectTrickByPlayerId = createSelector(
+  selectTrick,
+  (trick: PlayedCard[]): TrickByPlayerId =>
+    trick.reduce((acc, obj) => ({...acc, [obj.id]: obj}), {})
 )

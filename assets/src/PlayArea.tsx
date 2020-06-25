@@ -5,42 +5,60 @@ import {
   State,
   selectCurrentPlayer,
   selectGameState,
+  selectOrderedPlayers,
   selectPlayerCardsRevealed,
-  selectPlayersById,
-  selectTrick,
+  selectTrickByPlayerId,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
 import CallBox from "./CallBox";
 import ScoreBox from "./ScoreBox";
-import { VerticalLayout } from "./Layout";
-import { cardValue } from "./Hand";
+import { HorizontalLayout, VerticalLayout } from "./Layout";
+import { EmptyCard, PlayingCard } from "./Card";
 
 function PlayArea() {
   const username = useSelector(selectUsername);
   const currentPlayer = useSelector(selectCurrentPlayer);
   const cardsRevealed = useSelector(selectPlayerCardsRevealed);
   const gameState = useSelector(selectGameState);
-  const trick = useSelector(selectTrick);
-  const playersById = useSelector(selectPlayersById);
+  const trickById = useSelector(selectTrickByPlayerId);
+
+  const [self, leftPlayer, topPlayer, rightPlayer] = useSelector(selectOrderedPlayers);
+
+  const bottomCard = self && trickById[self.id];
+  const leftCard = leftPlayer && trickById[leftPlayer.id];
+  const topCard = topPlayer && trickById[topPlayer.id];
+  const rightCard = rightPlayer && trickById[rightPlayer.id];
 
   const isBidding =
     gameState === State.Bidding && currentPlayer?.name === username;
 
   return (
     <VerticalLayout flexGrow={1} height="100%" position="relative">
-      <VerticalLayout flexGrow={1} alignItems="center" justifyContent="center">
+      <VerticalLayout flexGrow={1} alignItems="center" justifyContent="center" width="auto">
         {gameState === State.Waiting && <div>Waiting for players...</div>}
         {gameState === State.Bidding && <div>Make your bids!</div>}
         {gameState === State.Playing && (
-          <div>
-            <div>Current trick:</div>
-            {trick.map(({ id, card }) => (
-              <div key={JSON.stringify(card)}>
-                {playersById[id] ?? id}: {cardValue(card.value)} {card.suit}
-              </div>
-            ))}
-          </div>
+          <HorizontalLayout alignItems="center">
+            {leftCard && (
+              <PlayingCard card={leftCard.card} />
+            )}
+            <VerticalLayout height="100%">
+              {topCard ? (
+                <PlayingCard card={topCard.card} />
+              ) : (
+                <EmptyCard />
+              )}
+              {bottomCard ? (
+                <PlayingCard card={bottomCard.card} />
+              ) : (
+                <EmptyCard />
+              )}
+            </VerticalLayout>
+            {rightCard && (
+              <PlayingCard card={rightCard.card} />
+            )}
+          </HorizontalLayout>
         )}
       </VerticalLayout>
       <ScoreBox />

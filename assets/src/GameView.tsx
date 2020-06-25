@@ -1,14 +1,11 @@
 import * as React from "react";
-import dropWhile from "lodash/dropWhile";
-import takeWhile from "lodash/takeWhile";
-import { useMemo } from "react";
 import { useSelector } from "react-redux";
 
 import {
   Card,
   selectCurrentPlayer,
   selectError,
-  selectPlayers,
+  selectOrderedPlayers,
   selectPlayerCards,
   selectPlayerCardsRevealed,
 } from "./features/game/gameSlice";
@@ -23,16 +20,11 @@ import { Column, HorizontalLayout, SubHeader, VerticalLayout } from "./Layout";
 
 function GameView() {
   const username = useSelector(selectUsername);
-  const players = useSelector(selectPlayers);
   const playerCards = useSelector(selectPlayerCards);
   const playerCardsRevealed = useSelector(selectPlayerCardsRevealed);
   const currentPlayer = useSelector(selectCurrentPlayer);
   const error = useSelector(selectError);
-
-  const [self, leftPlayer, teammate, rightPlayer] = useMemo(() => {
-    const after = takeWhile(players, (p) => p.name !== username);
-    return dropWhile(players, (p) => p.name !== username).concat(after);
-  }, [username, players]);
+  const [self, leftPlayer, teammate, rightPlayer] = useSelector(selectOrderedPlayers);
 
   return (
     <HorizontalLayout flexGrow={1}>
