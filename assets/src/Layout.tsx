@@ -2,57 +2,12 @@ import * as React from "react";
 import { useMemo } from "react";
 import classnames from "classnames";
 
-interface ContainerProps {
-  alignItems?: Align;
-  color?: React.CSSProperties["color"];
-  display?: "block" | "flex";
-  flexDirection?: "row" | "column";
-  flexGrow?: 0 | 1;
-  height?: string | number;
-  justifyContent?: Align;
-  position?: "absolute" | "fixed" | "relative";
-  width?: string | number;
-}
+interface ContainerProps extends React.CSSProperties {}
 
-export const Container: React.FC<ContainerProps> = ({
-  alignItems,
-  children,
-  color,
-  display,
-  flexDirection,
-  flexGrow,
-  height,
-  justifyContent,
-  position,
-  width,
-}) => {
-  const style = useMemo(
-    () => ({
-      alignItems,
-      backgroundColor: color,
-      display,
-      flexDirection,
-      flexGrow,
-      height,
-      justifyContent,
-      position,
-      width,
-    }),
-    [
-      alignItems,
-      color,
-      display,
-      flexDirection,
-      flexGrow,
-      height,
-      justifyContent,
-      position,
-      width,
-    ]
-  );
+export const Container: React.FC<ContainerProps> = (props) => {
   return (
-    <div className="container" style={style}>
-      {children}
+    <div className="container" style={props}>
+      {props.children}
     </div>
   );
 };

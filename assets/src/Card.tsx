@@ -79,7 +79,7 @@ export function PlayingCard({ card, onClick, orientation = "bottom" }: PlayerCar
       color,
       fontSize: "8em",
     };
-  }, [color]);
+  }, [color, onClick]);
   return (
     <div onClick={onClick} style={style}>
       <span dangerouslySetInnerHTML={{ __html: code }} />

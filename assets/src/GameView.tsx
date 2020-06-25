@@ -116,6 +116,8 @@ interface SelfProps extends PlayerProps<Card[]> {
 }
 
 const selfStyle = {
+  border: "1px solid lightgray",
+  borderRadius: 2,
   paddingBottom: 10,
 };
 
@@ -154,11 +156,13 @@ const Player = ({
   const NameComponent = position === "top" ? HorizontalLayout : VerticalLayout;
   return (
     <Component
-      height={position !== "top" ? "100%" : undefined}
+      border="1px solid lightgray"
+      borderRadius={2}
+      height={position !== "top" ? "85%" : undefined}
       width={position === "top" ? "100%" : undefined}
     >
       <HiddenHand cards={cards} position={position} />
-      <NameComponent>
+      <NameComponent justifyContent="space-between">
         <HorizontalLayout alignItems="center">
           <>{name}</>
           {current && <Marker />}
