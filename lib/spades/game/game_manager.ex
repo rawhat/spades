@@ -133,6 +133,8 @@ defmodule Spades.Game.GameManager do
     |> handle_error()
   end
 
+  @spec handle_error(Game.return()) ::
+          {:reply, {:error, String.t()}, Game.t()} | {:reply, :ok, Game.t()}
   defp handle_error({:error, game, reason}), do: {:reply, {:error, reason}, game}
-  defp handle_error(game), do: {:reply, :ok, game}
+  defp handle_error(%Game{} = game), do: {:reply, :ok, game}
 end

@@ -57,19 +57,19 @@ defmodule Spades.Game.Player do
     end
   end
 
-  @spec receive_cards(t(), list(Card.card())) :: t()
+  @spec receive_cards(t(), list(Card.t())) :: t()
   def receive_cards(%__MODULE__{} = player, cards) when is_list(cards) do
-    %{player | hand: Hand.new(cards)}
+    %__MODULE__{player | hand: Hand.new(cards)}
   end
 
   @spec reveal(t()) :: t()
   def reveal(%__MODULE__{hand: hand} = player) do
-    %{player | hand: Hand.reveal(hand)}
+    %__MODULE__{player | hand: Hand.reveal(hand)}
   end
 
   @spec make_call(t(), Hand.call()) :: t()
   def make_call(%__MODULE__{hand: hand} = player, call) do
-    %{player | hand: Hand.call(hand, call)}
+    %__MODULE__{player | hand: Hand.call(hand, call)}
   end
 
   @spec take(t()) :: t()
@@ -98,7 +98,7 @@ defmodule Spades.Game.Player do
 
   def sorted_hand(%__MODULE__{hand: nil}), do: []
 
-  @spec sorted_hand(t()) :: list(Card.card())
+  @spec sorted_hand(t()) :: list(Card.t())
   def sorted_hand(%__MODULE__{hand: hand}) do
     if hand.revealed do
       Enum.sort(hand.cards, &Card.compare/2)
@@ -119,7 +119,7 @@ defmodule Spades.Game.Player do
 
   def can_play?(_player, _card, nil, _broken), do: true
 
-  @spec can_play?(t(), Card.card(), Game.trick() | nil, boolean()) :: boolean()
+  @spec can_play?(t(), Card.t(), Game.trick() | nil, boolean()) :: boolean()
   def can_play?(%__MODULE__{hand: hand}, card, lead, broken) do
     Enum.member?(hand.cards, card) &&
       (card.suit == lead.suit ||
@@ -127,8 +127,8 @@ defmodule Spades.Game.Player do
          (card.suit == :spades && broken))
   end
 
-  @spec play_card(t(), Card.card()) :: t()
+  @spec play_card(t(), Card.t()) :: t()
   def play_card(%__MODULE__{hand: hand} = player, card) do
-    %{player | hand: Hand.play(hand, card)}
+    %__MODULE__{player | hand: Hand.play(hand, card)}
   end
 end

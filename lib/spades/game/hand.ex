@@ -25,22 +25,22 @@ defmodule Spades.Game.Hand do
     if revealed && value == -1 do
       hand
     else
-      %{hand | call: value, revealed: true, tricks: 0}
+      %__MODULE__{hand | call: value, revealed: true, tricks: 0}
     end
   end
 
   @spec take(t()) :: t()
-  def take(%__MODULE__{tricks: 0} = hand), do: %{hand | tricks: 1}
-  def take(%__MODULE__{tricks: tricks} = hand), do: %{hand | tricks: tricks + 1}
+  def take(%__MODULE__{tricks: 0} = hand), do: %__MODULE__{hand | tricks: 1}
+  def take(%__MODULE__{tricks: tricks} = hand), do: %__MODULE__{hand | tricks: tricks + 1}
 
-  @spec play(t(), Card.card()) :: t()
+  @spec play(t(), Card.t()) :: t()
   def play(%__MODULE__{cards: cards} = hand, %Card{} = card) do
-    %{hand | cards: Enum.filter(cards, &(&1 != card))}
+    %__MODULE__{hand | cards: Enum.filter(cards, &(&1 != card))}
   end
 
   @spec reveal(t()) :: t()
   def reveal(%__MODULE__{} = hand) do
-    %{hand | revealed: true}
+    %__MODULE__{hand | revealed: true}
   end
 
   @spec is_nil?(t()) :: boolean()
