@@ -7,9 +7,11 @@ export interface GameResponse {
   id: string;
   name: string;
   players: number;
-};
+}
 
-interface GameMap {[id: string]: GameResponse}
+interface GameMap {
+  [id: string]: GameResponse;
+}
 
 type LobbySocket = [GameResponse[], string?];
 
@@ -20,37 +22,39 @@ export function useLobbySocket(): LobbySocket {
   useEffect(() => {
     const socket = new Socket("/socket/lobby");
     socket.connect();
-    const channel = socket.channel('lobby:*');
+    const channel = socket.channel("lobby:*");
 
     const setGameList = (games: GameResponse[]) => {
-      setGames(games.reduce((acc, game) => {
-        acc[game.id] = game;
-        return acc;
-      }, {} as GameMap))
-    }
+      setGames(
+        games.reduce((acc, game) => {
+          acc[game.id] = game;
+          return acc;
+        }, {} as GameMap)
+      );
+    };
 
     channel
       .join()
-      .receive("ok", (data: {games: GameResponse[]}) => {
+      .receive("ok", (data: { games: GameResponse[] }) => {
         setGameList(data.games);
       })
       .receive("err", (err: any) => {
         setError(`Error connecting to lobby socket: ${JSON.stringify(err)}`);
-      })
+      });
 
-    channel.on("list_games", setGameList)
+    channel.on("list_games", setGameList);
     channel.on("update_game", (game: GameResponse) => {
-      setGames(existing => ({...existing, [game.id]: game}))
-    })
+      setGames((existing) => ({ ...existing, [game.id]: game }));
+    });
 
     return () => {
       channel.leave();
-    }
-  }, [])
+    };
+  }, []);
 
   const gamesList = useMemo(() => {
     return Object.values(games);
-  }, [games])
+  }, [games]);
 
   return [gamesList, error];
 }

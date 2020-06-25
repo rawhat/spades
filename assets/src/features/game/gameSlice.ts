@@ -120,10 +120,12 @@ export const socketError = createAction<string>("game/socketError");
 interface JoinGamePayload {
   id: string;
   team: Team;
-  username: string
-};
+  username: string;
+}
 export const joinGame = createAction<JoinGamePayload>("game/join");
-export const observeGame = createAction<{id: string, username?: string}>("game/observe");
+export const observeGame = createAction<{ id: string; username?: string }>(
+  "game/observe"
+);
 
 export const revealCards = createAction("game/reveal");
 export const makeCall = createAction<number>("game/makeCall");
@@ -225,17 +227,18 @@ export const selectSelf = createSelector(
 export const selectError = createSelector(
   (state: RootState) => state.game,
   (state) => state.error
-)
+);
 
 export const selectPlayersById = createSelector(
   getPlayerState,
   getGameState,
   (playerState, gameState) =>
     Object.fromEntries(
-      Object.values((playerState || gameState)?.players ?? {})
-        .map(({id, name}) => [id, name])
+      Object.values(
+        (playerState || gameState)?.players ?? {}
+      ).map(({ id, name }) => [id, name])
     )
-)
+);
 
 export const selectOrderedPlayers = createSelector(
   selectPlayers,
@@ -244,12 +247,12 @@ export const selectOrderedPlayers = createSelector(
     const after = takeWhile(players, (p) => p.name !== username);
     return dropWhile(players, (p) => p.name !== username).concat(after);
   }
-)
+);
 
-type TrickByPlayerId = { [playerId: string]: PlayedCard }
+type TrickByPlayerId = { [playerId: string]: PlayedCard };
 
 export const selectTrickByPlayerId = createSelector(
   selectTrick,
   (trick: PlayedCard[]): TrickByPlayerId =>
-    trick.reduce((acc, obj) => ({...acc, [obj.id]: obj}), {})
-)
+    trick.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {})
+);
