@@ -1,10 +1,16 @@
 import * as React from "react";
+import { useMemo } from "react";
 import get from "lodash/get";
 import { useSelector } from "react-redux";
 
-import { Team, selectScores } from "./features/game/gameSlice";
+import { Team, selectScores, selectSelf } from "./features/game/gameSlice";
 
-import { HorizontalLayout, SubHeader, VerticalLayout } from "./Layout";
+import {
+  HorizontalLayout,
+  PaddedHorizontalLayout,
+  SubHeader,
+  VerticalLayout
+} from "./Layout";
 
 const scoreBoxStyle: React.CSSProperties = {
   position: "absolute",
@@ -13,29 +19,43 @@ const scoreBoxStyle: React.CSSProperties = {
   height: "20%",
 };
 
-const padding = {
-  paddingRight: 5,
-};
-
 function ScoreBox() {
   const scores = useSelector(selectScores);
-  const team_one = get(scores, Team.NorthSouth);
-  const team_two = get(scores, Team.EastWest);
+  const self = useSelector(selectSelf);
+
+  const teamOne = get(scores, Team.NorthSouth);
+  const teamTwo = get(scores, Team.EastWest);
+
+  const hasTeam = self && self.team;
+  let teamOneIndicator;
+  let teamTwoIndicator;
+  if (hasTeam) {
+    teamOneIndicator = <Indicator enabled={false} />;
+    teamTwoIndicator = <Indicator enabled={false} />;
+    if (self?.team === Team.NorthSouth) {
+      teamOneIndicator = <Indicator />
+    } else if (self?.team === Team.EastWest) {
+      teamTwoIndicator = <Indicator />
+    }
+  }
+
   return (
     <div style={scoreBoxStyle}>
       <VerticalLayout>
         <SubHeader>Scores</SubHeader>
-        <HorizontalLayout justifyContent="space-between">
-          <span style={padding}>
+        <HorizontalLayout>
+          {teamOneIndicator}
+          <PaddedHorizontalLayout justifyContent="space-between" padding={5}>
             <b>North/South</b>
-          </span>
-          <span>{team_one}</span>
+            <span>{teamOne}</span>
+          </PaddedHorizontalLayout>
         </HorizontalLayout>
-        <HorizontalLayout justifyContent="space-between">
-          <span style={padding}>
+        <HorizontalLayout>
+          {teamTwoIndicator}
+          <PaddedHorizontalLayout justifyContent="space-between" padding={5}>
             <b>East/West</b>
-          </span>
-          <span>{team_two}</span>
+            <span>{teamTwo}</span>
+          </PaddedHorizontalLayout>
         </HorizontalLayout>
       </VerticalLayout>
     </div>
@@ -43,3 +63,17 @@ function ScoreBox() {
 }
 
 export default ScoreBox;
+
+const circle = "&#11044;";
+
+function Indicator({enabled = true}) {
+  const circleStyle = useMemo(() => ({
+    color: enabled ? 'lightblue' : 'white',
+  }), [enabled])
+  return (
+    <span
+      dangerouslySetInnerHTML={{__html: circle}}
+      style={circleStyle}
+    />
+  )
+}
