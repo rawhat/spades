@@ -17,7 +17,9 @@ function PlayArea() {
   const gameState = useSelector(selectGameState);
   const trickById = useSelector(selectTrickByPlayerId);
 
-  const [self, leftPlayer, topPlayer, rightPlayer] = useSelector(selectOrderedPlayers);
+  const [self, leftPlayer, topPlayer, rightPlayer] = useSelector(
+    selectOrderedPlayers
+  );
 
   const bottomCard = self && trickById[self.id];
   const leftCard = leftPlayer && trickById[leftPlayer.id];
@@ -26,29 +28,26 @@ function PlayArea() {
 
   return (
     <VerticalLayout flexGrow={1} height="100%" position="relative">
-      <VerticalLayout flexGrow={1} alignItems="center" justifyContent="center" width="auto">
+      <VerticalLayout
+        flexGrow={1}
+        alignItems="center"
+        justifyContent="center"
+        width="auto"
+      >
         {gameState === State.Waiting && <div>Waiting for players...</div>}
         {gameState === State.Bidding && <div>Make your bids!</div>}
         {gameState === State.Playing && (
           <HorizontalLayout alignItems="center">
-            {leftCard && (
-              <PlayingCard card={leftCard.card} />
-            )}
+            {leftCard && <PlayingCard card={leftCard.card} />}
             <VerticalLayout height="100%">
-              {topCard ? (
-                <PlayingCard card={topCard.card} />
-              ) : (
-                <EmptyCard />
-              )}
+              {topCard ? <PlayingCard card={topCard.card} /> : <EmptyCard />}
               {bottomCard ? (
                 <PlayingCard card={bottomCard.card} />
               ) : (
                 <EmptyCard />
               )}
             </VerticalLayout>
-            {rightCard && (
-              <PlayingCard card={rightCard.card} />
-            )}
+            {rightCard && <PlayingCard card={rightCard.card} />}
           </HorizontalLayout>
         )}
       </VerticalLayout>

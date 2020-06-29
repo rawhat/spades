@@ -5,7 +5,7 @@ import { useMemo } from "react";
 
 import { Card, playCard } from "./features/game/gameSlice";
 
-import { PlayingCard } from "./Card"
+import { PlayingCard } from "./Card";
 import { HorizontalLayout, VerticalLayout } from "./Layout";
 
 interface PlayerHandProps {

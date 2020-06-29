@@ -9,7 +9,7 @@ import {
   HorizontalLayout,
   PaddedHorizontalLayout,
   SubHeader,
-  VerticalLayout
+  VerticalLayout,
 } from "./Layout";
 
 const scoreBoxStyle: React.CSSProperties = {
@@ -33,9 +33,9 @@ function ScoreBox() {
     teamOneIndicator = <Indicator enabled={false} />;
     teamTwoIndicator = <Indicator enabled={false} />;
     if (self?.team === Team.NorthSouth) {
-      teamOneIndicator = <Indicator />
+      teamOneIndicator = <Indicator />;
     } else if (self?.team === Team.EastWest) {
-      teamTwoIndicator = <Indicator />
+      teamTwoIndicator = <Indicator />;
     }
   }
 
@@ -66,14 +66,14 @@ export default ScoreBox;
 
 const circle = "&#11044;";
 
-function Indicator({enabled = true}) {
-  const circleStyle = useMemo(() => ({
-    color: enabled ? 'lightblue' : 'white',
-  }), [enabled])
+function Indicator({ enabled = true }) {
+  const circleStyle = useMemo(
+    () => ({
+      color: enabled ? "lightblue" : "white",
+    }),
+    [enabled]
+  );
   return (
-    <span
-      dangerouslySetInnerHTML={{__html: circle}}
-      style={circleStyle}
-    />
-  )
+    <span dangerouslySetInnerHTML={{ __html: circle }} style={circleStyle} />
+  );
 }

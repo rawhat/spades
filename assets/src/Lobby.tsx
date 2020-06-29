@@ -16,7 +16,6 @@ import NewGame from "./NewGame";
 import { Toast } from "./Toast";
 
 function Lobby() {
-
   const [games, error] = useLobbySocket();
 
   return (
@@ -35,9 +34,7 @@ function Lobby() {
       {error && (
         <Columns>
           <Column width={6} margin="auto">
-            <Toast color="error">
-              {error}
-            </Toast>
+            <Toast color="error">{error}</Toast>
           </Column>
         </Columns>
       )}

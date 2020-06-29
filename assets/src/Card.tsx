@@ -1,4 +1,4 @@
-import * as React from 'react';
+import * as React from "react";
 import { useMemo } from "react";
 
 import { Card, Suit } from "./features/game/gameSlice";
@@ -71,11 +71,7 @@ interface PlayerCardProps {
   size?: number;
 }
 
-export function PlayingCard({
-  card,
-  onClick,
-  size = 8
-}: PlayerCardProps) {
+export function PlayingCard({ card, onClick, size = 8 }: PlayerCardProps) {
   const [code, color] = getUnicodeAndColorForCard(card);
   const style = useMemo(() => {
     return {
@@ -92,13 +88,13 @@ export function PlayingCard({
 }
 
 const emptyStyle = {
-  fontSize: "8em"
-}
+  fontSize: "8em",
+};
 
 export function EmptyCard() {
   return (
     <div style={emptyStyle}>
       <span dangerouslySetInnerHTML={{ __html: "&nbsp;" }} />
     </div>
-  )
+  );
 }

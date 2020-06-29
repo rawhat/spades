@@ -9,7 +9,7 @@ import {
   selectOrderedPlayers,
   selectPlayerCards,
   selectPlayerCardsRevealed,
-  selectPlayersById
+  selectPlayersById,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
@@ -30,7 +30,9 @@ function GameView() {
   const lastTrick = useSelector(selectLastTrick);
   const playersById = useSelector(selectPlayersById);
   const error = useSelector(selectError);
-  const [self, leftPlayer, teammate, rightPlayer] = useSelector(selectOrderedPlayers);
+  const [self, leftPlayer, teammate, rightPlayer] = useSelector(
+    selectOrderedPlayers
+  );
 
   return (
     <HorizontalLayout flexGrow={1}>
@@ -98,7 +100,10 @@ function GameView() {
           {error && (
             <Panel>
               <PanelBody>
-                <span><strong>Error:  </strong>{error}</span>
+                <span>
+                  <strong>Error: </strong>
+                  {error}
+                </span>
               </PanelBody>
             </Panel>
           )}
@@ -106,13 +111,10 @@ function GameView() {
             <VerticalLayout>
               <Bold>Last trick:</Bold>
               <HorizontalLayout>
-                {lastTrick.map(({id, card}) => (
+                {lastTrick.map(({ id, card }) => (
                   <VerticalLayout>
                     <div>{playersById[id] || id}</div>
-                    <PlayingCard
-                      card={card}
-                      size={5}
-                    />
+                    <PlayingCard card={card} size={5} />
                   </VerticalLayout>
                 ))}
               </HorizontalLayout>
@@ -152,9 +154,7 @@ const Self = ({ call, cards, current, name, revealed, tricks }: SelfProps) => (
           {current && <Marker />}
         </HorizontalLayout>
         {call !== null && tricks !== undefined && (
-          <div style={{flexShrink: 0}}>
-            {`${tricks} of ${call}`}
-          </div>
+          <div style={{ flexShrink: 0 }}>{`${tricks} of ${call}`}</div>
         )}
       </HorizontalLayout>
       {revealed ? (
@@ -190,9 +190,7 @@ const Player = ({
           {current && <Marker />}
         </HorizontalLayout>
         {call !== null && tricks !== undefined && (
-          <div style={{flexShrink: 0}}>
-            {`${tricks} of ${call}`}
-          </div>
+          <div style={{ flexShrink: 0 }}>{`${tricks} of ${call}`}</div>
         )}
       </NameComponent>
     </Component>

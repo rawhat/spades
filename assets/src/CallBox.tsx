@@ -41,18 +41,14 @@ function CallBox() {
 
   let revealButton = (
     <Call onClick={() => dispatch(revealCards())}>Reveal</Call>
-  )
+  );
 
   if (!currentlyBidding && cardsRevealed) {
     return null;
   }
 
   if (!currentlyBidding && !cardsRevealed) {
-    return (
-      <div className={viewStyle.callBox}>
-        {revealButton}
-      </div>
-    )
+    return <div className={viewStyle.callBox}>{revealButton}</div>;
   }
 
   if (!cardsRevealed) {

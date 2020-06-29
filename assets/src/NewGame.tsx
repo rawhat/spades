@@ -20,13 +20,10 @@ function NewGame() {
 
   const [request, setRequest] = useState<FetchArguments>();
 
-  const { data, status, error } = useQuery<
-    GameResponse,
-    "name"
-  >(request);
+  const { data, status, error } = useQuery<GameResponse, "name">(request);
 
   const newGame = useCallback(() => {
-    setRequest(postRequest("/api/game", { name }))
+    setRequest(postRequest("/api/game", { name }));
   }, [name]);
 
   const close = useCallback(() => {
@@ -36,16 +33,16 @@ function NewGame() {
 
   useEffect(() => {
     if (data) {
-      history.push(`/game/${data.id}`)
+      history.push(`/game/${data.id}`);
     }
-  }, [data, history])
+  }, [data, history]);
 
   return (
     <>
       {open ? (
         <PaddedHorizontalLayout padding={10}>
           <Input
-            error={error?.name.join(', ')}
+            error={error?.name.join(", ")}
             onChange={setName}
             placeholder="Enter game name..."
             value={name}

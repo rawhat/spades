@@ -34,7 +34,7 @@ function Game() {
   useEffect(() => {
     if (id) {
       dispatch(loadGameState(id));
-      dispatch(observeGame({id, username}));
+      dispatch(observeGame({ id, username }));
     }
   }, [dispatch, id, username]);
 
