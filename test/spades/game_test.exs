@@ -64,6 +64,13 @@ defmodule Spades.Game.GameTest do
     assert Enum.count(g.trick) == 0
     assert g.players[p1.id].hand.tricks == 1
     assert g.current_player == 0
+
+    assert g.last_trick == [
+             %{id: p1.id, card: Enum.at(deck, 0)},
+             %{id: p2.id, card: Enum.at(deck, 1)},
+             %{id: p3.id, card: Enum.at(deck, 2)},
+             %{id: p4.id, card: Enum.at(deck, 3)}
+           ]
   end
 
   test "play all cards, round ends", %{game: game, deck: deck, p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -81,6 +88,7 @@ defmodule Spades.Game.GameTest do
     assert g.current_player == 0
     assert Enum.at(g.play_order, 0) == p2.id
     assert g.state == :bidding
+    assert g.last_trick == []
 
     assert Enum.all?(g.players, fn {_, player} ->
              Enum.count(player.hand.cards) != 0

@@ -15,6 +15,7 @@ defmodule Spades.Game do
           cards: list(Card.t()),
           current_player: integer(),
           id: String.t(),
+          last_trick: list(trick()),
           name: String.t(),
           players: list(Player.public_player()),
           revealed: boolean(),
@@ -28,6 +29,7 @@ defmodule Spades.Game do
   @type public_state :: %{
           current_player: integer(),
           id: String.t(),
+          last_trick: list(trick()),
           name: String.t(),
           players: list(Player.public_player()),
           scores: scores(),
@@ -50,6 +52,7 @@ defmodule Spades.Game do
     field :spades_broken, boolean(), default: false
     field :state, state(), default: :waiting
     field :trick, list(trick()), default: []
+    field :last_trick, list(trick()), default: []
   end
 
   #################################
@@ -152,6 +155,7 @@ defmodule Spades.Game do
         cards: Player.sorted_hand(player),
         current_player: game.current_player,
         id: game.id,
+        last_trick: game.last_trick,
         name: game.name,
         players: get_player_list(game),
         revealed: revealed,
@@ -170,6 +174,7 @@ defmodule Spades.Game do
     %{
       current_player: game.current_player,
       id: game.id,
+      last_trick: game.last_trick,
       name: game.name,
       players: get_player_list(game),
       scores: game.scores,
@@ -341,7 +346,7 @@ defmodule Spades.Game do
 
   @spec end_hand(game()) :: game()
   defp end_hand({:ok, %__MODULE__{trick: trick} = game}) when length(trick) == 4 do
-    {:ok, %__MODULE__{game | trick: []}}
+    {:ok, %__MODULE__{game | trick: [], last_trick: trick}}
   end
 
   defp end_hand(game), do: game
@@ -355,6 +360,7 @@ defmodule Spades.Game do
 
     if all_empty do
       game
+      |> clear_last_trick()
       |> award_points()
       |> increment_play_order()
       |> deal(true)
@@ -365,6 +371,10 @@ defmodule Spades.Game do
   end
 
   defp end_round(game), do: game
+
+  defp clear_last_trick(%__MODULE__{} = game) do
+    %__MODULE__{game | last_trick: []}
+  end
 
   @spec reveal_player_card(t(), String.t()) :: game()
   defp reveal_player_card(game, id) do

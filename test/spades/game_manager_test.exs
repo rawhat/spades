@@ -58,6 +58,7 @@ defmodule Spades.Game.GameManagerTest do
     assert GameManager.get_game_state_for_player(id_2, p1[:id]) == %{
              current_player: 0,
              id: "2",
+             last_trick: [],
              name: "two",
              players: [],
              scores: %{:north_south => 0, :east_west => 0},
@@ -71,6 +72,7 @@ defmodule Spades.Game.GameManagerTest do
     assert GameManager.get_game_state(id) == %{
              current_player: 0,
              id: "1",
+             last_trick: [],
              name: "one",
              players: [],
              scores: %{:north_south => 0, :east_west => 0},

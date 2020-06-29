@@ -68,16 +68,20 @@ function getUnicodeAndColorForCard({ value, suit }: Card): [string, string] {
 interface PlayerCardProps {
   card: Card;
   onClick?: () => void;
-  orientation?: "bottom" | "top" | "left" | "right"
+  size?: number;
 }
 
-export function PlayingCard({ card, onClick, orientation = "bottom" }: PlayerCardProps) {
+export function PlayingCard({
+  card,
+  onClick,
+  size = 8
+}: PlayerCardProps) {
   const [code, color] = getUnicodeAndColorForCard(card);
   const style = useMemo(() => {
     return {
       cursor: onClick && "pointer",
       color,
-      fontSize: "8em",
+      fontSize: `${size}em`,
     };
   }, [color, onClick]);
   return (

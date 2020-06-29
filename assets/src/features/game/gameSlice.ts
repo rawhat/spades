@@ -23,6 +23,7 @@ export enum Team {
 
 export interface GameStatus {
   id: string;
+  last_trick: PlayedCard[];
   name: string;
   scores: { [team in keyof Team]: number };
   players: PublicPlayer[];
@@ -255,4 +256,10 @@ export const selectTrickByPlayerId = createSelector(
   selectTrick,
   (trick: PlayedCard[]): TrickByPlayerId =>
     trick.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {})
+);
+
+export const selectLastTrick = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState) => (playerState || gameState)?.last_trick
 );

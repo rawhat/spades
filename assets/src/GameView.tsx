@@ -5,16 +5,20 @@ import {
   Card,
   selectCurrentPlayer,
   selectError,
+  selectLastTrick,
   selectOrderedPlayers,
   selectPlayerCards,
   selectPlayerCardsRevealed,
+  selectPlayersById
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
 import PlayArea from "./PlayArea";
+import { Bold } from "./Text";
 import { HiddenHand } from "./Hand";
 import { Marker } from "./Marker";
 import { PlayerHand } from "./Hand";
+import { PlayingCard } from "./Card";
 import { Panel, PanelBody, PanelFooter, PanelHeader } from "./Panel";
 import { Column, HorizontalLayout, SubHeader, VerticalLayout } from "./Layout";
 
@@ -23,6 +27,8 @@ function GameView() {
   const playerCards = useSelector(selectPlayerCards);
   const playerCardsRevealed = useSelector(selectPlayerCardsRevealed);
   const currentPlayer = useSelector(selectCurrentPlayer);
+  const lastTrick = useSelector(selectLastTrick);
+  const playersById = useSelector(selectPlayersById);
   const error = useSelector(selectError);
   const [self, leftPlayer, teammate, rightPlayer] = useSelector(selectOrderedPlayers);
 
@@ -95,6 +101,22 @@ function GameView() {
                 <span><strong>Error:  </strong>{error}</span>
               </PanelBody>
             </Panel>
+          )}
+          {lastTrick && lastTrick.length > 0 && (
+            <VerticalLayout>
+              <Bold>Last trick:</Bold>
+              <HorizontalLayout>
+                {lastTrick.map(({id, card}) => (
+                  <VerticalLayout>
+                    <div>{playersById[id] || id}</div>
+                    <PlayingCard
+                      card={card}
+                      size={5}
+                    />
+                  </VerticalLayout>
+                ))}
+              </HorizontalLayout>
+            </VerticalLayout>
           )}
         </VerticalLayout>
       </Column>

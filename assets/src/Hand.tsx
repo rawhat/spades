@@ -27,7 +27,6 @@ export function PlayerHand({ cards }: PlayerHandProps) {
           key={`${card.value}-${card.suit}`}
           card={card}
           onClick={getOnClick(card)}
-          orientation="bottom"
         />
       ))}
     </HorizontalLayout>
