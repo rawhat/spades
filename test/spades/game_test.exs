@@ -80,6 +80,11 @@ defmodule Spades.Game.GameTest do
     assert g.scores == %{:north_south => -80, :east_west => -70}
     assert g.current_player == 0
     assert Enum.at(g.play_order, 0) == p2.id
+    assert g.state == :bidding
+
+    assert Enum.all?(g.players, fn {_, player} ->
+             Enum.count(player.hand.cards) != 0
+           end)
   end
 
   test "can't play non-matching card", %{game: game, deck: deck, p1: p1, p2: p2} do

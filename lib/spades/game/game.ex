@@ -227,6 +227,11 @@ defmodule Spades.Game do
     {:ok, %__MODULE__{game | state: :bidding}}
   end
 
+  defp start_bidding({:ok, %__MODULE__{players: players, state: :playing} = game})
+       when map_size(players) == 4 do
+    {:ok, %__MODULE__{game | state: :bidding}}
+  end
+
   defp start_bidding(game), do: game
 
   @spec can_play?(t(), String.t()) :: boolean()
@@ -352,7 +357,7 @@ defmodule Spades.Game do
       game
       |> award_points()
       |> increment_play_order()
-      |> deal_cards(true)
+      |> deal(true)
       |> start_bidding()
     else
       game
@@ -398,8 +403,12 @@ defmodule Spades.Game do
   @spec deal_cards(game()) :: game()
   defp deal_cards(game, shuffle \\ false)
 
-  defp deal_cards(
-         {:ok, %__MODULE__{players: players, play_order: play_order} = game},
+  defp deal_cards({:ok, %__MODULE__{} = game}, shuffle), do: deal(game, shuffle)
+
+  defp deal_cards(game, _shuffle), do: game
+
+  defp deal(
+         %__MODULE__{players: players, play_order: play_order} = game,
          shuffle
        ) do
     deck = if shuffle, do: Enum.shuffle(game.deck), else: game.deck
@@ -418,8 +427,6 @@ defmodule Spades.Game do
        | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.id, &1))
      }}
   end
-
-  defp deal_cards(game, _shuffle), do: game
 
   defp zip(teams, players \\ [])
   defp zip([[], team_two], players), do: Enum.concat(players, team_two)
