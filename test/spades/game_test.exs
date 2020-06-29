@@ -84,7 +84,11 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.id, Enum.at(deck, 6))
       |> Game.play_card(p4.id, Enum.at(deck, 7))
 
-    assert g.scores == %{:north_south => -80, :east_west => -70}
+    assert g.scores == %{
+             :north_south => %{points: -80, bags: 0},
+             :east_west => %{points: -70, bags: 0}
+           }
+
     assert g.current_player == 0
     assert Enum.at(g.play_order, 0) == p2.id
     assert g.state == :bidding
@@ -220,5 +224,71 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.id, Enum.at(deck, 3))
 
     assert game.current_player == 0
+  end
+
+  test "bagging out deducts points from score" do
+    starting_cards = [
+      :spades,
+      :diamonds,
+      :hearts,
+      :clubs
+    ]
+
+    card_values =
+      2..8
+      |> Stream.flat_map(fn num ->
+        Stream.repeatedly(fn -> num end)
+        |> Stream.take(4)
+        |> Enum.to_list()
+      end)
+
+    deck =
+      starting_cards
+      |> Stream.cycle()
+      |> Stream.zip(card_values)
+      |> Stream.map(fn {suit, value} -> Card.new(suit, value) end)
+      |> Stream.take(28)
+      |> Enum.to_list()
+
+    p1 = Player.new("0", "alex", :north_south)
+    p2 = Player.new("1", "jake", :east_west)
+    p3 = Player.new("2", "jon", :north_south)
+    p4 = Player.new("3", "gopal", :east_west)
+
+    with_players =
+      [p1, p2, p3, p4]
+      |> Stream.cycle()
+      |> Stream.take(28)
+      |> Enum.to_list()
+
+    game =
+      Game.new("1", "one", deck)
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.make_call(p1.id, 1)
+      |> Game.make_call(p2.id, 1)
+      |> Game.make_call(p3.id, 1)
+      |> Game.make_call(p4.id, 1)
+
+    next_game =
+      Enum.zip(with_players, deck)
+      |> Enum.reduce(game, fn {player, card}, g ->
+        Game.play_card(g, player.id, card)
+      end)
+
+    assert next_game.state == :bidding
+    # p1's team bagged out
+    #   so:  2 tricks * 10 - 50 for bagging out, with 5 bags
+    assert next_game.scores == %{
+             north_south: %{points: -30, bags: 5},
+             east_west: %{points: -20, bags: 0}
+           }
+
+    assert Game.state(next_game).scores == %{
+             north_south: -25,
+             east_west: -20
+           }
   end
 end

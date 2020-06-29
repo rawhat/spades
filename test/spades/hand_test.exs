@@ -28,7 +28,7 @@ defmodule Spades.Game.HandTest do
   test "scoring nil hand", %{hand: hand} do
     nil_hand = Hand.call(hand, 0)
 
-    assert Hand.score(nil_hand) == 50
+    assert Hand.score(nil_hand) == %{points: 50, bags: 0}
   end
 
   test "scoring broken nil hand", %{hand: hand} do
@@ -36,7 +36,7 @@ defmodule Spades.Game.HandTest do
       Hand.call(hand, 0)
       |> Hand.take()
 
-    assert Hand.score(broken_nil) == -50
+    assert Hand.score(broken_nil) == %{points: -50, bags: 0}
   end
 
   test "scoring made tricks hand", %{hand: hand} do
@@ -48,7 +48,7 @@ defmodule Spades.Game.HandTest do
       |> Hand.take()
       |> Hand.take()
 
-    assert Hand.score(five_tricks_made) == 50
+    assert Hand.score(five_tricks_made) == %{points: 50, bags: 0}
   end
 
   test "scoring broken tricks hand", %{hand: hand} do
@@ -59,6 +59,6 @@ defmodule Spades.Game.HandTest do
       |> Hand.take()
       |> Hand.take()
 
-    assert Hand.score(five_tricks_broken) == -50
+    assert Hand.score(five_tricks_broken) == %{points: -50, bags: 0}
   end
 end

@@ -74,7 +74,7 @@ defmodule Spades.Game.PlayerTest do
       |> Player.take()
       |> Player.take()
 
-    assert Player.get_score([alex, jon]) == 50
+    assert Player.get_score([alex, jon]) == %{points: 50, bags: 0}
   end
 
   test "score made with bags", %{alex: alex, jon: jon} do
@@ -91,7 +91,7 @@ defmodule Spades.Game.PlayerTest do
       |> Player.take()
       |> Player.take()
 
-    assert Player.get_score([alex, jon]) == 52
+    assert Player.get_score([alex, jon]) == %{points: 50, bags: 2}
   end
 
   test "score with one made, one broken", %{alex: alex, jon: jon} do
@@ -105,7 +105,7 @@ defmodule Spades.Game.PlayerTest do
       Player.make_call(jon, 2)
       |> Player.take()
 
-    assert Player.get_score([alex, jon]) == -50
+    assert Player.get_score([alex, jon]) == %{points: -50, bags: 0}
   end
 
   test "score with nil", %{alex: alex, jon: jon} do
@@ -118,6 +118,22 @@ defmodule Spades.Game.PlayerTest do
       |> Player.take()
       |> Player.take()
 
-    assert Player.get_score([alex, jon]) == 81
+    assert Player.get_score([alex, jon]) == %{points: 80, bags: 1}
+  end
+
+  test "bagging out with 5 removes nil amount, leaves bags intact" do
+    assert Player.bag_out(%{points: 100, bags: 5}) == %{points: 50, bags: 5}
+  end
+
+  test "bagging out with 10 removes nil amount, adds 10, and reset bags" do
+    assert Player.bag_out(%{points: 100, bags: 10}) == %{points: 60, bags: 0}
+  end
+
+  test "with less than 5 bags doesn't modify score" do
+    assert Player.bag_out(%{points: 100, bags: 3}) == %{points: 100, bags: 3}
+  end
+
+  test "with more than 5 but less than 10 bags doesn't modify score" do
+    assert Player.bag_out(%{points: 100, bags: 9}) == %{points: 100, bags: 9}
   end
 end

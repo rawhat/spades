@@ -6,7 +6,9 @@ defmodule Spades.Game do
   alias Spades.Game.Hand
   alias Spades.Game.Player
 
-  @type scores :: %{:north_south => integer(), :east_west => integer()}
+  @type score :: %{bags: integer(), points: integer()}
+  @type scores :: %{:north_south => score(), :east_west => score()}
+  @type public_score :: %{:north_south => integer(), :east_west => integer()}
   @type trick :: %{:id => String.t(), :card => Card.t()}
   @type state :: :waiting | :bidding | :playing
   @type player_map :: %{integer() => Player.t()}
@@ -19,7 +21,7 @@ defmodule Spades.Game do
           name: String.t(),
           players: list(Player.public_player()),
           revealed: boolean(),
-          scores: scores(),
+          scores: public_score(),
           spades_broken: boolean(),
           state: state(),
           team: Player.team(),
@@ -32,7 +34,7 @@ defmodule Spades.Game do
           last_trick: list(trick()),
           name: String.t(),
           players: list(Player.public_player()),
-          scores: scores(),
+          scores: public_score(),
           spades_broken: boolean(),
           state: state(),
           trick: list(trick())
@@ -48,7 +50,14 @@ defmodule Spades.Game do
     field :name, String.t(), enforce: true
     field :play_order, list(integer()), default: []
     field :players, player_map(), default: Map.new()
-    field :scores, scores(), default: Map.new([{:north_south, 0}, {:east_west, 0}])
+
+    field :scores, scores(),
+      default:
+        Map.new([
+          {:north_south, %{points: 0, bags: 0}},
+          {:east_west, %{points: 0, bags: 0}}
+        ])
+
     field :spades_broken, boolean(), default: false
     field :state, state(), default: :waiting
     field :trick, list(trick()), default: []
@@ -159,7 +168,7 @@ defmodule Spades.Game do
         name: game.name,
         players: get_player_list(game),
         revealed: revealed,
-        scores: game.scores,
+        scores: get_public_scores(game),
         spades_broken: game.spades_broken,
         state: game.state,
         team: player.team,
@@ -177,7 +186,7 @@ defmodule Spades.Game do
       last_trick: game.last_trick,
       name: game.name,
       players: get_player_list(game),
-      scores: game.scores,
+      scores: get_public_scores(game),
       spades_broken: game.spades_broken,
       state: game.state,
       trick: game.trick
@@ -227,17 +236,14 @@ defmodule Spades.Game do
   end
 
   @spec start_bidding(game()) :: game()
-  defp start_bidding({:ok, %__MODULE__{players: players, state: :waiting} = game})
+  defp start_bidding({:ok, %__MODULE__{players: players, state: :waiting}} = result)
        when map_size(players) == 4 do
-    {:ok, %__MODULE__{game | state: :bidding}}
-  end
-
-  defp start_bidding({:ok, %__MODULE__{players: players, state: :playing} = game})
-       when map_size(players) == 4 do
-    {:ok, %__MODULE__{game | state: :bidding}}
+    set_bidding(result)
   end
 
   defp start_bidding(game), do: game
+
+  defp set_bidding({:ok, %__MODULE__{} = game}), do: {:ok, %__MODULE__{game | state: :bidding}}
 
   @spec can_play?(t(), String.t()) :: boolean()
   defp can_play?(game, id) do
@@ -364,7 +370,7 @@ defmodule Spades.Game do
       |> award_points()
       |> increment_play_order()
       |> deal(true)
-      |> start_bidding()
+      |> set_bidding()
     else
       game
     end
@@ -388,20 +394,34 @@ defmodule Spades.Game do
   end
 
   @spec award_points(t()) :: t()
-  defp award_points(%__MODULE__{scores: scores, players: players} = game) do
-    team_one_score =
+  defp award_points(
+         %__MODULE__{
+           scores: %{north_south: north_south, east_west: east_west},
+           players: players
+         } = game
+       ) do
+    north_south_score =
       Player.get_team_players(players, :north_south)
       |> Player.get_score()
+      |> Player.bag_out()
 
-    team_two_score =
+    east_west_score =
       Player.get_team_players(players, :east_west)
       |> Player.get_score()
+      |> Player.bag_out()
 
     %__MODULE__{
       game
-      | scores:
-          Map.update!(scores, :north_south, &(&1 + team_one_score))
-          |> Map.update!(:east_west, &(&1 + team_two_score))
+      | scores: %{
+          north_south:
+            Map.merge(north_south, north_south_score, fn _, v1, v2 ->
+              v1 + v2
+            end),
+          east_west:
+            Map.merge(east_west, east_west_score, fn _, v1, v2 ->
+              v1 + v2
+            end)
+        }
     }
   end
 
@@ -445,5 +465,12 @@ defmodule Spades.Game do
   @spec zip(list(list(Player.t())), list(Player.t())) :: list(Player.t())
   defp zip([[one | team_one], [two | team_two]], players) do
     zip([team_one, team_two], Enum.concat(players, [one, two]))
+  end
+
+  defp get_public_scores(%__MODULE__{scores: %{north_south: north_south, east_west: east_west}}) do
+    %{
+      north_south: north_south.points + north_south.bags,
+      east_west: east_west.points + east_west.bags
+    }
   end
 end

@@ -77,24 +77,37 @@ defmodule Spades.Game.Player do
     %{player | hand: Hand.take(hand)}
   end
 
-  @spec get_score(list(t())) :: integer()
+  @spec get_score(list(t())) :: Game.score()
   def get_score([%__MODULE__{hand: hand1}, %__MODULE__{hand: hand2}]) do
     exists_nil = Hand.is_nil?(hand1) || Hand.is_nil?(hand2)
 
     if exists_nil do
-      Hand.score(hand1) + Hand.score(hand2)
+      Map.merge(Hand.score(hand1), Hand.score(hand2), fn _, v1, v2 ->
+        v1 + v2
+      end)
     else
       taken = hand1.tricks + hand2.tricks
       called = hand1.call + hand2.call
 
       if taken >= called do
         bags = if taken > called, do: taken - called, else: 0
-        called * 10 + bags
+        %{points: called * 10, bags: bags}
       else
-        called * -10
+        %{points: called * -10, bags: 0}
       end
     end
   end
+
+  @spec bag_out(Game.score(), integer()) :: Game.score()
+  def bag_out(score, nil_amount \\ 50)
+
+  def bag_out(%{points: points, bags: 5}, nil_amount),
+    do: %{points: points - nil_amount, bags: 5}
+
+  def bag_out(%{points: points, bags: 10}, nil_amount),
+    do: %{points: points - nil_amount + 10, bags: 0}
+
+  def bag_out(score, _amount), do: score
 
   def sorted_hand(%__MODULE__{hand: nil}), do: []
 

@@ -2,6 +2,7 @@ defmodule Spades.Game.Hand do
   use TypedStruct
   @enforce_keys [:cards]
 
+  alias Spades.Game
   alias Spades.Game.Card
 
   @type call :: 0..13 | -1
@@ -48,15 +49,15 @@ defmodule Spades.Game.Hand do
   def is_nil?(%__MODULE__{call: -1}), do: true
   def is_nil?(%__MODULE__{call: _}), do: false
 
-  @spec score(t()) :: integer()
-  def score(%__MODULE__{call: 0, tricks: 0}), do: 50
-  def score(%__MODULE__{call: 0}), do: -50
-  def score(%__MODULE__{call: -1, tricks: 0}), do: 100
-  def score(%__MODULE__{call: -1}), do: -100
+  @spec score(t()) :: Game.score()
+  def score(%__MODULE__{call: 0, tricks: 0}), do: %{points: 50, bags: 0}
+  def score(%__MODULE__{call: 0}), do: %{points: -50, bags: 0}
+  def score(%__MODULE__{call: -1, tricks: 0}), do: %{points: 100, bags: 0}
+  def score(%__MODULE__{call: -1}), do: %{points: -100, bags: 0}
 
   def score(%__MODULE__{call: call, tricks: tricks}) when tricks >= call do
-    call * 10 + if tricks > call, do: tricks - call, else: 0
+    %{points: call * 10, bags: if(tricks > call, do: tricks - call, else: 0)}
   end
 
-  def score(%__MODULE__{call: call}), do: call * -10
+  def score(%__MODULE__{call: call}), do: %{points: call * -10, bags: 0}
 end
