@@ -96,11 +96,13 @@ defmodule Spades.Game do
         %__MODULE__{state: :bidding} = game,
         id
       ) do
-    if can_play?(game, id) do
-      reveal_player_card(game, id)
-      |> chain()
-    else
-      {:error, game, "#{id} cannot reveal"}
+    case Map.get(game.players, id) do
+      %Player{hand: %Hand{revealed: false}} ->
+        reveal_player_card(game, id)
+        |> chain
+
+      _ ->
+        {:error, game, "#{id} cannot reveal"}
     end
   end
 
@@ -264,7 +266,7 @@ defmodule Spades.Game do
         id,
         call
       ) do
-    if can_play?(game, id) do
+    if can_play?(game, id) && Player.can_call?(game.players[id], call) do
       {:ok,
        %__MODULE__{game | players: Map.update!(game.players, id, &Player.make_call(&1, call))}}
     else

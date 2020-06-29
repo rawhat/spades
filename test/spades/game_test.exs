@@ -291,4 +291,41 @@ defmodule Spades.Game.GameTest do
              east_west: -20
            }
   end
+
+  test "can't call blind nil after revealing cards" do
+    p1 = Player.new("0", "alex", :north_south)
+    p2 = Player.new("1", "jake", :east_west)
+    p3 = Player.new("2", "jon", :north_south)
+    p4 = Player.new("3", "gopal", :east_west)
+
+    {:error, game, _reason} =
+      Game.new("2", "test")
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.reveal_cards(p1.id)
+      |> Game.call(p1.id, -1)
+
+    assert game.players["0"].hand.call == nil
+  end
+
+  test "can reveal cards out of turn, but not call" do
+    p1 = Player.new("0", "alex", :north_south)
+    p2 = Player.new("1", "jake", :east_west)
+    p3 = Player.new("2", "jon", :north_south)
+    p4 = Player.new("3", "gopal", :east_west)
+
+    revealed =
+      Game.new("2", "test")
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.reveal_cards(p4.id)
+
+    assert revealed.players[p4.id].hand.revealed == true
+
+    assert {:error, _game, _reason} = Game.call(revealed, p4.id, 4)
+  end
 end

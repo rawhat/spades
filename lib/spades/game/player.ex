@@ -67,6 +67,11 @@ defmodule Spades.Game.Player do
     %__MODULE__{player | hand: Hand.reveal(hand)}
   end
 
+  @spec can_call?(t(), Hand.call()) :: boolean()
+  def can_call?(%__MODULE__{hand: %Hand{revealed: true}}, -1), do: false
+  def can_call?(%__MODULE__{hand: nil}, _call), do: false
+  def can_call?(%__MODULE__{}, _call), do: true
+
   @spec make_call(t(), Hand.call()) :: t()
   def make_call(%__MODULE__{hand: hand} = player, call) do
     %__MODULE__{player | hand: Hand.call(hand, call)}

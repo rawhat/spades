@@ -3,13 +3,10 @@ import { useSelector } from "react-redux";
 
 import {
   State,
-  selectCurrentPlayer,
   selectGameState,
   selectOrderedPlayers,
-  selectPlayerCardsRevealed,
   selectTrickByPlayerId,
 } from "./features/game/gameSlice";
-import { selectUsername } from "./features/user/userSlice";
 
 import CallBox from "./CallBox";
 import ScoreBox from "./ScoreBox";
@@ -17,9 +14,6 @@ import { HorizontalLayout, VerticalLayout } from "./Layout";
 import { EmptyCard, PlayingCard } from "./Card";
 
 function PlayArea() {
-  const username = useSelector(selectUsername);
-  const currentPlayer = useSelector(selectCurrentPlayer);
-  const cardsRevealed = useSelector(selectPlayerCardsRevealed);
   const gameState = useSelector(selectGameState);
   const trickById = useSelector(selectTrickByPlayerId);
 
@@ -29,9 +23,6 @@ function PlayArea() {
   const leftCard = leftPlayer && trickById[leftPlayer.id];
   const topCard = topPlayer && trickById[topPlayer.id];
   const rightCard = rightPlayer && trickById[rightPlayer.id];
-
-  const isBidding =
-    gameState === State.Bidding && currentPlayer?.name === username;
 
   return (
     <VerticalLayout flexGrow={1} height="100%" position="relative">
@@ -62,7 +53,7 @@ function PlayArea() {
         )}
       </VerticalLayout>
       <ScoreBox />
-      {isBidding && <CallBox revealed={cardsRevealed} />}
+      {gameState === State.Bidding && <CallBox />}
     </VerticalLayout>
   );
 }

@@ -2,21 +2,29 @@ import * as React from "react";
 import range from "lodash/range";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { useState } from "react";
 
-import { revealCards, makeCall } from "./features/game/gameSlice";
+import {
+  makeCall,
+  revealCards,
+  selectCurrentPlayer,
+  selectPlayerCardsRevealed,
+} from "./features/game/gameSlice";
+import { selectUsername } from "./features/user/userSlice";
 
 import viewStyle from "./CallBox.module.css";
 
-interface CallBoxProps {
-  revealed: boolean;
-}
-
 type Call = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
 
-function CallBox({ revealed }: CallBoxProps) {
+function CallBox() {
   const [call, setCall] = useState<Call>();
   const dispatch = useDispatch();
+
+  const currentPlayer = useSelector(selectCurrentPlayer);
+  const username = useSelector(selectUsername);
+  const cardsRevealed = useSelector(selectPlayerCardsRevealed);
+  const currentlyBidding = currentPlayer?.name === username;
 
   const getOnClick = useCallback(
     (value: Call) => {
@@ -31,17 +39,34 @@ function CallBox({ revealed }: CallBoxProps) {
     }
   }, [call, dispatch]);
 
-  if (!revealed) {
+  let revealButton = (
+    <Call onClick={() => dispatch(revealCards())}>Reveal</Call>
+  )
+
+  if (!currentlyBidding && cardsRevealed) {
+    return null;
+  }
+
+  if (!currentlyBidding && !cardsRevealed) {
+    return (
+      <div className={viewStyle.callBox}>
+        {revealButton}
+      </div>
+    )
+  }
+
+  if (!cardsRevealed) {
     return (
       <div className={viewStyle.callBox}>
         <Call onClick={getOnClick(-1)} selected={call === -1}>
           Blind Nil
         </Call>
-        <Call onClick={() => dispatch(revealCards())}>Reveal</Call>
+        {revealButton}
         <Call onClick={onSubmit}>Submit</Call>
       </div>
     );
   }
+
   return (
     <div className={viewStyle.callBox}>
       {range(0, 14).map((value) => (
