@@ -103,16 +103,52 @@ defmodule Spades.Game.Player do
     end
   end
 
-  @spec bag_out(Game.score(), integer()) :: Game.score()
-  def bag_out(score, nil_amount \\ 50)
+  @spec update_score(Game.score(), Game.score()) :: Game.score()
+  def update_score(new_score, old_score, nil_amount \\ 50)
 
-  def bag_out(%{points: points, bags: 5}, nil_amount),
-    do: %{points: points - nil_amount, bags: 5}
+  # double bagging out
+  def update_score(
+        %{points: calculated_points, bags: new_bags} = _new_score,
+        %{points: existing_points, bags: old_bags} = _old_score,
+        nil_amount
+      )
+      when old_bags < 5 and new_bags + old_bags >= 10 do
+    %{
+      points: existing_points + calculated_points - nil_amount * 2 + 10,
+      bags: old_bags + new_bags - 10
+    }
+  end
 
-  def bag_out(%{points: points, bags: 10}, nil_amount),
-    do: %{points: points - nil_amount + 10, bags: 0}
+  # bagging out at 10
+  def update_score(
+        %{points: calculated_points, bags: new_bags} = _new_score,
+        %{points: existing_points, bags: old_bags} = _old_score,
+        nil_amount
+      )
+      when old_bags >= 5 and new_bags + old_bags >= 10 do
+    %{
+      points: existing_points + calculated_points - nil_amount + 10,
+      bags: old_bags + new_bags - 10
+    }
+  end
 
-  def bag_out(score, _amount), do: score
+  # bagging out at 5
+  def update_score(
+        %{points: calculated_points, bags: new_bags} = _new_score,
+        %{points: existing_points, bags: old_bags} = _old_score,
+        nil_amount
+      )
+      when old_bags < 5 and old_bags + new_bags > 5 do
+    %{points: calculated_points + existing_points - nil_amount, bags: old_bags + new_bags}
+  end
+
+  # just add to score
+  def update_score(
+        %{points: calculated_points, bags: new_bags} = _new_score,
+        %{points: existing_points, bags: old_bags} = _old_score,
+        _nil_amount
+      ),
+      do: %{points: calculated_points + existing_points, bags: new_bags + old_bags}
 
   def sorted_hand(%__MODULE__{hand: nil}), do: []
 

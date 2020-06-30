@@ -234,20 +234,24 @@ defmodule Spades.Game.GameTest do
       :clubs
     ]
 
+    range = 1..13
+
     card_values =
-      2..8
+      range
       |> Stream.flat_map(fn num ->
         Stream.repeatedly(fn -> num end)
         |> Stream.take(4)
         |> Enum.to_list()
       end)
 
+    count = Enum.count(range) * 4
+
     deck =
       starting_cards
       |> Stream.cycle()
       |> Stream.zip(card_values)
       |> Stream.map(fn {suit, value} -> Card.new(suit, value) end)
-      |> Stream.take(28)
+      |> Stream.take(count)
       |> Enum.to_list()
 
     p1 = Player.new("0", "alex", :north_south)
@@ -258,7 +262,7 @@ defmodule Spades.Game.GameTest do
     with_players =
       [p1, p2, p3, p4]
       |> Stream.cycle()
-      |> Stream.take(28)
+      |> Stream.take(count)
       |> Enum.to_list()
 
     game =
@@ -280,14 +284,15 @@ defmodule Spades.Game.GameTest do
 
     assert next_game.state == :bidding
     # p1's team bagged out
-    #   so:  2 tricks * 10 - 50 for bagging out, with 5 bags
+    #   so:  20 - 100 for bagging out, with 11 bags
+    #   which actually means: -80 + 10 + 1
     assert next_game.scores == %{
-             north_south: %{points: -30, bags: 5},
+             north_south: %{points: -70, bags: 1},
              east_west: %{points: -20, bags: 0}
            }
 
     assert Game.state(next_game).scores == %{
-             north_south: -25,
+             north_south: -69,
              east_west: -20
            }
   end

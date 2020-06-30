@@ -405,24 +405,18 @@ defmodule Spades.Game do
     north_south_score =
       Player.get_team_players(players, :north_south)
       |> Player.get_score()
-      |> Player.bag_out()
+      |> Player.update_score(north_south)
 
     east_west_score =
       Player.get_team_players(players, :east_west)
       |> Player.get_score()
-      |> Player.bag_out()
+      |> Player.update_score(east_west)
 
     %__MODULE__{
       game
       | scores: %{
-          north_south:
-            Map.merge(north_south, north_south_score, fn _, v1, v2 ->
-              v1 + v2
-            end),
-          east_west:
-            Map.merge(east_west, east_west_score, fn _, v1, v2 ->
-              v1 + v2
-            end)
+          north_south: north_south_score,
+          east_west: east_west_score
         }
     }
   end

@@ -2,7 +2,7 @@ defmodule Spades.Game.Card do
   use TypedStruct
 
   @type suit :: :spades | :diamonds | :clubs | :hearts
-  @type value :: 1..14
+  @type value :: 1..13
 
   @derive Jason.Encoder
   typedstruct do

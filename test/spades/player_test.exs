@@ -121,19 +121,31 @@ defmodule Spades.Game.PlayerTest do
     assert Player.get_score([alex, jon]) == %{points: 80, bags: 1}
   end
 
-  test "bagging out with 5 removes nil amount, leaves bags intact" do
-    assert Player.bag_out(%{points: 100, bags: 5}) == %{points: 50, bags: 5}
+  test "updating score" do
+    assert Player.update_score(%{points: 10, bags: 0}, %{points: 0, bags: 1}) == %{
+             points: 10,
+             bags: 1
+           }
   end
 
-  test "bagging out with 10 removes nil amount, adds 10, and reset bags" do
-    assert Player.bag_out(%{points: 100, bags: 10}) == %{points: 60, bags: 0}
+  test "bagging out with over 5" do
+    assert Player.update_score(%{points: 10, bags: 5}, %{points: 0, bags: 1}) == %{
+             points: -40,
+             bags: 6
+           }
   end
 
-  test "with less than 5 bags doesn't modify score" do
-    assert Player.bag_out(%{points: 100, bags: 3}) == %{points: 100, bags: 3}
+  test "bagging out with over 10" do
+    assert Player.update_score(%{points: 10, bags: 6}, %{points: 0, bags: 5}) == %{
+             points: -30,
+             bags: 1
+           }
   end
 
-  test "with more than 5 but less than 10 bags doesn't modify score" do
-    assert Player.bag_out(%{points: 100, bags: 9}) == %{points: 100, bags: 9}
+  test "double bagging out" do
+    assert Player.update_score(%{points: 10, bags: 6}, %{points: 0, bags: 4}) == %{
+             points: -80,
+             bags: 0
+           }
   end
 end
