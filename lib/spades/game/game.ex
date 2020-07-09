@@ -437,7 +437,10 @@ defmodule Spades.Game do
          %__MODULE__{players: players, play_order: play_order} = game,
          shuffle
        ) do
-    deck = if shuffle, do: Enum.shuffle(game.deck), else: game.deck
+    deck =
+      if shuffle,
+        do: Enum.reduce(1..10, game.deck, fn _, deck -> Enum.shuffle(deck) end),
+        else: game.deck
 
     dealt_players =
       Enum.chunk_every(deck, 4)
