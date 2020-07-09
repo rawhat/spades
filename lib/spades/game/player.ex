@@ -138,7 +138,7 @@ defmodule Spades.Game.Player do
         %{points: existing_points, bags: old_bags} = _old_score,
         nil_amount
       )
-      when old_bags < 5 and old_bags + new_bags > 5 do
+      when old_bags < 5 and old_bags + new_bags >= 5 do
     %{points: calculated_points + existing_points - nil_amount, bags: old_bags + new_bags}
   end
 
