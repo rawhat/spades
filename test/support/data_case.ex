@@ -16,6 +16,8 @@ defmodule Spades.DataCase do
 
   use ExUnit.CaseTemplate
 
+  alias Ecto.Adapters.SQL.Sandbox
+
   using do
     quote do
       alias Spades.Repo
@@ -28,10 +30,10 @@ defmodule Spades.DataCase do
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Spades.Repo)
+    :ok = Sandbox.checkout(Spades.Repo)
 
     unless tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Spades.Repo, {:shared, self()})
+      Sandbox.mode(Spades.Repo, {:shared, self()})
     end
 
     :ok

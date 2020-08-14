@@ -320,13 +320,11 @@ defmodule Spades.Game do
     max_spade = Card.max_spade(trick)
 
     id =
-      cond do
-        lead.suit == :spade || max_spade != nil ->
-          Map.get(max_spade, :id)
-
-        true ->
-          Card.max_of_suit(trick, lead.suit)
-          |> Map.get(:id)
+      if lead.suit == :spade || max_spade != nil do
+        Map.get(max_spade, :id)
+      else
+        Card.max_of_suit(trick, lead.suit)
+        |> Map.get(:id)
       end
 
     winner = Enum.find_index(game.play_order, &(&1 == id))

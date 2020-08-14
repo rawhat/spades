@@ -61,7 +61,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.id, Enum.at(deck, 2))
       |> Game.play_card(p4.id, Enum.at(deck, 3))
 
-    assert Enum.count(g.trick) == 0
+    assert Enum.empty?(g.trick)
     assert g.players[p1.id].hand.tricks == 1
     assert g.current_player == 0
 

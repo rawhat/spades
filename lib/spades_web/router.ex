@@ -1,6 +1,8 @@
 defmodule SpadesWeb.Router do
   use SpadesWeb, :router
 
+  alias Spades.Game.GameManager
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -50,7 +52,7 @@ defmodule SpadesWeb.Router do
   end
 
   defp game_exists(conn, _) do
-    case Spades.Game.GameManager.exists?(conn.params["id"]) do
+    case GameManager.exists?(conn.params["id"]) do
       true -> conn
       _ -> put_status(conn, 404) |> json(%{error: "Game not found"}) |> halt()
     end

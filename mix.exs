@@ -45,7 +45,8 @@ defmodule Spades.MixProject do
       {:plug_cowboy, "~> 2.3"},
       {:pbkdf2_elixir, "~> 1.0"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:typed_struct, "~> 0.2"}
+      {:typed_struct, "~> 0.2"},
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 

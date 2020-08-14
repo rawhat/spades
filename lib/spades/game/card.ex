@@ -42,28 +42,27 @@ defmodule Spades.Game.Card do
       get_value(card1) <= get_value(card2)
     end
   end
+
+  @spec suit_text(t()) :: String.t()
+  def suit_text(%__MODULE__{suit: :clubs}), do: "C"
+  def suit_text(%__MODULE__{suit: :diamonds}), do: "D"
+  def suit_text(%__MODULE__{suit: :hearts}), do: "H"
+  def suit_text(%__MODULE__{suit: :spades}), do: "S"
+
+  @spec value_text(t()) :: String.t()
+  def value_text(%__MODULE__{value: 1}), do: "A"
+  def value_text(%__MODULE__{value: value}) when value in 2..10, do: to_string(value)
+  def value_text(%__MODULE__{value: 11}), do: "J"
+  def value_text(%__MODULE__{value: 12}), do: "Q"
+  def value_text(%__MODULE__{value: 13}), do: "K"
 end
 
 defimpl String.Chars, for: Spades.Game.Card do
+  alias Spades.Game.Card
+
   def to_string(card) do
-    suit_text =
-      case card.suit do
-        :clubs -> "C"
-        :diamonds -> "D"
-        :hearts -> "H"
-        :spades -> "S"
-      end
-
-    value = card.value
-
-    value_text =
-      cond do
-        value == 1 -> "A"
-        value in 2..10 -> Kernel.to_string(value)
-        value == 11 -> "J"
-        value == 12 -> "Q"
-        value == 13 -> "A"
-      end
+    suit_text = Card.suit_text(card)
+    value_text = Card.value_text(card)
 
     "#{value_text}#{suit_text}"
   end

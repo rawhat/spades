@@ -14,7 +14,7 @@ defmodule Spades.Game.GameManager do
     GenServer.start_link(__MODULE__, game, name: name)
   end
 
-  def active_games() do
+  def active_games do
     Registry.select(Spades.Game.Registry, [
       {{:"$1", :_, :_}, [], [:"$1"]}
     ])
@@ -25,7 +25,7 @@ defmodule Spades.Game.GameManager do
     |> Enum.to_list()
   end
 
-  def next_id() do
+  def next_id do
     case active_games() do
       [] ->
         "1"
