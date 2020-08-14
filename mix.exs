@@ -46,7 +46,6 @@ defmodule Spades.MixProject do
       {:plug_cowboy, "~> 2.3"},
       {:pbkdf2_elixir, "~> 1.0"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
-      {:typed_struct, "~> 0.2"},
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:mix_gleam, git: "https://github.com/Jwsonic/mix_gleam.git", tag: "0.4"},
       {:gleam_stdlib, "~> 0.11.0"},
