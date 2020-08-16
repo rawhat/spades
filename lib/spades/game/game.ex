@@ -40,8 +40,9 @@ defmodule Spades.Game do
           trick: list(trick())
         }
   @type error :: {:error, t(), String.t()}
-  @type game :: {:ok, t()} | error()
-  @type return :: t() | error()
+  @type event :: map()
+  @type game :: {:ok, t(), list(event())} | error()
+  @type return :: {t(), list(event())} | error()
 
   typedstruct do
     field :current_player, integer(), default: 0
