@@ -3,6 +3,7 @@ defmodule Spades.Game do
 
   alias Spades.Game.Card
   alias Spades.Game.Deck
+  alias Spades.Game.Event
   alias Spades.Game.Hand
   alias Spades.Game.Player
 
@@ -40,9 +41,10 @@ defmodule Spades.Game do
           trick: list(trick())
         }
   @type error :: {:error, t(), String.t()}
-  @type event :: map()
-  @type game :: {:ok, t(), list(event())} | error()
-  @type return :: {t(), list(event())} | error()
+  @type game :: {:ok, t()} | error()
+  @type with_events :: {t(), list(Event.t())}
+  @type return :: with_events() | error()
+  @type input :: t() | return()
 
   typedstruct do
     field :current_player, integer(), default: 0
@@ -63,6 +65,7 @@ defmodule Spades.Game do
     field :state, state(), default: :waiting
     field :trick, list(trick()), default: []
     field :last_trick, list(trick()), default: []
+    field :events, list(Event.t()), default: []
   end
 
   #################################
@@ -78,7 +81,7 @@ defmodule Spades.Game do
     }
   end
 
-  @spec add_player(t(), Player.t()) :: return()
+  @spec add_player(input(), Player.t()) :: return()
   def add_player(
         %__MODULE__{} = game,
         %Player{} = player
@@ -90,9 +93,12 @@ defmodule Spades.Game do
     |> chain()
   end
 
+  def add_player({%__MODULE__{} = game, events}, %Player{} = player),
+    do: add_player(%{game | events: events}, player)
+
   def add_player({:error, _game, _reason} = with_error, _player), do: with_error
 
-  @spec reveal_cards(t(), String.t()) :: return()
+  @spec reveal_cards(input(), String.t()) :: return()
   def reveal_cards(
         %__MODULE__{state: :bidding} = game,
         id
@@ -100,18 +106,21 @@ defmodule Spades.Game do
     case Map.get(game.players, id) do
       %Player{hand: %Hand{revealed: false}} ->
         reveal_player_card(game, id)
-        |> chain
+        |> chain()
 
       _ ->
         {:error, game, "#{id} cannot reveal"}
     end
   end
 
+  def reveal_cards({%__MODULE__{} = game, events}, id),
+    do: reveal_cards(%{game | events: events}, id)
+
   def reveal_cards({:error, _game, _reason} = with_error, _id), do: with_error
 
   def reveal_cards(game, id), do: {:error, game, "invalid game state for #{id} to reveal"}
 
-  @spec make_call(t(), String.t(), Hand.call()) :: return()
+  @spec make_call(input(), String.t(), Hand.call()) :: return()
   def make_call(
         %__MODULE__{state: :bidding} = game,
         id,
@@ -128,9 +137,12 @@ defmodule Spades.Game do
     end
   end
 
+  def make_call({%__MODULE__{} = game, events}, id, call),
+    do: make_call(%{game | events: events}, id, call)
+
   def make_call({:error, _game, _reason} = with_error, _id, _call), do: with_error
 
-  @spec play_card(t(), String.t(), Card.t()) :: return()
+  @spec play_card(input(), String.t(), Card.t()) :: return()
   def play_card(
         %__MODULE__{state: :playing} = game,
         id,
@@ -148,6 +160,9 @@ defmodule Spades.Game do
       {:error, game, "#{id} cannot play card"}
     end
   end
+
+  def play_card({%__MODULE__{} = game, events}, id, %Card{} = card),
+    do: play_card(%{game | events: events}, id, card)
 
   def play_card({:error, _game, _reason} = with_error, _id, _card), do: with_error
 
@@ -199,8 +214,8 @@ defmodule Spades.Game do
   ###########################
 
   @spec chain(game()) :: return()
-  defp chain({:ok, game}), do: game
-  defp chain(with_error), do: with_error
+  defp chain({:ok, %__MODULE__{events: events} = game}), do: {%{game | events: []}, events}
+  defp chain({:error, game, err}), do: {:error, %{game | events: []}, err}
 
   @spec get_player_list(t()) :: list(Player.public_player())
   defp get_player_list(game) do
@@ -229,24 +244,27 @@ defmodule Spades.Game do
         |> Tuple.to_list()
         |> zip()
 
-      {:ok,
-       %__MODULE__{
-         game
-         | players: new_players,
-           play_order: play_order
-       }}
+      %__MODULE__{
+        game
+        | players: new_players,
+          play_order: play_order
+      }
+      |> ok()
     end
   end
 
   @spec start_bidding(game()) :: game()
-  defp start_bidding({:ok, %__MODULE__{players: players, state: :waiting}} = result)
+  defp start_bidding({:ok, %__MODULE__{players: players, state: :waiting} = game})
        when map_size(players) == 4 do
-    set_bidding(result)
+    set_bidding(game)
+    |> add_event(:state_changed, %{old: :waiting, new: :bidding})
+    |> ok()
   end
 
-  defp start_bidding(game), do: game
+  defp start_bidding(result), do: result
 
-  defp set_bidding({:ok, %__MODULE__{} = game}), do: {:ok, %__MODULE__{game | state: :bidding}}
+  defp set_bidding(%__MODULE__{} = game), do: %{game | state: :bidding}
+  defp set_bidding({:ok, %__MODULE__{} = game}), do: %{game | state: :bidding} |> ok()
 
   @spec can_play?(t(), String.t()) :: boolean()
   defp can_play?(game, id) do
@@ -256,7 +274,8 @@ defmodule Spades.Game do
   @spec next_player(game()) :: game()
   defp next_player({:ok, %__MODULE__{} = game}) do
     # TODO
-    {:ok, %__MODULE__{game | current_player: rem(game.current_player + 1, 4)}}
+    %__MODULE__{game | current_player: rem(game.current_player + 1, 4)}
+    |> ok()
   end
 
   defp next_player(game), do: game
@@ -268,8 +287,9 @@ defmodule Spades.Game do
         call
       ) do
     if can_play?(game, id) && Player.can_call?(game.players[id], call) do
-      {:ok,
-       %__MODULE__{game | players: Map.update!(game.players, id, &Player.make_call(&1, call))}}
+      %__MODULE__{game | players: Map.update!(game.players, id, &Player.make_call(&1, call))}
+      |> add_event(:called, %{player: id, call: call})
+      |> ok()
     else
       {:error, game, "#{id} cannot call right now"}
     end
@@ -278,10 +298,11 @@ defmodule Spades.Game do
   @spec play(t(), String.t(), Card.t()) :: game()
   defp play(%__MODULE__{trick: [], players: players} = game, id, card) do
     if Player.can_play?(players[id], card, nil, game.spades_broken) do
-      {:ok,
-       %__MODULE__{game | trick: [%{id: id, card: card}]}
-       |> take_card_from_hand(id, card)
-       |> spades_broken(card)}
+      %__MODULE__{game | trick: [%{id: id, card: card}]}
+      |> take_card_from_hand(id, card)
+      |> spades_broken(card)
+      |> add_event(:played_card, %{player: id, card: card})
+      |> ok()
     else
       {:error, game, "#{id} cannot play #{to_string(card)}"}
     end
@@ -293,10 +314,11 @@ defmodule Spades.Game do
          card
        ) do
     if Player.can_play?(players[id], card, lead, game.spades_broken) do
-      {:ok,
-       %__MODULE__{game | trick: Enum.concat(trick, [%{id: id, card: card}])}
-       |> take_card_from_hand(id, card)
-       |> spades_broken(card)}
+      %__MODULE__{game | trick: Enum.concat(trick, [%{id: id, card: card}])}
+      |> take_card_from_hand(id, card)
+      |> spades_broken(card)
+      |> add_event(:played_card, %{player: id, card: card})
+      |> ok()
     else
       {:error, game, "#{id} cannot play #{to_string(card)}, and #{to_string(lead)} was lead"}
     end
@@ -330,12 +352,13 @@ defmodule Spades.Game do
 
     winner = Enum.find_index(game.play_order, &(&1 == id))
 
-    {:ok,
-     %__MODULE__{
-       game
-       | players: Map.update!(game.players, id, &Player.take(&1)),
-         current_player: winner
-     }}
+    %__MODULE__{
+      game
+      | players: Map.update!(game.players, id, &Player.take(&1)),
+        current_player: winner
+    }
+    |> add_event(:awarded_trick, %{winner: id})
+    |> ok()
   end
 
   defp award_trick(game), do: game
@@ -343,17 +366,21 @@ defmodule Spades.Game do
   @spec start_game(game()) :: game()
   defp start_game({:ok, game}) do
     if Enum.all?(game.players, &(elem(&1, 1).hand.call != nil)) do
-      {:ok, %__MODULE__{game | state: :playing}}
+      %__MODULE__{game | state: :playing}
+      |> add_event(:state_changed, %{old: :bidding, new: :playing})
     else
-      {:ok, game}
+      game
     end
+    |> ok()
   end
 
   defp start_game(game), do: game
 
   @spec end_hand(game()) :: game()
   defp end_hand({:ok, %__MODULE__{trick: trick} = game}) when length(trick) == 4 do
-    {:ok, %__MODULE__{game | trick: [], last_trick: trick}}
+    %__MODULE__{game | trick: [], last_trick: trick}
+    |> add_event(:hand_ended, %{})
+    |> ok()
   end
 
   defp end_hand(game), do: game
@@ -372,8 +399,10 @@ defmodule Spades.Game do
       |> increment_play_order()
       |> deal(true)
       |> set_bidding()
+      |> add_event(:round_ended, %{})
+      |> ok()
     else
-      game
+      ok(game)
     end
   end
 
@@ -390,7 +419,9 @@ defmodule Spades.Game do
     if player == nil do
       {:error, game, "no player for #{id} in the game"}
     else
-      {:ok, %__MODULE__{game | players: Map.put(game.players, id, Player.reveal(player))}}
+      %__MODULE__{game | players: Map.put(game.players, id, Player.reveal(player))}
+      |> add_event(:revealed_cards, %{player: id})
+      |> ok()
     end
   end
 
@@ -428,7 +459,9 @@ defmodule Spades.Game do
   @spec deal_cards(game()) :: game()
   defp deal_cards(game, shuffle \\ false)
 
-  defp deal_cards({:ok, %__MODULE__{} = game}, shuffle), do: deal(game, shuffle)
+  defp deal_cards({:ok, %__MODULE__{players: players} = game}, shuffle)
+       when map_size(players) == 4,
+       do: deal(game, shuffle)
 
   defp deal_cards(game, _shuffle), do: game
 
@@ -449,11 +482,12 @@ defmodule Spades.Game do
         Player.receive_cards(players[id], Tuple.to_list(hand))
       end)
 
-    {:ok,
-     %__MODULE__{
-       game
-       | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.id, &1))
-     }}
+    %__MODULE__{
+      game
+      | players: Enum.reduce(dealt_players, %{}, &Map.put(&2, &1.id, &1))
+    }
+    |> add_event(:dealt_cards, %{})
+    |> ok()
   end
 
   defp zip(teams, players \\ [])
@@ -471,4 +505,16 @@ defmodule Spades.Game do
       east_west: east_west.points + east_west.bags
     }
   end
+
+  @spec add_event(t(), Event.event_type(), map()) :: t()
+  defp add_event(%__MODULE__{events: events} = game, type, data) do
+    %{game | events: Enum.concat(events, [Event.create_event(type, data)])}
+  end
+
+  defp add_event({:ok, %__MODULE__{events: events} = game}, type, data) do
+    {:ok, %{game | events: Enum.concat(events, [Event.create_event(type, data)])}}
+  end
+
+  defp ok(game) when is_struct(game), do: {:ok, game}
+  defp ok(result), do: result
 end

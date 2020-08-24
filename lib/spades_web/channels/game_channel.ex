@@ -32,11 +32,11 @@ defmodule SpadesWeb.GameChannel do
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
 
-      _ ->
+      {:ok, _game, events} ->
         state = GameManager.get_game_state_for_player(game_id, player_id)
 
-        push(socket, "game_state", state)
-        broadcast!(socket, "join_game", body)
+        push(socket, "game_state", %{events: events, state: state})
+        broadcast!(socket, "join_game", %{"events" => events})
 
         SpadesWeb.Endpoint.broadcast("lobby:*", "update_game", %{
           id: state.id,
@@ -56,10 +56,10 @@ defmodule SpadesWeb.GameChannel do
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
 
-      _ ->
+      {:ok, _game, events} ->
         state = GameManager.get_game_state_for_player(game_id, player_id)
 
-        push(socket, "game_state", state)
+        push(socket, "game_state", %{events: events, state: state})
 
         {:noreply, socket}
     end
@@ -73,8 +73,8 @@ defmodule SpadesWeb.GameChannel do
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
 
-      _ ->
-        broadcast!(socket, "make_call", %{})
+      {:ok, _game, events} ->
+        broadcast!(socket, "make_call", %{"events" => events})
 
         {:noreply, socket}
     end
@@ -92,8 +92,8 @@ defmodule SpadesWeb.GameChannel do
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
 
-      _ ->
-        broadcast!(socket, "play_card", %{})
+      {:ok, _game, events} ->
+        broadcast!(socket, "play_card", %{"events" => events})
 
         {:noreply, socket}
     end
@@ -101,32 +101,32 @@ defmodule SpadesWeb.GameChannel do
 
   intercept ["join_game", "make_call", "play_card"]
 
-  def handle_out("join_game", _body, socket) do
+  def handle_out("join_game", %{"events" => events}, socket) do
     game_id = socket.assigns[:game_id]
     player_id = socket.assigns[:user_id]
 
     state = GameManager.get_game_state_for_player(game_id, player_id)
-    push(socket, "game_state", state)
+    push(socket, "game_state", %{state: state, events: events})
 
     {:noreply, socket}
   end
 
-  def handle_out("make_call", _body, socket) do
+  def handle_out("make_call", %{"events" => events}, socket) do
     game_id = socket.assigns[:game_id]
     player_id = socket.assigns[:user_id]
 
     state = GameManager.get_game_state_for_player(game_id, player_id)
-    push(socket, "game_state", state)
+    push(socket, "game_state", %{state: state, events: events})
 
     {:noreply, socket}
   end
 
-  def handle_out("play_card", _body, socket) do
+  def handle_out("play_card", %{"events" => events}, socket) do
     game_id = socket.assigns[:game_id]
     player_id = socket.assigns[:user_id]
 
     state = GameManager.get_game_state_for_player(game_id, player_id)
-    push(socket, "game_state", state)
+    push(socket, "game_state", %{state: state, events: events})
 
     {:noreply, socket}
   end

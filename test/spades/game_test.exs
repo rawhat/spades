@@ -3,6 +3,7 @@ defmodule Spades.Game.GameTest do
 
   alias Spades.Game
   alias Spades.Game.Card
+  alias Spades.Game.Event
   alias Spades.Game.Player
 
   setup_all do
@@ -25,7 +26,7 @@ defmodule Spades.Game.GameTest do
       Card.new(:spades, 2)
     ]
 
-    game =
+    {game, _events} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -49,13 +50,13 @@ defmodule Spades.Game.GameTest do
   end
 
   test "play card for first player", %{p1: p1, game: game} do
-    g = Game.play_card(game, p1.id, Enum.at(p1.hand.cards, 0))
+    {g, _events} = Game.play_card(game, p1.id, Enum.at(p1.hand.cards, 0))
 
     assert Enum.count(g.trick) == 1
   end
 
   test "play four cards, assign trick", %{game: game, deck: deck, p1: p1, p2: p2, p3: p3, p4: p4} do
-    g =
+    {g, _events} =
       Game.play_card(game, p1.id, Enum.at(deck, 0))
       |> Game.play_card(p2.id, Enum.at(deck, 1))
       |> Game.play_card(p3.id, Enum.at(deck, 2))
@@ -74,7 +75,7 @@ defmodule Spades.Game.GameTest do
   end
 
   test "play all cards, round ends", %{game: game, deck: deck, p1: p1, p2: p2, p3: p3, p4: p4} do
-    g =
+    {g, events} =
       Game.play_card(game, p1.id, Enum.at(deck, 0))
       |> Game.play_card(p2.id, Enum.at(deck, 1))
       |> Game.play_card(p3.id, Enum.at(deck, 2))
@@ -97,6 +98,30 @@ defmodule Spades.Game.GameTest do
     assert Enum.all?(g.players, fn {_, player} ->
              Enum.count(player.hand.cards) != 0
            end)
+
+    assert events == [
+             Event.create_event(:dealt_cards, %{}),
+             Event.create_event(:state_changed, %{old: :waiting, new: :bidding}),
+             Event.create_event(:called, %{player: p1.id, call: 0}),
+             Event.create_event(:called, %{player: p2.id, call: 3}),
+             Event.create_event(:called, %{player: p3.id, call: 3}),
+             Event.create_event(:called, %{player: p4.id, call: 4}),
+             Event.create_event(:state_changed, %{old: :bidding, new: :playing}),
+             Event.create_event(:played_card, %{player: p1.id, card: Enum.at(deck, 0)}),
+             Event.create_event(:played_card, %{player: p2.id, card: Enum.at(deck, 1)}),
+             Event.create_event(:played_card, %{player: p3.id, card: Enum.at(deck, 2)}),
+             Event.create_event(:played_card, %{player: p4.id, card: Enum.at(deck, 3)}),
+             Event.create_event(:awarded_trick, %{winner: p1.id}),
+             Event.create_event(:hand_ended, %{}),
+             Event.create_event(:played_card, %{player: p1.id, card: Enum.at(deck, 4)}),
+             Event.create_event(:played_card, %{player: p2.id, card: Enum.at(deck, 5)}),
+             Event.create_event(:played_card, %{player: p3.id, card: Enum.at(deck, 6)}),
+             Event.create_event(:played_card, %{player: p4.id, card: Enum.at(deck, 7)}),
+             Event.create_event(:awarded_trick, %{winner: p4.id}),
+             Event.create_event(:hand_ended, %{}),
+             Event.create_event(:dealt_cards, %{}),
+             Event.create_event(:round_ended, %{})
+           ]
   end
 
   test "can't play non-matching card", %{game: game, deck: deck, p1: p1, p2: p2} do
@@ -143,7 +168,7 @@ defmodule Spades.Game.GameTest do
       Card.new(:diamonds, 5)
     ]
 
-    game =
+    {game, _events} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -176,7 +201,7 @@ defmodule Spades.Game.GameTest do
       Card.new(:spades, 7)
     ]
 
-    game =
+    {game, _events} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -208,7 +233,7 @@ defmodule Spades.Game.GameTest do
       Card.new(:spades, 5)
     ]
 
-    game =
+    {game, _evenst} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -265,7 +290,7 @@ defmodule Spades.Game.GameTest do
       |> Stream.take(count)
       |> Enum.to_list()
 
-    game =
+    {game, _events} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -276,7 +301,7 @@ defmodule Spades.Game.GameTest do
       |> Game.make_call(p3.id, 1)
       |> Game.make_call(p4.id, 1)
 
-    next_game =
+    {next_game, _events} =
       Enum.zip(with_players, deck)
       |> Enum.reduce(game, fn {player, card}, g ->
         Game.play_card(g, player.id, card)
@@ -310,7 +335,7 @@ defmodule Spades.Game.GameTest do
       |> Game.add_player(p3)
       |> Game.add_player(p4)
       |> Game.reveal_cards(p1.id)
-      |> Game.call(p1.id, -1)
+      |> Game.make_call(p1.id, -1)
 
     assert game.players["0"].hand.call == nil
   end
@@ -321,7 +346,7 @@ defmodule Spades.Game.GameTest do
     p3 = Player.new("2", "jon", :north_south)
     p4 = Player.new("3", "gopal", :east_west)
 
-    revealed =
+    {revealed, _events} =
       Game.new("2", "test")
       |> Game.add_player(p1)
       |> Game.add_player(p2)

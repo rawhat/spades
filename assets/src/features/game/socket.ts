@@ -23,6 +23,11 @@ interface ErrorPayload {
   reason: string;
 }
 
+interface GameStatePayload {
+  events: any[];
+  state: PlayerStatus | GameStatus;
+}
+
 export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
   let socket = new Socket("/socket/game");
   socket.connect();
@@ -47,11 +52,12 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
           next(socketError(err));
         });
 
-      channel.on("game_state", (payload: PlayerStatus | GameStatus) => {
-        if ((payload as PlayerStatus).team !== undefined) {
-          next(setPlayerState(payload as PlayerStatus));
+      channel.on("game_state", ({ events, state }: GameStatePayload) => {
+        console.log("got events", events);
+        if ((state as PlayerStatus).team !== undefined) {
+          next(setPlayerState(state as PlayerStatus));
         } else {
-          next(setGameState(payload));
+          next(setGameState(state));
         }
       });
 
