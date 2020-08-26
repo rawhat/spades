@@ -14,6 +14,7 @@ import {
   revealCards,
   setConnected,
   setError,
+  setEvents,
   setGameState,
   setPlayerState,
   socketError,
@@ -53,12 +54,12 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
         });
 
       channel.on("game_state", ({ events, state }: GameStatePayload) => {
-        console.log("got events", events);
         if ((state as PlayerStatus).team !== undefined) {
           next(setPlayerState(state as PlayerStatus));
         } else {
           next(setGameState(state));
         }
+        next(setEvents(events));
       });
 
       next(setConnected());

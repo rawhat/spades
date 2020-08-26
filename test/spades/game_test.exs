@@ -26,7 +26,7 @@ defmodule Spades.Game.GameTest do
       Card.new(:spades, 2)
     ]
 
-    {game, _events} =
+    {game, events} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -42,7 +42,7 @@ defmodule Spades.Game.GameTest do
     three = Map.get(game.players, p3.id)
     four = Map.get(game.players, p4.id)
 
-    {:ok, deck: deck, p1: one, p2: two, p3: three, p4: four, game: game}
+    {:ok, deck: deck, p1: one, p2: two, p3: three, p4: four, game: game, events: events}
   end
 
   test "is playing after seed", %{game: game} do
@@ -74,8 +74,16 @@ defmodule Spades.Game.GameTest do
            ]
   end
 
-  test "play all cards, round ends", %{game: game, deck: deck, p1: p1, p2: p2, p3: p3, p4: p4} do
-    {g, events} =
+  test "play all cards, round ends", %{
+    game: game,
+    events: events,
+    deck: deck,
+    p1: p1,
+    p2: p2,
+    p3: p3,
+    p4: p4
+  } do
+    {g, new_events} =
       Game.play_card(game, p1.id, Enum.at(deck, 0))
       |> Game.play_card(p2.id, Enum.at(deck, 1))
       |> Game.play_card(p3.id, Enum.at(deck, 2))
@@ -99,7 +107,7 @@ defmodule Spades.Game.GameTest do
              Enum.count(player.hand.cards) != 0
            end)
 
-    assert events == [
+    assert Enum.concat(events, new_events) == [
              Event.create_event(:dealt_cards, %{}),
              Event.create_event(:state_changed, %{old: :waiting, new: :bidding}),
              Event.create_event(:called, %{player: p1.id, call: 0}),

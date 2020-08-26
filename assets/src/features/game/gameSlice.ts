@@ -9,11 +9,83 @@ import { get } from "../../app/client";
 import { RootState } from "../../app/store";
 import { selectUsername } from "../user/userSlice";
 
+type CalledEvent = {
+  type: "called";
+  data: {
+    player: string;
+    call: number;
+  };
+};
+
+type StateChangedEvent = {
+  type: "state_changed";
+  data: {
+    old: GameState;
+    new: GameState;
+  };
+};
+
+export type PlayedCardEvent = {
+  type: "played_card";
+  data: {
+    player: string;
+    card: Card;
+  };
+};
+
+type HandEndedEvent = {
+  type: "hand_ended";
+  data: {};
+};
+
+type RoundEndedEvent = {
+  type: "round_ended";
+  data: {};
+};
+
+type AwardedTrickEvent = {
+  type: "awarded_trick";
+  data: {
+    winner: string;
+  };
+};
+
+type RevealedCardsEvent = {
+  type: "revealed_cards";
+  data: {
+    player: string;
+  };
+};
+
+type DealtCardsEvent = {
+  type: "dealt_cards";
+  data: {};
+};
+
+export type Event =
+  | CalledEvent
+  | StateChangedEvent
+  | PlayedCardEvent
+  | HandEndedEvent
+  | RoundEndedEvent
+  | AwardedTrickEvent
+  | RevealedCardsEvent
+  | DealtCardsEvent;
+
+type IsEvent<T, N> = T extends { type: N } ? T : never;
+
+export function isEvent<T extends Event, K extends T["type"]>(type: K) {
+  return (event: T): event is IsEvent<T, K> => {
+    return event.type === type;
+  };
+}
+
 interface GameState {
   connected: boolean;
   error?: string;
   game?: GameStatus;
   playerState?: PlayerStatus;
+  events?: Event[];
 }
 
 export enum Team {
@@ -100,14 +172,23 @@ export const gameSlice = createSlice({
     setPlayerState: (state, action: PayloadAction<PlayerStatus>) => {
       state.playerState = action.payload;
     },
+    setEvents: (state, action: PayloadAction<Event[]>) => {
+      console.log("settin events");
+      state.events = action.payload;
+    },
+    clearEvents: (state) => {
+      state.events = undefined;
+    },
   },
 });
 
 export const {
   clearError,
+  clearEvents,
   setConnected,
   setDisconnected,
   setError,
+  setEvents,
   setGameState,
 } = gameSlice.actions;
 
@@ -250,7 +331,7 @@ export const selectOrderedPlayers = createSelector(
   }
 );
 
-type TrickByPlayerId = { [playerId: string]: PlayedCard };
+export type TrickByPlayerId = { [playerId: string]: PlayedCard };
 
 export const selectTrickByPlayerId = createSelector(
   selectTrick,
@@ -262,4 +343,9 @@ export const selectLastTrick = createSelector(
   getGameState,
   getPlayerState,
   (gameState, playerState) => (playerState || gameState)?.last_trick
+);
+
+export const selectEvents = createSelector(
+  (state: RootState) => state.game,
+  (gameState: GameState) => gameState.events ?? []
 );

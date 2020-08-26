@@ -1,30 +1,38 @@
 import * as React from "react";
+import { useCallback } from "react";
 import { useSelector } from "react-redux";
 
 import {
   State,
+  isEvent,
+  selectEvents,
   selectGameState,
-  selectOrderedPlayers,
-  selectTrickByPlayerId,
 } from "./features/game/gameSlice";
 
 import CallBox from "./CallBox";
 import ScoreBox from "./ScoreBox";
-import { HorizontalLayout, VerticalLayout } from "./Layout";
-import { EmptyCard, PlayingCard } from "./Card";
+import Trick from "./Trick";
+import useDelay from "./useDelay";
+import { VerticalLayout } from "./Layout";
 
 function PlayArea() {
   const gameState = useSelector(selectGameState);
-  const trickById = useSelector(selectTrickByPlayerId);
+  const events = useSelector(selectEvents);
 
-  const [self, leftPlayer, topPlayer, rightPlayer] = useSelector(
-    selectOrderedPlayers
+  const shouldDelay = useCallback(
+    (previousState, currentState) => {
+      return (
+        previousState &&
+        currentState &&
+        previousState === State.Playing &&
+        currentState === State.Bidding &&
+        events.some(isEvent("played_card"))
+      );
+    },
+    [events]
   );
 
-  const bottomCard = self && trickById[self.id];
-  const leftCard = leftPlayer && trickById[leftPlayer.id];
-  const topCard = topPlayer && trickById[topPlayer.id];
-  const rightCard = rightPlayer && trickById[rightPlayer.id];
+  const state = useDelay(gameState, shouldDelay);
 
   return (
     <VerticalLayout flexGrow={1} height="100%" position="relative">
@@ -34,25 +42,12 @@ function PlayArea() {
         justifyContent="center"
         width="auto"
       >
-        {gameState === State.Waiting && <div>Waiting for players...</div>}
-        {gameState === State.Bidding && <div>Make your bids!</div>}
-        {gameState === State.Playing && (
-          <HorizontalLayout alignItems="center">
-            {leftCard && <PlayingCard card={leftCard.card} />}
-            <VerticalLayout height="100%">
-              {topCard ? <PlayingCard card={topCard.card} /> : <EmptyCard />}
-              {bottomCard ? (
-                <PlayingCard card={bottomCard.card} />
-              ) : (
-                <EmptyCard />
-              )}
-            </VerticalLayout>
-            {rightCard && <PlayingCard card={rightCard.card} />}
-          </HorizontalLayout>
-        )}
+        {state === State.Waiting && <div>Waiting for players...</div>}
+        {state === State.Bidding && <div>Make your bids!</div>}
+        {state === State.Playing && <Trick />}
       </VerticalLayout>
       <ScoreBox />
-      {gameState === State.Bidding && <CallBox />}
+      {state === State.Bidding && <CallBox />}
     </VerticalLayout>
   );
 }

@@ -112,7 +112,7 @@ function GameView() {
               <Bold>Last trick:</Bold>
               <HorizontalLayout>
                 {lastTrick.map(({ id, card }) => (
-                  <VerticalLayout>
+                  <VerticalLayout key={id}>
                     <div>{playersById[id] || id}</div>
                     <PlayingCard card={card} size={5} />
                   </VerticalLayout>

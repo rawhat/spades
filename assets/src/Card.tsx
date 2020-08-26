@@ -88,13 +88,16 @@ export function PlayingCard({ card, onClick, size = 8 }: PlayerCardProps) {
 }
 
 const emptyStyle = {
+  opacity: 0,
   fontSize: "8em",
 };
+
+const knightSpades = getCardCode(suitToOffset(Suit.Spades) + 11);
 
 export function EmptyCard() {
   return (
     <div style={emptyStyle}>
-      <span dangerouslySetInnerHTML={{ __html: "&nbsp;" }} />
+      <span dangerouslySetInnerHTML={{ __html: knightSpades }} />
     </div>
   );
 }
