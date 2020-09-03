@@ -173,7 +173,6 @@ export const gameSlice = createSlice({
       state.playerState = action.payload;
     },
     setEvents: (state, action: PayloadAction<Event[]>) => {
-      console.log("settin events");
       state.events = action.payload;
     },
     clearEvents: (state) => {

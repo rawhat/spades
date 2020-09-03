@@ -13,6 +13,7 @@ import {
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
+import EventStream from "./EventStream";
 import PlayArea from "./PlayArea";
 import { Bold } from "./Text";
 import { HiddenHand } from "./Hand";
@@ -120,6 +121,7 @@ function GameView() {
               </HorizontalLayout>
             </VerticalLayout>
           )}
+          <EventStream />
         </VerticalLayout>
       </Column>
     </HorizontalLayout>

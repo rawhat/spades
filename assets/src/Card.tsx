@@ -3,6 +3,26 @@ import { useMemo } from "react";
 
 import { Card, Suit } from "./features/game/gameSlice";
 
+export function cardToString(card: Card): string {
+  switch(card.value) {
+    case 14: {
+      return `Ace of ${card.suit}`;
+    }
+    case 13: {
+      return `King of ${card.suit}`;
+    }
+    case 12: {
+      return `Queen of ${card.suit}`;
+    }
+    case 11: {
+      return `Jack ${card.suit}`;
+    }
+    default: {
+      return `${card.value} of ${card.suit}`
+    }
+  }
+}
+
 export function cardValue(value: number): string {
   switch (value) {
     case 1:
