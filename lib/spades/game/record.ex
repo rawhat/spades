@@ -1,54 +1,56 @@
-defmodule Spades.Game.GameRecord do
-  # defmacro __using__(erl_mod: erl_mod, module: module, record_name: record_name) do
-  # erl_record = String.downcase(record_name) |> String.to_atom()
+defmodule Spades.Game.Record do
+  require Record
 
-  # record =
-  # Record.extract(
-  # erl_record,
-  # from: "gen/src/#{erl_mod}_#{record_name}.hrl"
-  # )
+  defmacro __using__(opts) do
+    name = Keyword.fetch!(opts, :name)
+    from = Keyword.fetch!(opts, :from)
 
-  # keys = :lists.map(&elem(&1, 0), record)
-  # vals = :lists.map(&{&1, [], nil}, keys)
-  # pairs = :lists.zip(keys, vals)
+    fields = Record.extract(name, from: from)
+    struct_fields = Keyword.keys(fields)
+    vars = Macro.generate_arguments(length(struct_fields), __MODULE__)
+    kvs = Enum.zip(struct_fields, vars)
 
-  # quote do
-  # defstruct unquote(keys)
-
-  # def to_record(%unquote(module){unquote_splicing(pairs)}) do
-  # {unquote(erl_record), unquote_splicing(vals)}
-  # end
-
-  # def from_record(s) do
-  # %unquote(module){unquote_splicing(pairs)}
-  # end
-
-  ## def to_record(%unquote(module){}) do
-  ## asdfasdfad
-  ## {erl_mod, unquote_splicing(vals)}
-  ## end
-
-  ## def to_record(quote(unquote_splicing(unquote(pairs)))) do
-  ## quote do
-  ## {unquote(erl_mod), unquote_splicing(vals)}
-  ## end
-  ## end
-
-  ## def from_record({unquote(erl_mod), unquote_splicing(unquote(vals))}) do
-  ## %unquote(module){unquote_splicing(pairs)}
-  ## end
-  ## end
-  # end
-  # end
-  defmacro __using__(erl_mod: erl_mod, module: module, record_name: record_name) do
     quote do
-      require Record
+      @derive Jason.Encoder
+      defstruct unquote(struct_fields)
 
-      record = unquote(record_name |> String.downcase() |> String.to_atom())
+      def from_record({unquote(name), unquote_splicing(vars)}) do
+        %__MODULE__{unquote_splicing(kvs)}
+      end
 
-      Record.defrecord(record,
-        from: "gen/src/#{unquote(erl_mod)}_#{unquote(record_name)}.hrl"
-      )
+      def to_record(%__MODULE__{unquote_splicing(kvs)}) do
+        {unquote(name), unquote_splicing(vars)}
+      end
+
+      def from_result({:ok, {unquote(name), unquote_splicing(vars)} = record}) do
+        {:ok, from_record(record)}
+      end
+
+      def from_result({unquote(name), unquote_splicing(vars)} = record) do
+        from_record(record)
+      end
+
+      def from_option({:some, {unquote(name), unquote_splicing(vars)} = record}) do
+        {:ok, from_record(Tuple.delete_at(0, 1))}
+      end
+
+      def from_option({unquote(name), unquote_splicing(vars)} = record) do
+        from_record(record)
+      end
+
+      def from_option(:none), do: nil
+
+      def to_option(nil), do: :none
+      def to_option(value), do: {:some, value}
+
+      def parse(record), do: from_record(record)
+
+      def unparse(%__MODULE__{} = struct), do: to_record(struct)
+
+      defoverridable parse: 1, unparse: 1
     end
   end
+
+  def option_as_nil(:none), do: nil
+  def option_as_nil({:some, opt}), do: opt
 end

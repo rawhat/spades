@@ -1,10 +1,13 @@
 defmodule Spades.Game.GameTest do
   use ExUnit.Case
 
-  alias Spades.Game
-  alias Spades.Game.Card
-  alias Spades.Game.Event
-  alias Spades.Game.Player
+  alias Spades.Game.Record.Card
+  alias Spades.Game.Record.Event
+  alias Spades.Game.Record.Game
+  alias Spades.Game.Record.Player
+  alias Spades.Game.Record.PublicScore
+  alias Spades.Game.Record.Score
+  alias Spades.Game.Record.Trick
 
   setup_all do
     p1 = Player.new("0", "alex", :north_south)
@@ -64,14 +67,16 @@ defmodule Spades.Game.GameTest do
 
     assert Enum.empty?(g.trick)
     assert g.players[p1.id].hand.tricks == 1
-    assert g.current_player == 0
+    assert g.current_player == {:some, p1.id}
 
-    assert g.last_trick == [
-             %{id: p1.id, card: Enum.at(deck, 0)},
-             %{id: p2.id, card: Enum.at(deck, 1)},
-             %{id: p3.id, card: Enum.at(deck, 2)},
-             %{id: p4.id, card: Enum.at(deck, 3)}
-           ]
+    assert g.last_trick ==
+             {:some,
+              [
+                %Trick{player_id: p1.id, card: Enum.at(deck, 0)},
+                %Trick{player_id: p2.id, card: Enum.at(deck, 1)},
+                %Trick{player_id: p3.id, card: Enum.at(deck, 2)},
+                %Trick{player_id: p4.id, card: Enum.at(deck, 3)}
+              ]}
   end
 
   test "play all cards, round ends", %{
@@ -94,14 +99,14 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.id, Enum.at(deck, 7))
 
     assert g.scores == %{
-             :north_south => %{points: -80, bags: 0},
-             :east_west => %{points: -70, bags: 0}
+             :north_south => %Score{points: -80, bags: 0},
+             :east_west => %Score{points: -70, bags: 0}
            }
 
-    assert g.current_player == 0
+    assert g.current_player == {:some, p2.id}
     assert Enum.at(g.play_order, 0) == p2.id
     assert g.state == :bidding
-    assert g.last_trick == []
+    assert g.last_trick == :none
 
     assert Enum.all?(g.players, fn {_, player} ->
              Enum.count(player.hand.cards) != 0
@@ -109,26 +114,51 @@ defmodule Spades.Game.GameTest do
 
     assert Enum.concat(events, new_events) == [
              Event.create_event(:dealt_cards, %{}),
-             Event.create_event(:state_changed, %{old: :waiting, new: :bidding}),
-             Event.create_event(:called, %{player: p1.id, call: 0}),
-             Event.create_event(:called, %{player: p2.id, call: 3}),
-             Event.create_event(:called, %{player: p3.id, call: 3}),
-             Event.create_event(:called, %{player: p4.id, call: 4}),
-             Event.create_event(:state_changed, %{old: :bidding, new: :playing}),
-             Event.create_event(:played_card, %{player: p1.id, card: Enum.at(deck, 0)}),
-             Event.create_event(:played_card, %{player: p2.id, card: Enum.at(deck, 1)}),
-             Event.create_event(:played_card, %{player: p3.id, card: Enum.at(deck, 2)}),
-             Event.create_event(:played_card, %{player: p4.id, card: Enum.at(deck, 3)}),
-             Event.create_event(:awarded_trick, %{winner: p1.id}),
+             Event.create_event(:state_changed, %Event.StateChanged{old: :waiting, new: :bidding}),
+             Event.create_event(:called, %Event.Called{player: p1.id, call: 0}),
+             Event.create_event(:called, %Event.Called{player: p2.id, call: 3}),
+             Event.create_event(:called, %Event.Called{player: p3.id, call: 3}),
+             Event.create_event(:called, %Event.Called{player: p4.id, call: 4}),
+             Event.create_event(:state_changed, %Event.StateChanged{old: :bidding, new: :playing}),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p1.id,
+               card: Enum.at(deck, 0)
+             }),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p2.id,
+               card: Enum.at(deck, 1)
+             }),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p3.id,
+               card: Enum.at(deck, 2)
+             }),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p4.id,
+               card: Enum.at(deck, 3)
+             }),
+             Event.create_event(:awarded_trick, %Event.AwardedTrick{winner: p1.id}),
              Event.create_event(:hand_ended, %{}),
-             Event.create_event(:played_card, %{player: p1.id, card: Enum.at(deck, 4)}),
-             Event.create_event(:played_card, %{player: p2.id, card: Enum.at(deck, 5)}),
-             Event.create_event(:played_card, %{player: p3.id, card: Enum.at(deck, 6)}),
-             Event.create_event(:played_card, %{player: p4.id, card: Enum.at(deck, 7)}),
-             Event.create_event(:awarded_trick, %{winner: p4.id}),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p1.id,
+               card: Enum.at(deck, 4)
+             }),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p2.id,
+               card: Enum.at(deck, 5)
+             }),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p3.id,
+               card: Enum.at(deck, 6)
+             }),
+             Event.create_event(:played_card, %Event.PlayedCard{
+               player: p4.id,
+               card: Enum.at(deck, 7)
+             }),
+             Event.create_event(:awarded_trick, %Event.AwardedTrick{winner: p4.id}),
              Event.create_event(:hand_ended, %{}),
+             Event.create_event(:round_ended, %{}),
              Event.create_event(:dealt_cards, %{}),
-             Event.create_event(:round_ended, %{})
+             Event.create_event(:state_changed, %Event.StateChanged{old: :playing, new: :bidding})
            ]
   end
 
@@ -137,7 +167,7 @@ defmodule Spades.Game.GameTest do
       Game.play_card(game, p1.id, Enum.at(deck, 0))
       |> Game.play_card(p2.id, Enum.at(deck, 5))
 
-    assert g.trick == [%{id: p1.id, card: Enum.at(deck, 0)}]
+    assert g.trick == [%Spades.Game.Record.Trick{player_id: p1.id, card: Enum.at(deck, 0)}]
   end
 
   test "spades not broken, can't lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -165,7 +195,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p1.id, Card.new(:spades, 2))
 
     assert game.trick == []
-    assert String.contains?(reason, "2S")
+    assert String.contains?(reason, "Card is not valid")
   end
 
   test "only have spades, can lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -186,9 +216,9 @@ defmodule Spades.Game.GameTest do
       |> Game.make_call(p2.id, 1)
       |> Game.make_call(p3.id, 1)
       |> Game.make_call(p4.id, 1)
-      |> Game.play_card(p1.id, Card.new(:spades, 2))
+      |> Game.play_card(p1.id, Enum.at(deck, 0))
 
-    assert game.trick == [%{id: p1.id, card: Card.new(:spades, 2)}]
+    assert game.trick == [%Trick{player_id: p1.id, card: Enum.at(deck, 0)}]
   end
 
   test "once spades are broken, they can be lead", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -225,7 +255,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.id, Enum.at(deck, 7))
       |> Game.play_card(p4.id, Enum.at(deck, 11))
 
-    assert game.trick == [%{id: p4.id, card: Enum.at(deck, 11)}]
+    assert game.trick == [%Trick{player_id: p4.id, card: Enum.at(deck, 11)}]
   end
 
   test "leading suit with all offsuit wins", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -241,7 +271,7 @@ defmodule Spades.Game.GameTest do
       Card.new(:spades, 5)
     ]
 
-    {game, _evenst} =
+    {game, _events} =
       Game.new("1", "one", deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
@@ -256,7 +286,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.id, Enum.at(deck, 2))
       |> Game.play_card(p4.id, Enum.at(deck, 3))
 
-    assert game.current_player == 0
+    assert game.current_player == {:some, p1.id}
   end
 
   test "bagging out deducts points from score" do
@@ -320,11 +350,11 @@ defmodule Spades.Game.GameTest do
     #   so:  20 - 100 for bagging out, with 11 bags
     #   which actually means: -80 + 10 + 1
     assert next_game.scores == %{
-             north_south: %{points: -70, bags: 1},
-             east_west: %{points: -20, bags: 0}
+             north_south: %Score{points: -70, bags: 1},
+             east_west: %Score{points: -20, bags: 0}
            }
 
-    assert Game.state(next_game).scores == %{
+    assert Game.state(next_game).scores == %PublicScore{
              north_south: -69,
              east_west: -20
            }
@@ -364,6 +394,6 @@ defmodule Spades.Game.GameTest do
 
     assert revealed.players[p4.id].hand.revealed == true
 
-    assert {:error, _game, _reason} = Game.call(revealed, p4.id, 4)
+    assert {:error, _game, _reason} = Game.make_call(revealed, p4, 4)
   end
 end

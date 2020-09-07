@@ -306,22 +306,6 @@ export const selectSelf = createSelector(
     (playerState || gameState)?.players.find((p) => p.name === username)
 );
 
-export const selectError = createSelector(
-  (state: RootState) => state.game,
-  (state) => state.error
-);
-
-export const selectPlayersById = createSelector(
-  getPlayerState,
-  getGameState,
-  (playerState, gameState) =>
-    Object.fromEntries(
-      Object.values(
-        (playerState || gameState)?.players ?? {}
-      ).map(({ id, name }) => [id, name])
-    )
-);
-
 export const selectOrderedPlayers = createSelector(
   selectPlayers,
   selectUsername,

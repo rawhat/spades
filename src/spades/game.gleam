@@ -1,88 +1,19 @@
 import gleam/io
-import gleam/iterator.{from_list, range, to_list}
-import gleam/list.{flatten}
+import gleam/list
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
-import gleam/order.{Eq, Gt, Lt, Order}
 import gleam/pair
 import gleam/result
-
-pub type Suit {
-  Clubs
-  Hearts
-  Diamonds
-  Spades
+import gleam/string
+import spades/card.{
+  Card, Spades, new_deck, string as card_to_string, value_order,
 }
-
-pub type Value {
-  Ace
-  King
-  Queen
-  Jack
-  Number(value: Int)
+import spades/player.{
+  BlindNil, Call, EastWest, Hand, NorthSouth, Player, PlayerId, PublicPlayer, Team,
+  has_suit, receive_cards, to_public,
 }
-
-pub fn value_order(v1: Value, v2: Value) -> Order {
-  case tuple(v1, v2) {
-    tuple(a, b) if a == b -> Eq
-    tuple(Ace, _) -> Gt
-    tuple(King, Ace) -> Lt
-    tuple(King, _) -> Gt
-    tuple(Queen, Ace) -> Lt
-    tuple(Queen, King) -> Lt
-    tuple(Queen, _) -> Gt
-    tuple(Jack, Ace) -> Lt
-    tuple(Jack, King) -> Lt
-    tuple(Jack, Queen) -> Lt
-    tuple(Jack, _) -> Gt
-    tuple(Number(n), Number(p)) if n > p -> Gt
-    tuple(Number(n), Number(p)) if n < p -> Lt
-    tuple(Number(_), _) -> Lt
-  }
-}
-
-pub type Card {
-  Card(suit: Suit, value: Value)
-}
-
-pub type Call {
-  BlindNil
-  Nil
-  Call(value: Int)
-}
-
-pub type Hand {
-  Hand(cards: List(Card), tricks: Int, call: Option(Call), revealed: Bool)
-}
-
-pub fn new_hand(cards: List(Card)) -> Hand {
-  Hand(cards, 0, None, False)
-}
-
-pub type Team {
-  NorthSouth
-  EastWest
-}
-
-pub type PlayerId =
-  String
-
-pub type Player {
-  Player(id: PlayerId, name: String, team: Team, hand: Option(Hand))
-}
-
-pub fn new_player(id: PlayerId, name: String, team: Team) -> Player {
-  Player(id, name, team, None)
-}
-
-pub fn receive_cards(player: Player, cards: List(Card)) -> Player {
-  Player(
-    id: player.id,
-    name: player.name,
-    team: player.team,
-    hand: Some(new_hand(cards)),
-  )
-}
+import spades/score.{Score, add, calculate_score, new_score}
+import spades/util.{partition}
 
 pub type GameState {
   Waiting
@@ -94,22 +25,22 @@ pub type Trick {
   Trick(player_id: PlayerId, card: Card)
 }
 
-pub type Score {
-  Score(points: Int, bags: Int)
-}
-
-pub fn new_score() -> Score {
-  Score(points: 0, bags: 0)
-}
-
-pub fn add(a: Score, b: Score) -> Score {
-  Score(points: a.points + b.points, bags: a.bags + b.bags)
+pub type Event {
+  AwardedTrick(winner: PlayerId)
+  Called(player: PlayerId, call: Call)
+  DealtCards
+  HandEnded
+  PlayedCard(player: PlayerId, card: Card)
+  RevealedCards(player: PlayerId)
+  RoundEnded
+  StateChanged(old: GameState, new: GameState)
 }
 
 pub type Game {
   Game(
     current_player: Option(PlayerId),
     deck: List(Card),
+    events: List(Event),
     id: String,
     last_trick: Option(List(Trick)),
     name: String,
@@ -122,22 +53,11 @@ pub type Game {
   )
 }
 
-pub fn new_deck() -> List(Card) {
-  let values =
-    range(from: 2, to: 10)
-    |> iterator.map(Number(_))
-    |> to_list
+pub type GameWithEvents =
+  tuple(Game, List(Event))
 
-  [Ace, King, Queen, Jack, ..values]
-  |> from_list
-  |> iterator.map(fn(value) {
-    [Clubs, Diamonds, Hearts, Spades]
-    |> from_list
-    |> iterator.map(Card(_, value))
-    |> to_list
-  })
-  |> to_list
-  |> flatten
+pub fn with_events(game: Game) -> GameWithEvents {
+  tuple(Game(..game, events: []), game.events)
 }
 
 pub fn new_game(id: String, name: String, deck: Option(List(Card))) -> Game {
@@ -150,37 +70,121 @@ pub fn new_game(id: String, name: String, deck: Option(List(Card))) -> Game {
   Game(
     current_player: None,
     deck: d,
+    events: list.new(),
     id: id,
     last_trick: None,
     name: name,
-    play_order: [],
+    play_order: list.new(),
     players: map.new(),
     scores: scores,
     spades_broken: False,
     state: Waiting,
-    trick: [],
+    trick: list.new(),
   )
 }
 
-pub fn partition(items: List(a), func: fn(a) -> Bool) -> tuple(List(a), List(a)) {
-  items
-  |> list.fold(
-    tuple(list.new(), list.new()),
-    fn(item, acc) {
-      case func(item) {
-        True ->
-          acc
-          |> pair.first
-          |> list.append([item])
-          |> fn(new) { tuple(new, pair.second(acc)) }
-        _ ->
-          acc
-          |> pair.second
-          |> list.append([item])
-          |> fn(new) { tuple(pair.first(acc), new) }
-      }
-    },
+pub type PublicScore {
+  PublicScore(east_west: Int, north_south: Int)
+}
+
+pub fn get_public_scores(scores: Map(Team, Score)) -> PublicScore {
+  let get_score = fn(team: Team) -> Int {
+    case map.get(scores, team) {
+      Ok(Score(points, bags)) -> points + bags
+      _ -> 0
+    }
+  }
+  PublicScore(
+    east_west: get_score(EastWest),
+    north_south: get_score(NorthSouth),
   )
+}
+
+pub type PublicState {
+  PublicState(
+    current_player: Option(PlayerId),
+    id: String,
+    last_trick: Option(List(Trick)),
+    name: String,
+    players: List(PublicPlayer),
+    scores: PublicScore,
+    spades_broken: Bool,
+    state: GameState,
+    trick: List(Trick),
+  )
+}
+
+pub type GameStateForPlayer {
+  GameStateForPlayer(
+    call: Option(Call),
+    cards: List(Card),
+    current_player: Option(PlayerId),
+    id: String,
+    last_trick: Option(List(Trick)),
+    name: String,
+    players: List(PublicPlayer),
+    revealed: Bool,
+    scores: PublicScore,
+    spades_broken: Bool,
+    state: GameState,
+    team: Team,
+    trick: List(Trick),
+    tricks: Int,
+  )
+}
+
+pub fn state(game: Game) -> PublicState {
+  PublicState(
+    current_player: game.current_player,
+    id: game.id,
+    last_trick: game.last_trick,
+    name: game.name,
+    players: game.players
+    |> map.values
+    |> list.map(to_public),
+    scores: get_public_scores(game.scores),
+    spades_broken: game.spades_broken,
+    state: game.state,
+    trick: game.trick,
+  )
+}
+
+pub fn state_for_player(
+  game: Game,
+  player_id: PlayerId,
+) -> Result(GameStateForPlayer, PublicState) {
+  case map.get(game.players, player_id) {
+    Error(_) ->
+      game
+      |> state
+      |> Error
+    Ok(Player(hand: hand, team: team, ..)) -> {
+      let player_hand = option.unwrap(hand, Hand(list.new(), 0, None, False))
+      GameStateForPlayer(
+        call: player_hand.call,
+        cards: player_hand.cards,
+        current_player: game.current_player,
+        id: game.id,
+        last_trick: game.last_trick,
+        name: game.name,
+        players: game.players
+        |> map.values
+        |> list.map(to_public),
+        revealed: player_hand.revealed,
+        scores: get_public_scores(game.scores),
+        spades_broken: game.spades_broken,
+        state: game.state,
+        team: team,
+        trick: game.trick,
+        tricks: player_hand.tricks,
+      )
+      |> Ok
+    }
+  }
+}
+
+pub fn add_event(game: Game, event: Event) -> Game {
+  Game(..game, events: list.append(game.events, [event]))
 }
 
 pub fn deal_cards(game: Game) -> Game {
@@ -220,6 +224,7 @@ pub fn deal_cards(game: Game) -> Game {
       )
       |> map.from_list
       |> fn(new_players) { Game(..game, players: new_players) }
+      |> add_event(DealtCards)
     }
     _ -> game
   }
@@ -227,50 +232,11 @@ pub fn deal_cards(game: Game) -> Game {
 
 pub fn start_bidding(game: Game) -> Game {
   case map.size(game.players) {
-    4 -> Game(..game, state: Bidding)
+    4 ->
+      Game(..game, state: Bidding)
+      |> add_event(StateChanged(old: game.state, new: Bidding))
     _ -> game
   }
-}
-
-pub fn update_player_hand(
-  game: Game,
-  player_id: PlayerId,
-  updater: fn(Hand) -> Hand,
-) -> Result(Game, String) {
-  let player =
-    game.players
-    |> map.get(player_id)
-    |> result.map(fn(p) {
-      Player(..p, hand: option.map(p.hand, updater))
-    })
-  case player {
-    Ok(p) ->
-      Game(
-        ..game,
-        players: map.insert(game.players, player_id, p)
-      )
-      |> Ok
-    Error(_) -> Error("Couldn't update hand")
-  }
-}
-
-pub fn reveal_player_card(
-  game: Game,
-  player_id: PlayerId,
-) -> Result(Game, String) {
-  update_player_hand(game, player_id, fn(hand) { Hand(..hand, revealed: True) })
-}
-
-pub fn make_player_call(
-  game: Game,
-  player_id: PlayerId,
-  call: Call,
-) -> Result(Game, String) {
-  update_player_hand(
-    game,
-    player_id,
-    fn(hand) { Hand(..hand, call: Some(call)) },
-  )
 }
 
 pub fn is_current(game: Game, player_id: PlayerId) -> Bool {
@@ -287,21 +253,62 @@ pub fn next_player(game: Game) -> Game {
 }
 
 pub fn start_game(game: Game) -> Game {
-  let has_call = fn(player: Player) -> Bool {
-    player.hand
-    |> option.map(fn(h: Hand) { h.call })
-    |> option.is_some
-  }
-
   let all_called =
     game.players
     |> map.values
-    |> list.all(has_call)
+    |> list.all(fn(player: Player) {
+      player.hand
+      |> option.map(fn(h: Hand) { h.call })
+      |> option.flatten
+      |> option.is_some
+    })
 
   case all_called {
-    True -> Game(..game, state: Playing)
+    True ->
+      Game(..game, state: Playing)
+      |> add_event(StateChanged(old: game.state, new: Playing))
     _ -> game
   }
+}
+
+pub fn update_player_hand(
+  game: Game,
+  player_id: PlayerId,
+  updater: fn(Hand) -> Hand,
+) -> Result(Game, String) {
+  let player =
+    game.players
+    |> map.get(player_id)
+    |> result.map(fn(p) { Player(..p, hand: option.map(p.hand, updater)) })
+  case player {
+    Ok(p) ->
+      Game(..game, players: map.insert(game.players, player_id, p))
+      |> Ok
+    Error(_) -> Error("Couldn't update hand")
+  }
+}
+
+pub fn reveal_player_card(
+  game: Game,
+  player_id: PlayerId,
+) -> Result(GameWithEvents, String) {
+  game
+  |> update_player_hand(player_id, fn(hand) { Hand(..hand, revealed: True) })
+  |> result.map(fn(g) { add_event(g, RevealedCards(player: player_id)) })
+  |> result.map(with_events)
+}
+
+pub fn make_player_call(
+  game: Game,
+  player_id: PlayerId,
+  call: Call,
+) -> Result(Game, String) {
+  update_player_hand(
+    game,
+    player_id,
+    fn(hand) { Hand(..hand, call: Some(call)) },
+  )
+  |> result.map(fn(g) { add_event(g, Called(player: player_id, call: call)) })
 }
 
 pub fn play_player_card(
@@ -316,19 +323,13 @@ pub fn play_player_card(
       Hand(..hand, cards: list.filter(hand.cards, fn(c) { c != card }))
     },
   )
+  |> result.map(fn(g) {
+    add_event(g, PlayedCard(player: player_id, card: card))
+  })
 }
 
 pub fn add_to_trick(game: Game, player_id: PlayerId, card: Card) -> Game {
   Game(..game, trick: list.append(game.trick, [Trick(player_id, card)]))
-}
-
-pub fn has_suit(player: Player, suit: Suit) -> Bool {
-  player.hand
-  |> option.map(fn(h: Hand) { h.cards })
-  |> option.map(fn(cards: List(Card)) {
-    list.any(cards, fn(c: Card) { c.suit == suit })
-  })
-  |> option.is_some
 }
 
 pub fn trick_winner(trick: List(Trick)) -> PlayerId {
@@ -344,20 +345,16 @@ pub fn trick_winner(trick: List(Trick)) -> PlayerId {
     )
 
   let filter_fn: fn(Trick) -> Bool = case tuple(trick, has_spade) {
-    tuple(_, True) -> {
-      fn(play) {
-        case play {
-          Trick(card: Card(suit: Spades, ..), ..) -> True
-          _ -> False
-        }
+    tuple(_, True) -> fn(play) {
+      case play {
+        Trick(card: Card(suit: Spades, ..), ..) -> True
+        _ -> False
       }
     }
-    tuple([Trick(card: Card(suit: lead_suit, ..), ..), ..], _) -> {
-      fn(play) {
-        case play {
-          Trick(card: Card(suit: suit, ..), ..) if suit == lead_suit -> True
-          _ -> False
-        }
+    tuple([Trick(card: Card(suit: lead_suit, ..), ..), ..], _) -> fn(play) {
+      case play {
+        Trick(card: Card(suit: suit, ..), ..) if suit == lead_suit -> True
+        _ -> False
       }
     }
   }
@@ -381,6 +378,8 @@ pub fn award_trick(game: Game) -> Result(Game, String) {
         winner,
         fn(h) { Hand(..h, tricks: h.tricks + 1) },
       )
+      |> result.map(fn(g) { Game(..g, current_player: Some(winner)) })
+      |> result.map(fn(g) { add_event(g, AwardedTrick(winner)) })
     }
     _ -> Ok(game)
   }
@@ -388,65 +387,10 @@ pub fn award_trick(game: Game) -> Result(Game, String) {
 
 pub fn end_hand(game: Game) -> Game {
   case list.length(game.trick) {
-    4 -> Game(..game, trick: [], last_trick: Some(game.trick))
+    4 ->
+      Game(..game, trick: [], last_trick: Some(game.trick))
+      |> add_event(HandEnded)
     _ -> game
-  }
-}
-
-pub fn score_from_call(call_and_taken: tuple(Call, Int)) -> Score {
-  case call_and_taken {
-    tuple(BlindNil, 0) -> Score(points: 100, bags: 0)
-    tuple(BlindNil, _) -> Score(points: -100, bags: 0)
-    tuple(Nil, 0) -> Score(points: 50, bags: 0)
-    tuple(Nil, _) -> Score(points: -50, bags: 0)
-    tuple(Call(value: called), taken) if called > taken ->
-      Score(points: -1 * called, bags: 0)
-    tuple(Call(value: called), taken) if taken >= called ->
-      Score(points: 10 * called, bags: taken - called)
-  }
-}
-
-pub fn calculate_score(players: List(Player)) -> Score {
-  let calls_and_taken =
-    players
-    |> list.map(fn(player: Player) {
-      case player.hand {
-        Some(Hand(call: Some(call), tricks: tricks, ..)) ->
-          Some(tuple(call, tricks))
-        _ -> None
-      }
-    })
-  let nil_not_nil =
-    partition(
-      calls_and_taken,
-      fn(call) {
-        case call {
-          Some(tuple(Nil, _)) | Some(tuple(BlindNil, _)) -> True
-          _ -> False
-        }
-      },
-    )
-  case nil_not_nil {
-    tuple(
-      [],
-      [Some(tuple(Call(value: call1), taken1)), Some(tuple(Call(value: call2), taken2))],
-    ) ->
-      case tuple(call1 + call2, taken1 + taken2) {
-        tuple(call, taken) if call > taken -> Score(points: -1 * call, bags: 0)
-        tuple(call, taken) if taken >= call ->
-          Score(points: call * 10, bags: taken - call)
-      }
-    tuple(nils, not_nils) ->
-      list.append(nils, not_nils)
-      |> list.fold(
-        new_score(),
-        fn(item, score) {
-          item
-          |> option.unwrap(tuple(Call(0), 0))
-          |> score_from_call
-          |> add(score)
-        },
-      )
   }
 }
 
@@ -494,6 +438,7 @@ pub fn increment_play_order(game: Game) -> Game {
 
 pub fn set_bidding(game: Game) -> Game {
   Game(..game, state: Bidding)
+  |> add_event(StateChanged(old: game.state, new: Bidding))
 }
 
 pub fn end_round(game: Game) -> Game {
@@ -502,27 +447,47 @@ pub fn end_round(game: Game) -> Game {
     |> map.values
     |> list.all(fn(p: Player) {
       p.hand
-      |> option.map(fn(h: Hand) { list.length(h.cards) == 4 })
+      |> option.map(fn(h: Hand) { list.length(h.cards) == 0 })
       |> option.unwrap(False)
     })
   case all_empty {
     False -> game
     _ ->
       Game(..game, last_trick: None)
+      |> add_event(RoundEnded)
       |> award_points
       |> increment_play_order
+      |> fn(g) {
+        Game(
+          ..g,
+          current_player: g.play_order
+          |> list.head
+          |> option.from_result,
+        )
+      }
       |> deal_cards
       |> set_bidding
+  }
+}
+
+pub fn add_to_play_order(game: Game, id: PlayerId) -> Game {
+  Game(..game, play_order: list.append(game.play_order, [id]))
+}
+
+pub fn set_spades_broken(game: Game, card: Card) -> Game {
+  case card.suit {
+    Spades -> Game(..game, spades_broken: True)
+    _ -> game
   }
 }
 
 // Public API
 //   - Add player ✔️
 //   - Reveal cards ✔️
-//   - Make call
-//   - Play card
+//   - Make call ✔️
+//   - Play card ✔️
 //   (state fns)
-pub fn add_player(game: Game, player: Player) -> Result(Game, String) {
+pub fn add_player(game: Game, player: Player) -> Result(GameWithEvents, String) {
   let is_full = map.size(game.players) == 4
   let player_exists = map.has_key(game.players, player.id)
   let team_count =
@@ -531,20 +496,34 @@ pub fn add_player(game: Game, player: Player) -> Result(Game, String) {
     |> map.size
 
   case tuple(is_full, player_exists, team_count == 2) {
-    tuple(True, _, _) -> Error("Cannot add player, game is full")
-    tuple(_, True, _) -> Error("Cannot add player, already in game")
-    tuple(_, _, True) -> Error("Cannot add player, team is full")
+    tuple(True, _, _) ->
+      Error(string.concat(["Cannot add player", player.id, " game is full"]))
+    tuple(_, True, _) ->
+      Error(string.concat(["Cannot add player ", player.id, " already in game"]))
+    tuple(_, _, True) ->
+      Error(string.concat(["Cannot add player ", player.id, " team is full"]))
     _ ->
       game.players
       |> map.insert(player.id, player)
-      |> fn(players) { Game(..game, players: players) }
+      |> fn(players) {
+        Game(
+          ..game,
+          players: players,
+          current_player: option.or(game.current_player, Some(player.id)),
+        )
+      }
+      |> add_to_play_order(player.id)
       |> deal_cards
       |> start_bidding
+      |> with_events
       |> Ok
   }
 }
 
-pub fn reveal_cards(game: Game, player_id: PlayerId) -> Result(Game, String) {
+pub fn reveal_cards(
+  game: Game,
+  player_id: PlayerId,
+) -> Result(GameWithEvents, String) {
   case map.get(game.players, player_id) {
     Ok(Player(hand: Some(Hand(revealed: False, ..)), ..)) ->
       reveal_player_card(game, player_id)
@@ -556,7 +535,7 @@ pub fn make_call(
   game: Game,
   player_id: PlayerId,
   call: Call,
-) -> Result(Game, String) {
+) -> Result(GameWithEvents, String) {
   let can_play = is_current(game, player_id)
   let is_valid_call = case call {
     BlindNil ->
@@ -577,7 +556,7 @@ pub fn make_call(
       make_player_call(game, player_id, call)
       |> result.map(next_player)
       |> result.map(start_game)
-    _ -> Error("Player cannot call")
+      |> result.map(with_events)
   }
 }
 
@@ -585,7 +564,7 @@ pub fn play_card(
   game: Game,
   player_id: PlayerId,
   card: Card,
-) -> Result(Game, String) {
+) -> Result(GameWithEvents, String) {
   let can_play = is_current(game, player_id)
   let has_card =
     game.players
@@ -598,7 +577,15 @@ pub fn play_card(
     })
     |> result.unwrap(False)
   let card_is_valid = case tuple(game.trick, game.spades_broken, card.suit) {
-    tuple([], False, Spades) -> False
+    tuple([], False, Spades) ->
+      game.players
+      |> map.get(player_id)
+      |> result.map(fn(player: Player) { option.to_result(player.hand, Nil) })
+      |> result.flatten
+      |> result.map(fn(hand: Hand) {
+        list.all(hand.cards, fn(c: Card) { c.suit == Spades })
+      })
+      |> result.unwrap(False)
     tuple([], _, _) -> True
     tuple([Trick(card: lead, ..), ..], _, suit) ->
       lead.suit == suit || game.players
@@ -607,17 +594,32 @@ pub fn play_card(
       |> result.unwrap(True)
   }
   case tuple(can_play, has_card, card_is_valid) {
-    tuple(False, _, _) -> Error("Player cannot play card")
-    tuple(_, False, _) -> Error("Player does not have card")
-    tuple(_, _, False) -> Error("Card is not valid")
+    tuple(False, _, _) ->
+      Error(string.concat([
+        "Player ",
+        player_id,
+        " cannot play card ",
+        card_to_string(card),
+      ]))
+    tuple(_, False, _) ->
+      Error(string.concat([
+        "Player ",
+        player_id,
+        " does not have card ",
+        card_to_string(card),
+      ]))
+    tuple(_, _, False) ->
+      Error(string.concat(["Card is not valid ", card_to_string(card)]))
     _ ->
       game
       |> play_player_card(player_id, card)
       |> result.map(fn(g) { add_to_trick(g, player_id, card) })
+      |> result.map(fn(g) { set_spades_broken(g, card) })
       |> result.map(next_player)
       |> result.map(award_trick)
       |> result.flatten
       |> result.map(end_hand)
       |> result.map(end_round)
+      |> result.map(with_events)
   }
 }
