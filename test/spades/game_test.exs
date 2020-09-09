@@ -10,10 +10,10 @@ defmodule Spades.Game.GameTest do
   alias Spades.Game.Record.Trick
 
   setup_all do
-    p1 = Player.new("0", "alex", :north_south)
-    p2 = Player.new("1", "jake", :east_west)
-    p3 = Player.new("2", "jon", :north_south)
-    p4 = Player.new("3", "gopal", :east_west)
+    p1 = Player.new("0", "alex", :north)
+    p2 = Player.new("1", "jake", :east)
+    p3 = Player.new("2", "jon", :south)
+    p4 = Player.new("3", "gopal", :west)
 
     deck = [
       # First hand
@@ -67,7 +67,7 @@ defmodule Spades.Game.GameTest do
 
     assert Enum.empty?(g.trick)
     assert g.players[p1.id].hand.tricks == 1
-    assert g.current_player == p1.id
+    assert g.current_player == p1.position
 
     assert g.last_trick ==
              [
@@ -102,8 +102,8 @@ defmodule Spades.Game.GameTest do
              :east_west => %Score{points: -70, bags: 0}
            }
 
-    assert g.current_player == p2.id
-    assert Enum.at(g.play_order, 0) == p2.id
+    assert g.current_player == p2.position
+    assert Enum.at(g.play_order, 0) == p2.position
     assert g.state == :bidding
     assert g.last_trick == nil
 
@@ -285,7 +285,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.id, Enum.at(deck, 2))
       |> Game.play_card(p4.id, Enum.at(deck, 3))
 
-    assert game.current_player == p1.id
+    assert game.current_player == p1.position
   end
 
   test "bagging out deducts points from score" do
@@ -316,10 +316,10 @@ defmodule Spades.Game.GameTest do
       |> Stream.take(count)
       |> Enum.to_list()
 
-    p1 = Player.new("0", "alex", :north_south)
-    p2 = Player.new("1", "jake", :east_west)
-    p3 = Player.new("2", "jon", :north_south)
-    p4 = Player.new("3", "gopal", :east_west)
+    p1 = Player.new("0", "alex", :north)
+    p2 = Player.new("1", "jake", :east)
+    p3 = Player.new("2", "jon", :south)
+    p4 = Player.new("3", "gopal", :west)
 
     with_players =
       [p1, p2, p3, p4]
@@ -360,10 +360,10 @@ defmodule Spades.Game.GameTest do
   end
 
   test "can't call blind nil after revealing cards" do
-    p1 = Player.new("0", "alex", :north_south)
-    p2 = Player.new("1", "jake", :east_west)
-    p3 = Player.new("2", "jon", :north_south)
-    p4 = Player.new("3", "gopal", :east_west)
+    p1 = Player.new("0", "alex", :north)
+    p2 = Player.new("1", "jake", :east)
+    p3 = Player.new("2", "jon", :south)
+    p4 = Player.new("3", "gopal", :west)
 
     {:error, game, _reason} =
       Game.new("2", "test")
@@ -378,10 +378,10 @@ defmodule Spades.Game.GameTest do
   end
 
   test "can reveal cards out of turn, but not call" do
-    p1 = Player.new("0", "alex", :north_south)
-    p2 = Player.new("1", "jake", :east_west)
-    p3 = Player.new("2", "jon", :north_south)
-    p4 = Player.new("3", "gopal", :east_west)
+    p1 = Player.new("0", "alex", :north)
+    p2 = Player.new("1", "jake", :east)
+    p3 = Player.new("2", "jon", :south)
+    p4 = Player.new("3", "gopal", :west)
 
     {revealed, _events} =
       Game.new("2", "test")
@@ -397,10 +397,10 @@ defmodule Spades.Game.GameTest do
   end
 
   test "making sure combination works within a full game" do
-    p1 = Player.new("0", "alex", :north_south)
-    p2 = Player.new("1", "jake", :east_west)
-    p3 = Player.new("2", "jon", :north_south)
-    p4 = Player.new("3", "gopal", :east_west)
+    p1 = Player.new("0", "alex", :north)
+    p2 = Player.new("1", "jake", :east)
+    p3 = Player.new("2", "jon", :south)
+    p4 = Player.new("3", "gopal", :west)
 
     deck = [
       Card.new(:spades, 1),

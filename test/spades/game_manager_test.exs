@@ -11,10 +11,10 @@ defmodule Spades.Game.GameManagerTest do
     {:ok, _} = GameManager.start_link(id: id, name: "one")
     {:ok, _} = GameManager.start_link(id: id_2, name: "two")
 
-    p1 = [id: "0", name: "alex", team: :north_south]
-    p2 = [id: "1", name: "jake", team: :east_west]
-    p3 = [id: "2", name: "jon", team: :north_south]
-    p4 = [id: "3", name: "gopal", team: :east_west]
+    p1 = [id: "0", name: "alex", position: :north]
+    p2 = [id: "1", name: "jake", position: :east]
+    p3 = [id: "2", name: "jon", position: :south]
+    p4 = [id: "3", name: "gopal", position: :west]
 
     {:ok, id: id, p1: p1, p2: p2, p3: p3, p4: p4, id_2: id_2}
   end
@@ -64,6 +64,7 @@ defmodule Spades.Game.GameManagerTest do
              last_trick: nil,
              name: "two",
              players: [],
+             player_position: %{},
              scores: %PublicScore{:north_south => 0, :east_west => 0},
              spades_broken: false,
              state: :waiting,
@@ -78,6 +79,7 @@ defmodule Spades.Game.GameManagerTest do
              last_trick: nil,
              name: "one",
              players: [],
+             player_position: %{},
              scores: %PublicScore{:north_south => 0, :east_west => 0},
              spades_broken: false,
              state: :waiting,

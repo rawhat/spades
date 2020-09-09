@@ -39,13 +39,14 @@ pub type Event {
 
 pub type Game {
   Game(
-    current_player: Option(PlayerId),
+    current_player: Option(Position),
     deck: List(Card),
     events: List(Event),
     id: String,
     last_trick: Option(List(Trick)),
     name: String,
-    play_order: List(PlayerId),
+    player_position: Map(Position, PlayerId),
+    play_order: List(Position),
     players: Map(PlayerId, Player),
     scores: Map(Team, Score),
     spades_broken: Bool,
@@ -80,10 +81,11 @@ fn get_public_scores(scores: Map(Team, Score)) -> PublicScore {
 
 pub type PublicState {
   PublicState(
-    current_player: Option(PlayerId),
+    current_player: Option(Position),
     id: String,
     last_trick: Option(List(Trick)),
     name: String,
+    player_position: Map(Position, PlayerId),
     players: List(PublicPlayer),
     scores: PublicScore,
     spades_broken: Bool,
@@ -96,10 +98,11 @@ pub type GameStateForPlayer {
   GameStateForPlayer(
     call: Option(Call),
     cards: List(Card),
-    current_player: Option(PlayerId),
+    current_player: Option(Position),
     id: String,
     last_trick: Option(List(Trick)),
     name: String,
+    player_position: Map(Position, PlayerId),
     players: List(PublicPlayer),
     position: Position,
     revealed: Bool,
@@ -121,6 +124,7 @@ pub fn state(game: Game) -> PublicState {
     players: game.players
     |> map.values
     |> list.map(to_public),
+    player_position: game.player_position,
     scores: get_public_scores(game.scores),
     spades_broken: game.spades_broken,
     state: game.state,
@@ -149,6 +153,7 @@ pub fn state_for_player(
         players: game.players
         |> map.values
         |> list.map(to_public),
+        player_position: game.player_position,
         position: position,
         revealed: player_hand.revealed,
         scores: get_public_scores(game.scores),
@@ -221,18 +226,23 @@ fn start_bidding(game: Game) -> Game {
 
 fn is_current(game: Game, player_id: PlayerId) -> Bool {
   game.current_player
+  |> option.map(fn(position) {
+    map.get(game.player_position, position)
+    |> option.from_result
+  })
+  |> option.flatten
   |> option.map(fn(id) { id == player_id })
   |> option.unwrap(False)
 }
 
 fn next_player(game: Game) -> Game {
   let next = case game.current_player {
-    Some(player_id) ->
+    Some(position) ->
       game.play_order
       |> iterator.from_list
       |> iterator.cycle
       |> iterator.take(5)
-      |> drop_while(fn(p) { p != player_id })
+      |> drop_while(fn(p) { p != position })
       |> list.tail
       |> result.map(list.head)
       |> result.flatten
@@ -371,7 +381,18 @@ fn award_trick(game: Game) -> Result(Game, String) {
         winner,
         fn(h) { Hand(..h, tricks: h.tricks + 1) },
       )
-      |> result.map(fn(g) { Game(..g, current_player: Some(winner)) })
+      |> result.map(fn(g) {
+        Game(
+          ..g,
+          current_player:
+            game.player_position
+            |> map.to_list
+            |> list.map(pair.swap)
+            |> map.from_list
+            |> map.get(winner)
+            |> option.from_result
+        )
+      })
       |> result.map(fn(g) { add_event(g, AwardedTrick(winner)) })
     }
     _ -> Ok(game)
@@ -465,8 +486,8 @@ fn end_round(game: Game) -> Game {
   }
 }
 
-fn add_to_play_order(game: Game, id: PlayerId) -> Game {
-  Game(..game, play_order: list.append(game.play_order, [id]))
+fn add_to_play_order(game: Game, position: Position) -> Game {
+  Game(..game, play_order: list.append(game.play_order, [position]))
 }
 
 fn set_spades_broken(game: Game, card: Card) -> Game {
@@ -497,6 +518,7 @@ pub fn new_game(id: String, name: String, deck: Option(List(Card))) -> Game {
     last_trick: None,
     name: name,
     play_order: list.new(),
+    player_position: map.new(),
     players: map.new(),
     scores: scores,
     spades_broken: False,
@@ -529,10 +551,11 @@ pub fn add_player(game: Game, player: Player) -> Result(GameWithEvents, String) 
         Game(
           ..game,
           players: players,
-          current_player: option.or(game.current_player, Some(player.id)),
+          player_position: map.insert(game.player_position, player.position, player.id),
+          current_player: option.or(game.current_player, Some(player.position)),
         )
       }
-      |> add_to_play_order(player.id)
+      |> add_to_play_order(player.position)
       |> deal_cards
       |> start_bidding
       |> with_events

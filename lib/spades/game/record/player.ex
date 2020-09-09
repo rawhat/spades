@@ -5,21 +5,22 @@ defmodule Spades.Game.Record.Player do
 
   alias Spades.Game.Record.Hand
 
+  @type position :: :north | :south | :east | :west
   @type team :: :north_south | :east_west
 
   @type t :: %__MODULE__{
           hand: Hand.t(),
           id: String.t(),
           name: String.t(),
-          team: team()
+          position: position()
         }
 
-  @spec new(String.t(), String.t(), team()) :: t()
-  def new(id, name, team) do
+  @spec new(String.t(), String.t(), position()) :: t()
+  def new(id, name, position) do
     %__MODULE__{
       id: id,
       name: name,
-      team: team
+      position: position
     }
   end
 
