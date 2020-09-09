@@ -16,9 +16,7 @@ import { HorizontalLayout, VerticalLayout } from "./Layout";
 import { EmptyCard, PlayingCard } from "./Card";
 
 function Trick() {
-  const [self, leftPlayer, topPlayer, rightPlayer] = useSelector(
-    selectOrderedPlayers
-  );
+  const [bottom, left, top, right] = useSelector(selectOrderedPlayers);
 
   const trickById = useSelector(selectTrickByPlayerId);
   const events = useSelector(selectEvents);
@@ -53,10 +51,10 @@ function Trick() {
   );
   const trick = useDelay(trickById, shouldDelay, addPlayedEvent) ?? {};
 
-  const bottomCard = self && trick[self.id];
-  const leftCard = leftPlayer && trick[leftPlayer.id];
-  const topCard = topPlayer && trick[topPlayer.id];
-  const rightCard = rightPlayer && trick[rightPlayer.id];
+  const bottomCard = bottom && trick[bottom.id];
+  const leftCard = left && trick[left.id];
+  const topCard = top && trick[top.id];
+  const rightCard = right && trick[right.id];
 
   const winner = events.find(isEvent("awarded_trick"))?.data.winner;
 

@@ -10,8 +10,8 @@ import spades/card.{
   Card, Spades, new_deck, sort as sort_cards, string as card_to_string, value_order,
 }
 import spades/player.{
-  BlindNil, Call, EastWest, Hand, NorthSouth, Player, PlayerId, Position, PublicPlayer,
-  Team, has_suit, receive_cards, team_from_position, to_public,
+  BlindNil, Call, East, EastWest, Hand, North, NorthSouth, Player, PlayerId, Position,
+  PublicPlayer, South, Team, West, has_suit, receive_cards, team_from_position, to_public,
 }
 import spades/score.{Score, add, calculate_score, new_score}
 import spades/util.{drop_while, partition}
@@ -384,13 +384,12 @@ fn award_trick(game: Game) -> Result(Game, String) {
       |> result.map(fn(g) {
         Game(
           ..g,
-          current_player:
-            game.player_position
-            |> map.to_list
-            |> list.map(pair.swap)
-            |> map.from_list
-            |> map.get(winner)
-            |> option.from_result
+          current_player: game.player_position
+          |> map.to_list
+          |> list.map(pair.swap)
+          |> map.from_list
+          |> map.get(winner)
+          |> option.from_result,
         )
       })
       |> result.map(fn(g) { add_event(g, AwardedTrick(winner)) })
@@ -486,10 +485,6 @@ fn end_round(game: Game) -> Game {
   }
 }
 
-fn add_to_play_order(game: Game, position: Position) -> Game {
-  Game(..game, play_order: list.append(game.play_order, [position]))
-}
-
 fn set_spades_broken(game: Game, card: Card) -> Game {
   case card.suit {
     Spades -> Game(..game, spades_broken: True)
@@ -517,7 +512,7 @@ pub fn new_game(id: String, name: String, deck: Option(List(Card))) -> Game {
     id: id,
     last_trick: None,
     name: name,
-    play_order: list.new(),
+    play_order: [North, East, South, West],
     player_position: map.new(),
     players: map.new(),
     scores: scores,
@@ -551,11 +546,14 @@ pub fn add_player(game: Game, player: Player) -> Result(GameWithEvents, String) 
         Game(
           ..game,
           players: players,
-          player_position: map.insert(game.player_position, player.position, player.id),
+          player_position: map.insert(
+            game.player_position,
+            player.position,
+            player.id,
+          ),
           current_player: option.or(game.current_player, Some(player.position)),
         )
       }
-      |> add_to_play_order(player.position)
       |> deal_cards
       |> start_bidding
       |> with_events

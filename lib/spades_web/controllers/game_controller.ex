@@ -16,7 +16,7 @@ defmodule SpadesWeb.GameController do
     user_id = get_session(conn, :user_id)
     creator = Accounts.get_user_by(id: user_id)
 
-    GameManager.add_player(id, id: user_id, name: creator.username, team: :north_south)
+    GameManager.add_player(id, id: user_id, name: creator.username, position: :north)
 
     game_state = %{id: id, name: name, players: 1}
     SpadesWeb.Endpoint.broadcast!("lobby:*", "update_game", game_state)

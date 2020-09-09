@@ -112,8 +112,8 @@ export const textColor = {
     700: ".text-pink-700",
     800: ".text-pink-800",
     900: ".text-pink-900",
-  }
-}
+  },
+};
 
 export const bgColor = {
   transparent: ".bg-transparent",
@@ -229,5 +229,5 @@ export const bgColor = {
     700: ".bg-pink-700",
     800: ".bg-pink-800",
     900: ".bg-pink-900",
-  }
-}
+  },
+};

@@ -12,7 +12,7 @@ import Game from "./Game";
 import Lobby from "./Lobby";
 import Login from "./Login";
 
-import "spectre.css"
+import "spectre.css";
 import "./App.css";
 
 import TopNav from "./TopNav";

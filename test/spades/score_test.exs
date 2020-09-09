@@ -6,8 +6,8 @@ defmodule Spades.Game.Record.ScoreTest do
   alias Spades.Game.Record.Score
 
   setup_all do
-    p1 = Player.new("1", "alex", :north_south)
-    p2 = Player.new("2", "jon", :north_south)
+    p1 = Player.new("1", "alex", :south)
+    p2 = Player.new("2", "jon", :south)
 
     {:ok, p1: p1, p2: p2}
   end

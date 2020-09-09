@@ -5,8 +5,8 @@ import { Dispatch } from "redux";
 import { createSelector } from "reselect";
 import { createAction, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import { get } from "../../app/client";
 import { RootState } from "../../app/store";
+import { get } from "../../app/client";
 import { selectUsername } from "../user/userSlice";
 
 type CalledEvent = {
@@ -93,11 +93,19 @@ export enum Team {
   EastWest = "east_west",
 }
 
+export enum Position {
+  North = "north",
+  South = "south",
+  East = "east",
+  West = "west",
+}
+
 export interface GameStatus {
   id: string;
   last_trick: PlayedCard[];
   name: string;
-  scores: { [team in keyof Team]: number };
+  scores: Record<Team, number>;
+  player_position: Record<Position, string>;
   players: PublicPlayer[];
   state: State;
   trick: PlayedCard[];
@@ -107,6 +115,7 @@ export interface GameStatus {
 export interface PlayerStatus extends GameStatus {
   cards: Card[];
   call: number | null;
+  position: Position;
   tricks: number | null;
   trick: PlayedCard[];
   team: Team;
@@ -141,6 +150,7 @@ export interface PublicPlayer {
   cards: number;
   id: string;
   name: string;
+  position: Position;
   revealed: boolean;
   team: Team;
   tricks: number;
@@ -173,7 +183,6 @@ export const gameSlice = createSlice({
       state.playerState = action.payload;
     },
     setEvents: (state, action: PayloadAction<Event[]>) => {
-      console.log("settin events");
       state.events = action.payload;
     },
     clearEvents: (state) => {
@@ -201,7 +210,7 @@ export const socketError = createAction<string>("game/socketError");
 
 interface JoinGamePayload {
   id: string;
-  team: Team;
+  position: Position;
   username: string;
 }
 export const joinGame = createAction<JoinGamePayload>("game/join");
@@ -256,9 +265,16 @@ export const selectPlayers = createSelector(
   (gameState, playerState) => playerState?.players || gameState?.players || []
 );
 
+export const selectPlayerPositions = createSelector(
+  getGameState,
+  getPlayerState,
+  (gameState, playerState) =>
+    playerState?.player_position || gameState?.player_position
+);
+
 export const selectPlayerCards = createSelector(
   getPlayerState,
-  (player) => player?.cards || []
+  (player) => player?.cards
 );
 
 export const selectPlayerCardsRevealed = createSelector(
@@ -274,7 +290,7 @@ export const selectCurrentPlayer = createSelector(
     const currentPlayer =
       playerState?.current_player || gameState?.current_player;
     if (players && currentPlayer) {
-      return players.find((p) => p.id === currentPlayer);
+      return players.find((p) => p.position === currentPlayer);
     }
     return;
   }
@@ -312,14 +328,16 @@ export const selectSelf = createSelector(
     (playerState || gameState)?.players.find((p) => p.name === username)
 );
 
-export const selectOrderedPlayers = createSelector(
-  selectPlayers,
-  selectUsername,
-  (players, username) => {
-    const after = takeWhile(players, (p) => p.name !== username);
-    return dropWhile(players, (p) => p.name !== username).concat(after);
-  }
-);
+// Clockwise from bottom, i.e:
+//         S
+//      E     W
+//         N
+const defaultOrder = [
+  Position.North,
+  Position.East,
+  Position.South,
+  Position.West,
+];
 
 export type TrickByPlayerId = { [playerId: string]: PlayedCard };
 
@@ -350,8 +368,29 @@ export const selectPlayersById = createSelector(
   getGameState,
   (playerState, gameState) =>
     Object.fromEntries(
-      Object.values(
-        (playerState || gameState)?.players ?? {}
-      ).map(({ id, name }) => [id, name])
+      Object.values((playerState || gameState)?.players ?? {}).map((player) => [
+        player.id,
+        player,
+      ])
     )
+);
+
+export const selectOrderedPlayers = createSelector(
+  selectPlayerPositions,
+  selectPlayersById,
+  selectSelf,
+  (playerPositions, playersById, self) => {
+    const orderedPlayers = defaultOrder
+      .map((position) =>
+        playerPositions ? playerPositions[position] : undefined
+      )
+      .map((playerId) => (playerId ? playersById[playerId] : undefined));
+    if (!self) {
+      return orderedPlayers;
+    }
+    const after = takeWhile(orderedPlayers, (p) => p?.name !== self.name);
+    return dropWhile(orderedPlayers, (p) => p?.name !== self.name).concat(
+      after
+    );
+  }
 );
