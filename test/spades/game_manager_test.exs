@@ -2,6 +2,8 @@ defmodule Spades.Game.GameManagerTest do
   use ExUnit.Case
 
   alias Spades.Game.GameManager
+  alias Spades.Game.Record.PublicScore
+  alias Spades.Game.Record.PublicState
 
   setup do
     id = "1"
@@ -51,17 +53,18 @@ defmodule Spades.Game.GameManagerTest do
 
     assert state.state == :playing
     assert length(state.players) == 4
-    assert Enum.find(state.players, &(&1[:id] == p2[:id])).call == 1
+    # TODO:  dumb?
+    # assert Enum.find(state.players, &(&1.id == p2.id)).call == 1
   end
 
   test "it allows multiple games", %{id_2: id_2, p1: p1} do
-    assert GameManager.get_game_state_for_player(id_2, p1[:id]) == %{
-             current_player: 0,
+    assert GameManager.get_game_state_for_player(id_2, p1[:id]) == %PublicState{
+             current_player: nil,
              id: "2",
-             last_trick: [],
+             last_trick: nil,
              name: "two",
              players: [],
-             scores: %{:north_south => 0, :east_west => 0},
+             scores: %PublicScore{:north_south => 0, :east_west => 0},
              spades_broken: false,
              state: :waiting,
              trick: []
@@ -69,13 +72,13 @@ defmodule Spades.Game.GameManagerTest do
   end
 
   test "it returns game state", %{id: id} do
-    assert GameManager.get_game_state(id) == %{
-             current_player: 0,
+    assert GameManager.get_game_state(id) == %PublicState{
+             current_player: nil,
              id: "1",
-             last_trick: [],
+             last_trick: nil,
              name: "one",
              players: [],
-             scores: %{:north_south => 0, :east_west => 0},
+             scores: %PublicScore{:north_south => 0, :east_west => 0},
              spades_broken: false,
              state: :waiting,
              trick: []

@@ -101,7 +101,7 @@ export interface GameStatus {
   players: PublicPlayer[];
   state: State;
   trick: PlayedCard[];
-  current_player: number;
+  current_player: string;
 }
 
 export interface PlayerStatus extends GameStatus {
@@ -132,8 +132,8 @@ export interface Card {
 }
 
 export interface PlayedCard {
-  id: string;
   card: Card;
+  player_id: string;
 }
 
 export interface PublicPlayer {
@@ -269,9 +269,15 @@ export const selectPlayerCardsRevealed = createSelector(
 export const selectCurrentPlayer = createSelector(
   getGameState,
   getPlayerState,
-  (gameState, playerState): PublicPlayer | undefined =>
-    playerState?.players[playerState?.current_player] ||
-    gameState?.players[gameState?.current_player]
+  (gameState, playerState): PublicPlayer | undefined => {
+    const players = playerState?.players || gameState?.players;
+    const currentPlayer =
+      playerState?.current_player || gameState?.current_player;
+    if (players && currentPlayer) {
+      return players.find((p) => p.id === currentPlayer);
+    }
+    return;
+  }
 );
 
 export const selectGameState = createSelector(
@@ -320,7 +326,7 @@ export type TrickByPlayerId = { [playerId: string]: PlayedCard };
 export const selectTrickByPlayerId = createSelector(
   selectTrick,
   (trick: PlayedCard[]): TrickByPlayerId =>
-    trick.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {})
+    trick.reduce((acc, obj) => ({ ...acc, [obj.player_id]: obj }), {})
 );
 
 export const selectLastTrick = createSelector(

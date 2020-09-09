@@ -111,9 +111,9 @@ function GameView() {
             <VerticalLayout>
               <Bold>Last trick:</Bold>
               <HorizontalLayout>
-                {lastTrick.map(({ id, card }) => (
-                  <VerticalLayout key={id}>
-                    <div>{playersById[id] || id}</div>
+                {lastTrick.map(({ player_id, card }) => (
+                  <VerticalLayout key={player_id}>
+                    <div>{playersById[player_id] || player_id}</div>
                     <PlayingCard card={card} size={5} />
                   </VerticalLayout>
                 ))}

@@ -1,9 +1,9 @@
 defmodule Spades.Game.Record.Call do
   def parse(:none), do: nil
-  def parse({:some, value}), do: {:some, from_record(value)}
+  def parse({:some, value}), do: from_record(value)
 
   def unparse(nil), do: :none
-  def unparse({:some, call}), do: {:some, to_record(call)}
+  def unparse(call), do: {:some, to_record(call)}
 
   def to_record(0), do: nil
   def to_record(-1), do: :blind_nil

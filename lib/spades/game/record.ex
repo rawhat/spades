@@ -53,4 +53,7 @@ defmodule Spades.Game.Record do
 
   def option_as_nil(:none), do: nil
   def option_as_nil({:some, opt}), do: opt
+
+  def nil_as_option(nil), do: :none
+  def nil_as_option(value), do: {:some, value}
 end

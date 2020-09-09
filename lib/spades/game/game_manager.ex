@@ -1,8 +1,8 @@
 defmodule Spades.Game.GameManager do
   use GenServer
 
-  alias Spades.Game
-  alias Spades.Game.Player
+  alias Spades.Game.Record.Game
+  alias Spades.Game.Record.Player
 
   # Client
 

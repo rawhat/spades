@@ -13,7 +13,18 @@ defmodule Spades.Game.Record.Hand do
           tricks: integer()
         }
 
-  def parse({:some, record}) do
+  def new(cards) do
+    cards
+    |> Enum.map(&Card.unparse/1)
+    |> :spades@player.new_hand()
+    |> parse_record()
+  end
+
+  def parse({:some, record}), do: parse_record(record)
+
+  def parse(:none), do: nil
+
+  def parse_record(record) do
     parsed = from_record(record)
 
     %__MODULE__{
@@ -23,8 +34,6 @@ defmodule Spades.Game.Record.Hand do
     }
   end
 
-  def parse(:none), do: nil
-
   def unparse(%__MODULE__{} = hand) do
     unparsed = %__MODULE__{
       hand
@@ -32,7 +41,6 @@ defmodule Spades.Game.Record.Hand do
         cards: Enum.map(hand.cards, &Card.unparse/1)
     }
 
-    # unparse
     {:some, to_record(unparsed)}
   end
 

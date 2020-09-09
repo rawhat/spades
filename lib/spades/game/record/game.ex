@@ -12,6 +12,7 @@ defmodule Spades.Game.Record.Game do
   alias Spades.Game.Record.PublicState
   alias Spades.Game.Record.Score
   alias Spades.Game.Record.Trick
+  alias Spades.Game.Record, as: GameRecord
 
   @type scores :: %{:north_south => integer(), :east_west => integer()}
   @type trick :: %{:id => String.t(), :card => Card.t()}
@@ -65,7 +66,7 @@ defmodule Spades.Game.Record.Game do
   def reveal_cards(%Game{} = game, player_id) do
     game
     |> unparse()
-    |> :spades@game.reveal_cards(player_id)
+    |> :spades@game.reveal_cards(to_string(player_id))
     |> result_with_game(game)
   end
 
@@ -78,7 +79,7 @@ defmodule Spades.Game.Record.Game do
   def make_call(%Game{} = game, player_id, call) do
     game
     |> unparse()
-    |> :spades@game.make_call(player_id, Call.to_record(call))
+    |> :spades@game.make_call(to_string(player_id), Call.to_record(call))
     |> result_with_game(game)
   end
 
@@ -91,7 +92,7 @@ defmodule Spades.Game.Record.Game do
   def play_card(%Game{} = game, player_id, %Card{} = card) do
     game
     |> unparse()
-    |> :spades@game.play_card(player_id, Card.unparse(card))
+    |> :spades@game.play_card(to_string(player_id), Card.unparse(card))
     |> result_with_game(game)
   end
 
@@ -107,11 +108,11 @@ defmodule Spades.Game.Record.Game do
     |> PublicState.parse()
   end
 
-  def state_for_player(%Game{} = game, %Player{} = player) do
+  def state_for_player(%Game{} = game, player_id) do
     state =
       game
       |> unparse()
-      |> :spades@game.state_for_player(player.id)
+      |> :spades@game.state_for_player(to_string(player_id))
 
     case state do
       {:ok, state_for_player} -> GameStateForPlayer.parse(state_for_player)
@@ -127,14 +128,15 @@ defmodule Spades.Game.Record.Game do
   def parse(%Game{} = game) do
     %__MODULE__{
       game
-      | deck: Enum.map(game.deck, &Card.parse/1),
+      | current_player: GameRecord.option_as_nil(game.current_player),
+        deck: Enum.map(game.deck, &Card.parse/1),
         players: map_values(game.players, &Player.parse/1),
         scores: map_values(game.scores, &Score.parse/1),
         trick: Enum.map(game.trick, &Trick.parse/1),
         last_trick:
           case game.last_trick do
-            {:some, tricks} -> {:some, Enum.map(tricks, &Trick.parse/1)}
-            :none -> :none
+            {:some, tricks} -> Enum.map(tricks, &Trick.parse/1)
+            :none -> nil
           end
     }
   end
@@ -142,15 +144,16 @@ defmodule Spades.Game.Record.Game do
   def unparse(%Game{} = game) do
     %__MODULE__{
       game
-      | deck: Enum.map(game.deck, &Card.unparse/1),
+      | current_player: GameRecord.nil_as_option(game.current_player),
+        deck: Enum.map(game.deck, &Card.unparse/1),
         events: Enum.map(game.events, &Event.unparse/1),
         players: map_values(game.players, &Player.unparse/1),
         scores: map_values(game.scores, &Score.unparse/1),
         trick: Enum.map(game.trick, &Trick.unparse/1),
         last_trick:
           case game.last_trick do
-            {:some, tricks} -> {:some, Enum.map(tricks, &Trick.unparse/1)}
-            :none -> :none
+            nil -> :none
+            tricks -> {:some, Enum.map(tricks, &Trick.unparse/1)}
           end
     }
     |> to_record()

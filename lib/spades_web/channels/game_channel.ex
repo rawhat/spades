@@ -2,7 +2,7 @@ defmodule SpadesWeb.GameChannel do
   use Phoenix.Channel
 
   alias Spades.Accounts
-  alias Spades.Game.Card
+  alias Spades.Game.Record.Card
   alias Spades.Game.GameManager
 
   def join("game:" <> game_id, %{"params" => %{"username" => username}}, socket) do

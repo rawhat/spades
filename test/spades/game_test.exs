@@ -67,16 +67,15 @@ defmodule Spades.Game.GameTest do
 
     assert Enum.empty?(g.trick)
     assert g.players[p1.id].hand.tricks == 1
-    assert g.current_player == {:some, p1.id}
+    assert g.current_player == p1.id
 
     assert g.last_trick ==
-             {:some,
-              [
-                %Trick{player_id: p1.id, card: Enum.at(deck, 0)},
-                %Trick{player_id: p2.id, card: Enum.at(deck, 1)},
-                %Trick{player_id: p3.id, card: Enum.at(deck, 2)},
-                %Trick{player_id: p4.id, card: Enum.at(deck, 3)}
-              ]}
+             [
+               %Trick{player_id: p1.id, card: Enum.at(deck, 0)},
+               %Trick{player_id: p2.id, card: Enum.at(deck, 1)},
+               %Trick{player_id: p3.id, card: Enum.at(deck, 2)},
+               %Trick{player_id: p4.id, card: Enum.at(deck, 3)}
+             ]
   end
 
   test "play all cards, round ends", %{
@@ -103,10 +102,10 @@ defmodule Spades.Game.GameTest do
              :east_west => %Score{points: -70, bags: 0}
            }
 
-    assert g.current_player == {:some, p2.id}
+    assert g.current_player == p2.id
     assert Enum.at(g.play_order, 0) == p2.id
     assert g.state == :bidding
-    assert g.last_trick == :none
+    assert g.last_trick == nil
 
     assert Enum.all?(g.players, fn {_, player} ->
              Enum.count(player.hand.cards) != 0
@@ -286,7 +285,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p3.id, Enum.at(deck, 2))
       |> Game.play_card(p4.id, Enum.at(deck, 3))
 
-    assert game.current_player == {:some, p1.id}
+    assert game.current_player == p1.id
   end
 
   test "bagging out deducts points from score" do
@@ -394,6 +393,46 @@ defmodule Spades.Game.GameTest do
 
     assert revealed.players[p4.id].hand.revealed == true
 
-    assert {:error, _game, _reason} = Game.make_call(revealed, p4, 4)
+    assert {:error, _game, _reason} = Game.make_call(revealed, p4.id, 4)
+  end
+
+  test "making sure combination works within a full game" do
+    p1 = Player.new("0", "alex", :north_south)
+    p2 = Player.new("1", "jake", :east_west)
+    p3 = Player.new("2", "jon", :north_south)
+    p4 = Player.new("3", "gopal", :east_west)
+
+    deck = [
+      Card.new(:spades, 1),
+      Card.new(:spades, 2),
+      Card.new(:spades, 3),
+      Card.new(:spades, 4),
+      #
+      Card.new(:spades, 12),
+      Card.new(:spades, 5),
+      Card.new(:spades, 6),
+      Card.new(:spades, 7)
+    ]
+
+    {game, _events} =
+      Game.new("2", "test", deck)
+      |> Game.add_player(p1)
+      |> Game.add_player(p2)
+      |> Game.add_player(p3)
+      |> Game.add_player(p4)
+      |> Game.make_call(p1.id, 1)
+      |> Game.make_call(p2.id, 1)
+      |> Game.make_call(p3.id, 1)
+      |> Game.make_call(p4.id, 1)
+      |> Game.play_card(p1.id, Enum.at(deck, 0))
+      |> Game.play_card(p2.id, Enum.at(deck, 1))
+      |> Game.play_card(p3.id, Enum.at(deck, 2))
+      |> Game.play_card(p4.id, Enum.at(deck, 3))
+      |> Game.play_card(p1.id, Enum.at(deck, 4))
+      |> Game.play_card(p2.id, Enum.at(deck, 5))
+      |> Game.play_card(p3.id, Enum.at(deck, 6))
+      |> Game.play_card(p4.id, Enum.at(deck, 7))
+
+    assert %PublicScore{north_south: 20, east_west: -20} = Game.state(game).scores
   end
 end

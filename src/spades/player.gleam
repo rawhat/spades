@@ -21,11 +21,25 @@ pub type Team {
   EastWest
 }
 
+pub type Position {
+  North
+  South
+  East
+  West
+}
+
+pub fn team_from_position(position: Position) -> Team {
+  case position {
+    North | South -> NorthSouth
+    East | West -> EastWest
+  }
+}
+
 pub type PlayerId =
   String
 
 pub type Player {
-  Player(id: PlayerId, name: String, team: Team, hand: Option(Hand))
+  Player(id: PlayerId, name: String, position: Position, hand: Option(Hand))
 }
 
 pub type PublicPlayer {
@@ -34,23 +48,19 @@ pub type PublicPlayer {
     call: Option(Call),
     id: String,
     name: String,
+    position: Position,
     team: Team,
     tricks: Int,
     revealed: Bool,
   )
 }
 
-pub fn new_player(id: PlayerId, name: String, team: Team) -> Player {
-  Player(id, name, team, None)
+pub fn new_player(id: PlayerId, name: String, position: Position) -> Player {
+  Player(id, name, position, None)
 }
 
 pub fn receive_cards(player: Player, cards: List(Card)) -> Player {
-  Player(
-    id: player.id,
-    name: player.name,
-    team: player.team,
-    hand: Some(new_hand(cards)),
-  )
+  Player(..player, hand: Some(new_hand(cards)))
 }
 
 pub fn has_suit(player: Player, suit: Suit) -> Bool {
@@ -71,7 +81,8 @@ pub fn to_public(player: Player) -> PublicPlayer {
     call: hand.call,
     id: player.id,
     name: player.name,
-    team: player.team,
+    position: player.position,
+    team: team_from_position(player.position),
     tricks: hand.tricks,
     revealed: hand.revealed,
   )

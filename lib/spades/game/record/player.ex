@@ -31,7 +31,8 @@ defmodule Spades.Game.Record.Player do
   def unparse(%__MODULE__{} = player) do
     %__MODULE__{
       player
-      | hand: Hand.unparse(player.hand)
+      | hand: Hand.unparse(player.hand),
+        id: to_string(player.id)
     }
     |> to_record()
   end
