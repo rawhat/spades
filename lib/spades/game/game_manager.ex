@@ -1,8 +1,8 @@
 defmodule Spades.Game.GameManager do
   use GenServer
 
-  alias Spades.Game
-  alias Spades.Game.Player
+  alias Spades.Game.Record.Game
+  alias Spades.Game.Record.Player
 
   # Client
 
@@ -49,8 +49,8 @@ defmodule Spades.Game.GameManager do
     end
   end
 
-  def add_player(id, id: player_id, name: name, team: team) do
-    GenServer.call(via_tuple(id), {:add_player, player_id, name, team})
+  def add_player(id, id: player_id, name: name, position: position) do
+    GenServer.call(via_tuple(id), {:add_player, player_id, name, position})
   end
 
   def get_game_state(id) do
@@ -103,8 +103,8 @@ defmodule Spades.Game.GameManager do
   end
 
   @impl true
-  def handle_call({:add_player, player_id, name, team}, _from, game) do
-    player = Player.new(player_id, name, team)
+  def handle_call({:add_player, player_id, name, position}, _from, game) do
+    player = Player.new(player_id, name, position)
 
     game
     |> Game.add_player(player)
