@@ -2,7 +2,7 @@ defmodule SpadesWeb.GameChannel do
   use Phoenix.Channel
 
   alias Spades.Accounts
-  alias Spades.Game.Record.Card
+  alias Spades.Game.Card
   alias Spades.Game.GameManager
 
   def join("game:" <> game_id, %{"params" => %{"username" => username}}, socket) do
@@ -23,12 +23,12 @@ defmodule SpadesWeb.GameChannel do
 
   def handle_in("join_game", %{"body" => body}, socket) do
     game_id = socket.assigns[:game_id]
-    # convert "north" to :north
-    position = String.to_atom(body["position"])
+    # convert "north_south" to :north_south
+    team = String.to_atom(body["team"])
     username = socket.assigns[:username]
     player_id = socket.assigns[:user_id]
 
-    case GameManager.add_player(game_id, id: player_id, name: username, position: position) do
+    case GameManager.add_player(game_id, id: player_id, name: username, team: team) do
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
 

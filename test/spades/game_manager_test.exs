@@ -2,8 +2,6 @@ defmodule Spades.Game.GameManagerTest do
   use ExUnit.Case
 
   alias Spades.Game.GameManager
-  alias Spades.Game.Record.PublicScore
-  alias Spades.Game.Record.PublicState
 
   setup do
     id = "1"
@@ -11,10 +9,10 @@ defmodule Spades.Game.GameManagerTest do
     {:ok, _} = GameManager.start_link(id: id, name: "one")
     {:ok, _} = GameManager.start_link(id: id_2, name: "two")
 
-    p1 = [id: "0", name: "alex", position: :north]
-    p2 = [id: "1", name: "jake", position: :east]
-    p3 = [id: "2", name: "jon", position: :south]
-    p4 = [id: "3", name: "gopal", position: :west]
+    p1 = [id: "0", name: "alex", team: :north_south]
+    p2 = [id: "1", name: "jake", team: :east_west]
+    p3 = [id: "2", name: "jon", team: :north_south]
+    p4 = [id: "3", name: "gopal", team: :east_west]
 
     {:ok, id: id, p1: p1, p2: p2, p3: p3, p4: p4, id_2: id_2}
   end
@@ -53,19 +51,17 @@ defmodule Spades.Game.GameManagerTest do
 
     assert state.state == :playing
     assert length(state.players) == 4
-    # TODO:  dumb?
-    # assert Enum.find(state.players, &(&1.id == p2.id)).call == 1
+    assert Enum.find(state.players, &(&1[:id] == p2[:id])).call == 1
   end
 
   test "it allows multiple games", %{id_2: id_2, p1: p1} do
-    assert GameManager.get_game_state_for_player(id_2, p1[:id]) == %PublicState{
-             current_player: nil,
+    assert GameManager.get_game_state_for_player(id_2, p1[:id]) == %{
+             current_player: 0,
              id: "2",
-             last_trick: nil,
+             last_trick: [],
              name: "two",
              players: [],
-             player_position: %{},
-             scores: %PublicScore{:north_south => 0, :east_west => 0},
+             scores: %{:north_south => 0, :east_west => 0},
              spades_broken: false,
              state: :waiting,
              trick: []
@@ -73,14 +69,13 @@ defmodule Spades.Game.GameManagerTest do
   end
 
   test "it returns game state", %{id: id} do
-    assert GameManager.get_game_state(id) == %PublicState{
-             current_player: nil,
+    assert GameManager.get_game_state(id) == %{
+             current_player: 0,
              id: "1",
-             last_trick: nil,
+             last_trick: [],
              name: "one",
              players: [],
-             player_position: %{},
-             scores: %PublicScore{:north_south => 0, :east_west => 0},
+             scores: %{:north_south => 0, :east_west => 0},
              spades_broken: false,
              state: :waiting,
              trick: []
