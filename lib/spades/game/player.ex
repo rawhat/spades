@@ -11,6 +11,7 @@ defmodule Spades.Game.Player do
           call: integer() | nil,
           id: String.t(),
           name: String.t(),
+          position: Game.position(),
           team: team(),
           tricks: integer() | nil,
           revealed: boolean()
@@ -19,16 +20,16 @@ defmodule Spades.Game.Player do
   typedstruct do
     field :id, String.t(), enforce: true
     field :name, String.t(), enforce: true
-    field :team, team(), enforce: true
+    field :position, Game.position(), enforce: true
     field :hand, Hand.t()
   end
 
-  @spec new(String.t(), String.t(), team()) :: t()
-  def new(id, name, team) do
+  @spec new(String.t(), String.t(), Game.position()) :: t()
+  def new(id, name, position) do
     %__MODULE__{
       id: id,
       name: name,
-      team: team
+      position: position
     }
   end
 
@@ -40,7 +41,8 @@ defmodule Spades.Game.Player do
         call: player.hand.call,
         id: player.id,
         name: player.name,
-        team: player.team,
+        position: player.position,
+        team: team_from_position(player.position),
         tricks: player.hand.tricks,
         revealed: player.hand.revealed
       }
@@ -48,7 +50,8 @@ defmodule Spades.Game.Player do
       %{
         id: player.id,
         name: player.name,
-        team: player.team,
+        position: player.position,
+        team: team_from_position(player.position),
         cards: 0,
         call: nil,
         tricks: 0,
@@ -164,7 +167,7 @@ defmodule Spades.Game.Player do
   @spec get_team_players(%{String.t() => t()}, team()) :: list(t())
   def get_team_players(players, team) do
     Map.values(players)
-    |> Enum.filter(&(&1.team == team))
+    |> Enum.filter(&(team_from_position(&1.position) == team))
   end
 
   def can_play?(%__MODULE__{hand: hand}, %Card{suit: :spades}, nil, broken) do
@@ -185,4 +188,9 @@ defmodule Spades.Game.Player do
   def play_card(%__MODULE__{hand: hand} = player, card) do
     %__MODULE__{player | hand: Hand.play(hand, card)}
   end
+
+  def team_from_position(:north), do: :north_south
+  def team_from_position(:south), do: :north_south
+  def team_from_position(:east), do: :east_west
+  def team_from_position(:west), do: :east_west
 end

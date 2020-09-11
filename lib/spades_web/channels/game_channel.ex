@@ -24,11 +24,11 @@ defmodule SpadesWeb.GameChannel do
   def handle_in("join_game", %{"body" => body}, socket) do
     game_id = socket.assigns[:game_id]
     # convert "north_south" to :north_south
-    team = String.to_atom(body["team"])
+    position = String.to_atom(body["position"])
     username = socket.assigns[:username]
     player_id = socket.assigns[:user_id]
 
-    case GameManager.add_player(game_id, id: player_id, name: username, team: team) do
+    case GameManager.add_player(game_id, id: player_id, name: username, position: position) do
       {:error, reason} ->
         {:reply, {:error, %{reason: reason}}, socket}
 

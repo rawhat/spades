@@ -16,9 +16,7 @@ import { HorizontalLayout, VerticalLayout } from "./Layout";
 import { EmptyCard, PlayingCard } from "./Card";
 
 function Trick() {
-  const [self, leftPlayer, topPlayer, rightPlayer] = useSelector(
-    selectOrderedPlayers
-  );
+  const [bottom, left, top, right] = useSelector(selectOrderedPlayers);
 
   const trickById = useSelector(selectTrickByPlayerId);
   const events = useSelector(selectEvents);
@@ -44,7 +42,7 @@ function Trick() {
       return {
         ...trick,
         [playedCardEvent.data.player]: {
-          id: playedCardEvent.data.player,
+          player_id: playedCardEvent.data.player.toString(),
           card: playedCardEvent.data.card,
         },
       };
@@ -53,32 +51,32 @@ function Trick() {
   );
   const trick = useDelay(trickById, shouldDelay, addPlayedEvent) ?? {};
 
-  const bottomCard = self && trick[self.id];
-  const leftCard = leftPlayer && trick[leftPlayer.id];
-  const topCard = topPlayer && trick[topPlayer.id];
-  const rightCard = rightPlayer && trick[rightPlayer.id];
+  const bottomCard = bottom && trick[bottom.id];
+  const leftCard = left && trick[left.id];
+  const topCard = top && trick[top.id];
+  const rightCard = right && trick[right.id];
 
   const winner = events.find(isEvent("awarded_trick"))?.data.winner;
 
   return (
     <HorizontalLayout alignItems="center">
       <TrickCard layout="horizontal" playedCard={leftCard}>
-        {winner && winner === leftCard?.id && <span>WINNER</span>}
+        {winner && winner === leftCard?.player_id && <span>WINNER</span>}
         {leftCard && <PlayingCard card={leftCard.card} />}
       </TrickCard>
       <VerticalLayout height="100%">
         <TrickCard layout="vertical" playedCard={topCard}>
-          {winner && winner === topCard?.id && <span>WINNER</span>}
+          {winner && winner === topCard?.player_id && <span>WINNER</span>}
           {topCard && <PlayingCard card={topCard.card} />}
         </TrickCard>
         <TrickCard layout="vertical" playedCard={bottomCard}>
           {bottomCard && <PlayingCard card={bottomCard.card} />}
-          {winner && winner === bottomCard?.id && <span>WINNER</span>}
+          {winner && winner === bottomCard?.player_id && <span>WINNER</span>}
         </TrickCard>
       </VerticalLayout>
       <TrickCard layout="horizontal" playedCard={rightCard}>
         {rightCard && <PlayingCard card={rightCard.card} />}
-        {winner && winner === rightCard?.id && <span>WINNER</span>}
+        {winner && winner === rightCard?.player_id && <span>WINNER</span>}
       </TrickCard>
     </HorizontalLayout>
   );

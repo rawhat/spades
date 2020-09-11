@@ -10,17 +10,20 @@ defmodule Spades.Game do
   @type score :: %{bags: integer(), points: integer()}
   @type scores :: %{:north_south => score(), :east_west => score()}
   @type public_score :: %{:north_south => integer(), :east_west => integer()}
-  @type trick :: %{:id => String.t(), :card => Card.t()}
+  @type trick :: %{:player_id => String.t(), :card => Card.t()}
   @type state :: :waiting | :bidding | :playing
-  @type player_map :: %{integer() => Player.t()}
+  @type position :: :north | :east | :south | :west
+  @type player_map :: %{String.t() => Player.t()}
   @type player_state :: %{
           call: Hand.call() | nil,
           cards: list(Card.t()),
-          current_player: integer(),
+          current_player: position() | nil,
           id: String.t(),
-          last_trick: list(trick()),
+          last_trick: list(trick()) | nil,
           name: String.t(),
+          player_position: %{position() => String.t()},
           players: list(Player.public_player()),
+          position: position(),
           revealed: boolean(),
           scores: public_score(),
           spades_broken: boolean(),
@@ -30,11 +33,12 @@ defmodule Spades.Game do
           tricks: integer() | nil
         }
   @type public_state :: %{
-          current_player: integer(),
+          current_player: position() | nil,
           id: String.t(),
           last_trick: list(trick()),
           name: String.t(),
           players: list(Player.public_player()),
+          player_position: %{position() => String.t()},
           scores: public_score(),
           spades_broken: boolean(),
           state: state(),
@@ -47,11 +51,12 @@ defmodule Spades.Game do
   @type input :: t() | return()
 
   typedstruct do
-    field :current_player, integer(), default: 0
+    field :current_player, position(), default: :north
     field :deck, list(Card.t()), enforce: true
     field :id, String.t(), enforce: true
     field :name, String.t(), enforce: true
-    field :play_order, list(integer()), default: []
+    field :play_order, list(position()), default: []
+    field :player_position, %{position() => String.t()}, default: Map.new()
     field :players, player_map(), default: Map.new()
 
     field :scores, scores(),
@@ -77,7 +82,8 @@ defmodule Spades.Game do
     %__MODULE__{
       deck: deck,
       id: id,
-      name: name
+      name: name,
+      play_order: [:north, :east, :south, :west]
     }
   end
 
@@ -185,11 +191,13 @@ defmodule Spades.Game do
         last_trick: game.last_trick,
         name: game.name,
         players: get_player_list(game),
+        player_position: game.player_position,
+        position: player.position,
         revealed: revealed,
         scores: get_public_scores(game),
         spades_broken: game.spades_broken,
         state: game.state,
-        team: player.team,
+        team: Player.team_from_position(player.position),
         trick: game.trick,
         tricks: if(player.hand != nil, do: player.hand.tricks, else: nil)
       }
@@ -204,6 +212,7 @@ defmodule Spades.Game do
       last_trick: game.last_trick,
       name: game.name,
       players: get_player_list(game),
+      player_position: game.player_position,
       scores: get_public_scores(game),
       spades_broken: game.spades_broken,
       state: game.state,
@@ -218,8 +227,15 @@ defmodule Spades.Game do
   defp chain({:error, game, err}), do: {:error, %{game | events: []}, err}
 
   @spec get_player_list(t()) :: list(Player.public_player())
-  defp get_player_list(game) do
-    Stream.map(game.play_order, &Map.get(game.players, &1))
+  defp get_player_list(%__MODULE__{
+         play_order: play_order,
+         player_position: player_position,
+         players: players
+       }) do
+    play_order
+    |> Stream.map(&Map.get(player_position, &1))
+    |> Stream.map(&Map.get(players, &1))
+    |> Stream.filter(&(&1 != nil))
     |> Stream.map(&Player.to_public/1)
     |> Enum.to_list()
   end
@@ -233,21 +249,20 @@ defmodule Spades.Game do
        do: {:error, game, "player #{id} is already in game"}
 
   defp put_player(%__MODULE__{players: players} = game, player) do
-    if Enum.count(players, fn {_, p} -> p.team == player.team end) == 2 do
-      {:error, game, "cannot add #{player.name} to #{to_string(player.team)} because it is full"}
+    players_on_team =
+      players
+      |> Enum.count(fn {_, p} ->
+        Player.team_from_position(p.position) == Player.team_from_position(player.position)
+      end)
+
+    if players_on_team == 2 do
+      team = to_string(Player.team_from_position(player.position))
+      {:error, game, "cannot add #{player.name} to #{team} because it is full"}
     else
-      new_players = Map.put(players, player.id, player)
-
-      play_order =
-        Enum.concat(game.play_order, [player.id])
-        |> Enum.split_with(&(Map.get(new_players, &1).team == :north_south))
-        |> Tuple.to_list()
-        |> zip()
-
       %__MODULE__{
         game
-        | players: new_players,
-          play_order: play_order
+        | players: Map.put(players, player.id, player),
+          player_position: Map.put(game.player_position, player.position, player.id)
       }
       |> ok()
     end
@@ -267,14 +282,25 @@ defmodule Spades.Game do
   defp set_bidding({:ok, %__MODULE__{} = game}), do: %{game | state: :bidding} |> ok()
 
   @spec can_play?(t(), String.t()) :: boolean()
-  defp can_play?(game, id) do
-    Enum.at(game.play_order, game.current_player) == id
+  defp can_play?(
+         %__MODULE__{player_position: player_position, current_player: current_player},
+         id
+       ) do
+    Map.get(player_position, current_player) == id
   end
 
+  defp can_play?(%__MODULE__{}, _id), do: false
+
   @spec next_player(game()) :: game()
-  defp next_player({:ok, %__MODULE__{} = game}) do
-    # TODO
-    %__MODULE__{game | current_player: rem(game.current_player + 1, 4)}
+  defp next_player({:ok, %__MODULE__{current_player: current, play_order: play_order} = game}) do
+    current_player =
+      play_order
+      |> Stream.cycle()
+      |> Stream.take(5)
+      |> Enum.drop_while(&(&1 != current))
+      |> Enum.at(1)
+
+    %__MODULE__{game | current_player: current_player}
     |> ok()
   end
 
@@ -296,31 +322,32 @@ defmodule Spades.Game do
   end
 
   @spec play(t(), String.t(), Card.t()) :: game()
-  defp play(%__MODULE__{trick: [], players: players} = game, id, card) do
-    if Player.can_play?(players[id], card, nil, game.spades_broken) do
-      %__MODULE__{game | trick: [%{id: id, card: card}]}
-      |> take_card_from_hand(id, card)
+  defp play(%__MODULE__{trick: [], players: players} = game, player_id, card) do
+    if Player.can_play?(players[player_id], card, nil, game.spades_broken) do
+      %__MODULE__{game | trick: [%{player_id: player_id, card: card}]}
+      |> take_card_from_hand(player_id, card)
       |> spades_broken(card)
-      |> add_event(:played_card, %{player: id, card: card})
+      |> add_event(:played_card, %{player: player_id, card: card})
       |> ok()
     else
-      {:error, game, "#{id} cannot play #{to_string(card)}"}
+      {:error, game, "#{Map.get(players, player_id).name} cannot play #{to_string(card)}"}
     end
   end
 
   defp play(
          %__MODULE__{trick: [%{card: lead} | _] = trick, players: players} = game,
-         id,
+         player_id,
          card
        ) do
-    if Player.can_play?(players[id], card, lead, game.spades_broken) do
-      %__MODULE__{game | trick: Enum.concat(trick, [%{id: id, card: card}])}
-      |> take_card_from_hand(id, card)
+    if Player.can_play?(players[player_id], card, lead, game.spades_broken) do
+      %__MODULE__{game | trick: Enum.concat(trick, [%{player_id: player_id, card: card}])}
+      |> take_card_from_hand(player_id, card)
       |> spades_broken(card)
-      |> add_event(:played_card, %{player: id, card: card})
+      |> add_event(:played_card, %{player: player_id, card: card})
       |> ok()
     else
-      {:error, game, "#{id} cannot play #{to_string(card)}, and #{to_string(lead)} was lead"}
+      {:error, game,
+       "#{Map.get(players, player_id).name} cannot play #{to_string(card)}, and #{to_string(lead)} was lead"}
     end
   end
 
@@ -344,18 +371,21 @@ defmodule Spades.Game do
 
     id =
       if lead.suit == :spade || max_spade != nil do
-        Map.get(max_spade, :id)
+        Map.get(max_spade, :player_id)
       else
         Card.max_of_suit(trick, lead.suit)
-        |> Map.get(:id)
+        |> Map.get(:player_id)
       end
 
-    winner = Enum.find_index(game.play_order, &(&1 == id))
+    {winning_position, _} =
+      Enum.find(game.player_position, fn {_pos, player_id} ->
+        player_id == id
+      end)
 
     %__MODULE__{
       game
       | players: Map.update!(game.players, id, &Player.take(&1)),
-        current_player: winner
+        current_player: winning_position
     }
     |> add_event(:awarded_trick, %{winner: id})
     |> ok()
@@ -452,8 +482,8 @@ defmodule Spades.Game do
   end
 
   @spec increment_play_order(t()) :: t()
-  defp increment_play_order(%__MODULE__{play_order: [last | rest]} = game) do
-    %__MODULE__{game | play_order: Enum.concat(rest, [last]), current_player: 0}
+  defp increment_play_order(%__MODULE__{play_order: [last, next | rest]} = game) do
+    %__MODULE__{game | play_order: Enum.concat([next | rest], [last]), current_player: next}
   end
 
   @spec deal_cards(game()) :: game()
@@ -466,7 +496,8 @@ defmodule Spades.Game do
   defp deal_cards(game, _shuffle), do: game
 
   defp deal(
-         %__MODULE__{players: players, play_order: play_order} = game,
+         %__MODULE__{players: players, play_order: play_order, player_position: player_position} =
+           game,
          shuffle
        ) do
     deck =
@@ -474,12 +505,17 @@ defmodule Spades.Game do
         do: Enum.reduce(1..10, game.deck, fn _, deck -> Enum.shuffle(deck) end),
         else: game.deck
 
+    ordered_players =
+      play_order
+      |> Enum.map(&Map.get(player_position, &1))
+      |> Enum.map(&Map.get(players, &1))
+
     dealt_players =
       Enum.chunk_every(deck, 4)
       |> Enum.zip()
-      |> Enum.zip(play_order)
-      |> Enum.map(fn {hand, id} ->
-        Player.receive_cards(players[id], Tuple.to_list(hand))
+      |> Enum.zip(ordered_players)
+      |> Enum.map(fn {hand, player} ->
+        Player.receive_cards(player, Tuple.to_list(hand))
       end)
 
     %__MODULE__{
@@ -488,15 +524,6 @@ defmodule Spades.Game do
     }
     |> add_event(:dealt_cards, %{})
     |> ok()
-  end
-
-  defp zip(teams, players \\ [])
-  defp zip([[], team_two], players), do: Enum.concat(players, team_two)
-  defp zip([team_one, []], players), do: Enum.concat(players, team_one)
-
-  @spec zip(list(list(Player.t())), list(Player.t())) :: list(Player.t())
-  defp zip([[one | team_one], [two | team_two]], players) do
-    zip([team_one, team_two], Enum.concat(players, [one, two]))
   end
 
   defp get_public_scores(%__MODULE__{scores: %{north_south: north_south, east_west: east_west}}) do

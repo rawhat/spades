@@ -13,19 +13,19 @@ defmodule Spades.Game.PlayerTest do
     all_cards = [ace_of_spades, three_of_diamonds, queen_of_hearts]
 
     alex =
-      Player.new("0", "alex", :north_south)
+      Player.new("0", "alex", :north)
       |> Player.receive_cards(only_spades)
 
     jon =
-      Player.new("1", "jon", :north_south)
+      Player.new("1", "jon", :south)
       |> Player.receive_cards(all_cards)
 
     jake =
-      Player.new("2", "jake", :east_west)
+      Player.new("2", "jake", :east)
       |> Player.receive_cards(only_spades)
 
     gopal =
-      Player.new("e", "gopal", :east_west)
+      Player.new("e", "gopal", :west)
       |> Player.receive_cards(all_cards)
 
     player_map = %{"alex" => alex, "jon" => jon, "jake" => jake, "gopal" => gopal}

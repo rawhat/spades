@@ -23,7 +23,7 @@ function EventStream() {
             case "called": {
               return (
                 <GameEvent key={eventText}>
-                  {playersById[event.data.player] || event.data.player} called {event.data.call}
+                  {playersById[event.data.player]?.name || event.data.player} called {event.data.call}
                 </GameEvent>
               )
             }
@@ -40,7 +40,7 @@ function EventStream() {
             case "played_card": {
               return (
                 <GameEvent key={eventText}>
-                  {playersById[event.data.player] || event.data.player} played {cardToString(event.data.card)}
+                  {playersById[event.data.player]?.name || event.data.player} played {cardToString(event.data.card)}
                 </GameEvent>
               )
             }
@@ -52,7 +52,7 @@ function EventStream() {
             case "awarded_trick": {
               return (
                 <GameEvent key={eventText}>
-                  Awarded trick to {playersById[event.data.winner] || event.data.winner}
+                  Awarded trick to {playersById[event.data.winner]?.name || event.data.winner}
                 </GameEvent>
               )
             }
@@ -66,9 +66,12 @@ function EventStream() {
             case "revealed_cards": {
               return (
                 <GameEvent key={eventText}>
-                  {playersById[event.data.player] || event.data.player} revealed their hand
+                  {playersById[event.data.player]?.name || event.data.player} revealed their hand
                 </GameEvent>
               )
+            }
+            default: {
+              throw new Error("Unexpected event");
             }
           }
         })}
