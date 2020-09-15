@@ -18,6 +18,7 @@ defmodule Spades.Game do
   @type player_state :: %{
           call: Hand.call() | nil,
           cards: list(Card.t()),
+          created_by: String.t(),
           current_player: position() | nil,
           id: String.t(),
           last_trick: list(trick()) | nil,
@@ -34,6 +35,7 @@ defmodule Spades.Game do
           tricks: integer() | nil
         }
   @type public_state :: %{
+          created_by: String.t(),
           current_player: position() | nil,
           id: String.t(),
           last_trick: list(trick()),
@@ -53,6 +55,7 @@ defmodule Spades.Game do
 
   typedstruct do
     field :bots, list(position()), default: []
+    field :created_by, :string, enforce: true
     field :current_player, position(), default: :north
     field :deck, list(Card.t()), enforce: true
     field :id, String.t(), enforce: true
@@ -80,8 +83,9 @@ defmodule Spades.Game do
   #################################
 
   @spec new(String.t(), String.t(), list(Card.t()) | nil) :: t()
-  def new(id, name, deck \\ Deck.new()) when is_binary(id) do
+  def new(id, name, created_by, deck \\ Deck.new()) when is_binary(id) do
     %__MODULE__{
+      created_by: created_by,
       deck: deck,
       id: id,
       name: name,
@@ -205,6 +209,7 @@ defmodule Spades.Game do
       %{
         call: if(player.hand != nil, do: player.hand.call, else: nil),
         cards: Player.sorted_hand(player),
+        created_by: game.created_by,
         current_player: game.current_player,
         id: game.id,
         last_trick: game.last_trick,
@@ -226,6 +231,7 @@ defmodule Spades.Game do
   @spec state(t()) :: public_state()
   def state(%__MODULE__{} = game) do
     %{
+      created_by: game.created_by,
       current_player: game.current_player,
       id: game.id,
       last_trick: game.last_trick,

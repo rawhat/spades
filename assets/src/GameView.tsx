@@ -8,9 +8,11 @@ import {
   Card,
   PublicPlayer,
   Position,
+  addBot,
   joinGame,
   selectCurrentPlayer,
   selectError,
+  selectIsCreator,
   selectLastTrick,
   selectOrderedPlayers,
   selectPlayerCards,
@@ -43,11 +45,13 @@ function GameView() {
     selectOrderedPlayers
   );
   const canJoin = !playerCards || !(bottomPlayer?.name === username);
+  const isCreator = useSelector(selectIsCreator);
 
   return (
     <HorizontalLayout flexGrow={1}>
       <Column width={1}>
         <GamePosition
+          canAddBot={isCreator && !leftPlayer}
           canJoin={canJoin}
           orientation="side"
           player={leftPlayer}
@@ -57,6 +61,7 @@ function GameView() {
       <Column width={8}>
         <VerticalLayout height="100%">
           <GamePosition
+            canAddBot={isCreator && !topPlayer}
             canJoin={canJoin}
             orientation="top"
             player={topPlayer}
@@ -75,6 +80,7 @@ function GameView() {
             />
           ) : (
             <GamePosition
+              canAddBot={isCreator && !bottomPlayer}
               canJoin={canJoin}
               orientation="top"
               player={bottomPlayer}
@@ -85,6 +91,7 @@ function GameView() {
       </Column>
       <Column width={1}>
         <GamePosition
+          canAddBot={isCreator && !rightPlayer}
           canJoin={canJoin}
           orientation="side"
           player={rightPlayer}
@@ -115,11 +122,11 @@ function GameView() {
           {lastTrick && lastTrick.length > 0 && (
             <VerticalLayout>
               <Bold>Last trick:</Bold>
-              <HorizontalLayout>
+              <HorizontalLayout flexWrap="wrap">
                 {lastTrick.map(({ player_id, card }) => (
                   <VerticalLayout key={player_id}>
                     <div>{playersById[player_id]?.name || player_id}</div>
-                    <PlayingCard card={card} size={5} />
+                    <PlayingCard card={card} size={3} />
                   </VerticalLayout>
                 ))}
               </HorizontalLayout>
@@ -226,6 +233,7 @@ const Player = ({
 };
 
 interface GamePositionProps {
+  canAddBot: boolean;
   canJoin: boolean;
   orientation: "side" | "top";
   player?: PublicPlayer;
@@ -233,6 +241,7 @@ interface GamePositionProps {
 }
 
 const GamePosition = ({
+  canAddBot,
   canJoin,
   orientation,
   player,
@@ -262,7 +271,15 @@ const GamePosition = ({
       </PositionContainer>
     );
   }
-  return null;
+  return (
+    <PositionContainer
+      alignItems="center"
+      justifyContent="center"
+      position={orientation}
+    >
+      <AddBotButton position={position} />
+    </PositionContainer>
+  );
 };
 
 interface JoinPositionProps {
@@ -280,6 +297,18 @@ const JoinPosition = ({ position }: JoinPositionProps) => {
     }
   }, [dispatch, id, position, username]);
   return <Button onClick={join}>Join</Button>;
+};
+
+const AddBotButton = ({ position }: JoinPositionProps) => {
+  const dispatch = useDispatch();
+  const { id } = useParams();
+
+  const join = useCallback(() => {
+    if (id) {
+      dispatch(addBot({ position }));
+    }
+  }, [dispatch, id, position]);
+  return <Button onClick={join}>Add Bot</Button>;
 };
 
 export default GameView;

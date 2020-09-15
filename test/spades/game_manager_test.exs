@@ -2,17 +2,19 @@ defmodule Spades.Game.GameManagerTest do
   use ExUnit.Case
 
   alias Spades.Game.GameManager
+  alias Spades.Game
 
   setup do
     id = "1"
     id_2 = "2"
-    {:ok, _} = GameManager.start_link(id: id, name: "one")
-    {:ok, _} = GameManager.start_link(id: id_2, name: "two")
 
     p1 = [id: "0", name: "alex", position: :north]
     p2 = [id: "1", name: "jake", position: :east]
     p3 = [id: "2", name: "jon", position: :south]
     p4 = [id: "3", name: "gopal", position: :west]
+
+    {:ok, _} = GameManager.start_link(id: id, name: "one", game: Game.new(id, "one", p1[:id]))
+    {:ok, _} = GameManager.start_link(id: id_2, name: "two", game: Game.new(id_2, "two", p1[:id]))
 
     {:ok, id: id, p1: p1, p2: p2, p3: p3, p4: p4, id_2: id_2}
   end
@@ -55,6 +57,7 @@ defmodule Spades.Game.GameManagerTest do
 
   test "it allows multiple games", %{id_2: id, p1: p1} do
     assert GameManager.get_game_state_for_player(id, p1[:id]) == %{
+             created_by: p1[:id],
              current_player: :north,
              id: id,
              last_trick: [],
@@ -70,6 +73,7 @@ defmodule Spades.Game.GameManagerTest do
 
   test "it returns game state", %{id: id, p1: p1} do
     assert GameManager.get_game_state(id) == %{
+             created_by: p1[:id],
              current_player: p1[:position],
              id: "1",
              last_trick: [],

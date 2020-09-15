@@ -6,6 +6,7 @@ import { Socket } from "phoenix";
 import {
   GameStatus,
   PlayerStatus,
+  addBot,
   clearError,
   joinGame,
   makeCall,
@@ -66,6 +67,11 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
     } else if (joinGame.match(action)) {
       channel
         .push("join_game", { body: action.payload })
+        .receive("error", ({ reason }: ErrorPayload) => next(setError(reason)));
+    } else if (addBot.match(action)) {
+      next(clearError());
+      channel
+        .push("add_bot", { body: action.payload })
         .receive("error", ({ reason }: ErrorPayload) => next(setError(reason)));
     } else if (revealCards.match(action)) {
       next(clearError());

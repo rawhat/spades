@@ -3,6 +3,7 @@ defmodule SpadesWeb.GameController do
 
   alias Spades.Accounts
   alias Spades.Game.GameManager
+  alias Spades.Game
 
   def list(conn, _params) do
     games = GameManager.active_games()
@@ -10,10 +11,10 @@ defmodule SpadesWeb.GameController do
   end
 
   def create(conn, %{"name" => name}) do
-    id = GameManager.next_id()
-    GameManager.start_link(id: id, name: name)
-
     user_id = get_session(conn, :user_id)
+    id = GameManager.next_id()
+    GameManager.start_link(id: id, name: name, game: Game.new(id, name, user_id))
+
     creator = Accounts.get_user_by(id: user_id)
 
     GameManager.add_player(id, id: user_id, name: creator.username, position: :north)

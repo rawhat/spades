@@ -8,8 +8,7 @@ defmodule Spades.Game.GameManager do
 
   def start_link(opts) do
     {id, _} = Keyword.pop_first(opts, :id, next_id())
-    game_name = Keyword.fetch!(opts, :name)
-    {game, _} = Keyword.pop_first(opts, :game, Game.new(id, game_name))
+    game = Keyword.fetch!(opts, :game)
     name = via_tuple(id)
     GenServer.start_link(__MODULE__, game, name: name)
   end
@@ -51,6 +50,10 @@ defmodule Spades.Game.GameManager do
 
   def add_player(id, id: player_id, name: name, position: position) do
     GenServer.call(via_tuple(id), {:add_player, player_id, name, position})
+  end
+
+  def add_bot(id, position: position) do
+    GenServer.call(via_tuple(id), {:add_bot, position})
   end
 
   def get_game_state(id) do
@@ -108,6 +111,13 @@ defmodule Spades.Game.GameManager do
 
     game
     |> Game.add_player(player)
+    |> handle_error()
+  end
+
+  @impl true
+  def handle_call({:add_bot, position}, _from, game) do
+    game
+    |> Game.add_bot(position)
     |> handle_error()
   end
 

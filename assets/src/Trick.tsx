@@ -56,7 +56,8 @@ function Trick() {
   const topCard = top && trick[top.id];
   const rightCard = right && trick[right.id];
 
-  const winner = events.find(isEvent("awarded_trick"))?.data.winner;
+  const winner =
+    trick.length === 4 && events.find(isEvent("awarded_trick"))?.data.winner;
 
   return (
     <HorizontalLayout alignItems="center">

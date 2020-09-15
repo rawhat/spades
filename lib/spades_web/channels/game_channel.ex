@@ -48,6 +48,39 @@ defmodule SpadesWeb.GameChannel do
     end
   end
 
+  def handle_in("add_bot", %{"body" => body}, socket) do
+    game_id = socket.assigns[:game_id]
+    player_id = socket.assigns[:user_id]
+    # convert "north_south" to :north_south
+    position = String.to_atom(body["position"])
+    state = GameManager.get_game_state(game_id)
+
+    case state.created_by do
+      ^player_id ->
+        case GameManager.add_bot(game_id, position: position) do
+          {:error, reason} ->
+            {:reply, {:error, %{reason: reason}}, socket}
+
+          {:ok, _game, events} ->
+            state = GameManager.get_game_state_for_player(game_id, player_id)
+
+            push(socket, "game_state", %{events: events, state: state})
+            broadcast!(socket, "join_game", %{"events" => events})
+
+            SpadesWeb.Endpoint.broadcast("lobby:*", "update_game", %{
+              id: state.id,
+              name: state.name,
+              players: Enum.count(state.players)
+            })
+
+            {:noreply, socket}
+        end
+
+      _ ->
+        {:reply, {:error, %{reason: "Player cannot add bot"}}, socket}
+    end
+  end
+
   def handle_in("reveal", _params, socket) do
     game_id = socket.assigns[:game_id]
     player_id = socket.assigns[:user_id]

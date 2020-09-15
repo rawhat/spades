@@ -204,7 +204,7 @@ defmodule Spades.Game.Bot do
 
   def winning_card(
         %Game{trick: trick, spades_broken: spades_broken} = game,
-        %Player{hand: %Hand{cards: cards}} = bot
+        %Player{hand: %Hand{cards: _cards}} = bot
       ) do
     case trick do
       [] ->

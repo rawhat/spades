@@ -27,7 +27,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     {game, events} =
-      Game.new("1", "one", deck)
+      Game.new("1", "one", p1.id, deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -153,7 +153,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     {:error, game, reason} =
-      Game.new("1", "one", deck)
+      Game.new("1", "one", p1.id, deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -177,7 +177,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     {game, _events} =
-      Game.new("1", "one", deck)
+      Game.new("1", "one", p1.id, deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -210,7 +210,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     {game, _events} =
-      Game.new("1", "one", deck)
+      Game.new("1", "one", p1.id, deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -242,7 +242,7 @@ defmodule Spades.Game.GameTest do
     ]
 
     {game, _events} =
-      Game.new("1", "one", deck)
+      Game.new("1", "one", p1.id, deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -299,7 +299,7 @@ defmodule Spades.Game.GameTest do
       |> Enum.to_list()
 
     {game, _events} =
-      Game.new("1", "one", deck)
+      Game.new("1", "one", p1.id, deck)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -337,7 +337,7 @@ defmodule Spades.Game.GameTest do
     p4 = Player.new("3", "gopal", :west)
 
     {:error, game, _reason} =
-      Game.new("2", "test")
+      Game.new("2", "test", p1.id)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)
@@ -355,7 +355,7 @@ defmodule Spades.Game.GameTest do
     p4 = Player.new("3", "gopal", :west)
 
     {revealed, _events} =
-      Game.new("2", "test")
+      Game.new("2", "test", p1.id)
       |> Game.add_player(p1)
       |> Game.add_player(p2)
       |> Game.add_player(p3)

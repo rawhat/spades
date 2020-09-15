@@ -100,15 +100,16 @@ export enum Position {
 }
 
 export interface GameStatus {
+  created_by: string;
+  current_player: string;
   id: string;
   last_trick: PlayedCard[];
   name: string;
-  scores: Record<Team, number>;
   player_position: Record<Position, string>;
   players: PublicPlayer[];
+  scores: Record<Team, number>;
   state: State;
   trick: PlayedCard[];
-  current_player: string;
 }
 
 export interface PlayerStatus extends GameStatus {
@@ -216,6 +217,7 @@ export const joinGame = createAction<JoinGamePayload>("game/join");
 export const observeGame = createAction<{ id: string; username?: string }>(
   "game/observe"
 );
+export const addBot = createAction<{ position: Position }>("game/addBot");
 
 export const revealCards = createAction("game/reveal");
 export const makeCall = createAction<number>("game/makeCall");
@@ -373,5 +375,18 @@ export const selectOrderedPlayers = createSelector(
     return dropWhile(orderedPlayers, (p) => p?.name !== self.name).concat(
       after
     );
+  }
+);
+
+export const selectIsCreator = createSelector(
+  getPlayerState,
+  getGameState,
+  selectSelf,
+  (playerState, gameState, self) => {
+    const createdBy = playerState?.created_by || gameState?.created_by;
+    if (createdBy) {
+      return self?.id === createdBy;
+    }
+    return false;
   }
 );
