@@ -1,6 +1,7 @@
 defmodule Spades.Game do
   use TypedStruct
 
+  alias Spades.Game.Bot
   alias Spades.Game.Card
   alias Spades.Game.Deck
   alias Spades.Game.Event
@@ -51,6 +52,7 @@ defmodule Spades.Game do
   @type input :: t() | return()
 
   typedstruct do
+    field :bots, list(position()), default: []
     field :current_player, position(), default: :north
     field :deck, list(Card.t()), enforce: true
     field :id, String.t(), enforce: true
@@ -104,6 +106,21 @@ defmodule Spades.Game do
 
   def add_player({:error, _game, _reason} = with_error, _player), do: with_error
 
+  @spec add_bot(input(), position()) :: return()
+  def add_bot(%__MODULE__{} = game, position) do
+    bot_position = Atom.to_string(position)
+
+    %__MODULE__{game | bots: [position | game.bots]}
+    |> add_player(
+      Player.new("#{bot_position}_bot", "Bot (#{String.upcase(bot_position)})", position)
+    )
+  end
+
+  def add_bot({%__MODULE__{} = game, events}, position),
+    do: add_bot(%{game | events: events}, position)
+
+  def add_bot({:error, _game, _reason} = with_error, _player), do: with_error
+
   @spec reveal_cards(input(), String.t()) :: return()
   def reveal_cards(
         %__MODULE__{state: :bidding} = game,
@@ -137,6 +154,7 @@ defmodule Spades.Game do
       |> call(id, call)
       |> next_player()
       |> start_game()
+      |> take_bot_action()
       |> chain()
     else
       {:error, game, "player #{id} cannot make call"}
@@ -161,6 +179,7 @@ defmodule Spades.Game do
       |> award_trick()
       |> end_hand()
       |> end_round()
+      |> take_bot_action()
       |> chain()
     else
       {:error, game, "#{id} cannot play card"}
@@ -225,6 +244,36 @@ defmodule Spades.Game do
   @spec chain(game()) :: return()
   defp chain({:ok, %__MODULE__{events: events} = game}), do: {%{game | events: []}, events}
   defp chain({:error, game, err}), do: {:error, %{game | events: []}, err}
+  defp chain({%__MODULE__{}, _events} = return), do: return
+
+  defp take_bot_action(
+         %__MODULE__{
+           bots: bots,
+           current_player: current_player,
+           player_position: player_position,
+           players: players,
+           state: state
+         } = game
+       ) do
+    current_id = Map.get(player_position, current_player)
+    current = Map.get(players, current_id)
+
+    case {Enum.member?(bots, current_player), state} do
+      {true, :bidding} ->
+        game
+        |> Bot.call(current)
+
+      {true, :playing} ->
+        game
+        |> Bot.play(current)
+
+      _ ->
+        ok(game)
+    end
+  end
+
+  defp take_bot_action({:ok, %__MODULE__{} = game}), do: take_bot_action(game)
+  defp take_bot_action({:error, _game, _reason} = with_error), do: with_error
 
   @spec get_player_list(t()) :: list(Player.public_player())
   defp get_player_list(%__MODULE__{
@@ -273,12 +322,18 @@ defmodule Spades.Game do
        when map_size(players) == 4 do
     set_bidding(game)
     |> add_event(:state_changed, %{old: :waiting, new: :bidding})
+    |> take_bot_action()
     |> ok()
   end
 
   defp start_bidding(result), do: result
 
+  defp set_bidding(%__MODULE__{state: :done} = game), do: {:error, game, "Game is finished"}
   defp set_bidding(%__MODULE__{} = game), do: %{game | state: :bidding}
+
+  defp set_bidding({:ok, %__MODULE__{state: :done} = game}),
+    do: {:error, game, "Game is finished"}
+
   defp set_bidding({:ok, %__MODULE__{} = game}), do: %{game | state: :bidding} |> ok()
 
   @spec can_play?(t(), String.t()) :: boolean()
@@ -423,14 +478,23 @@ defmodule Spades.Game do
       end)
 
     if all_empty do
-      game
-      |> clear_last_trick()
-      |> award_points()
-      |> increment_play_order()
-      |> deal(true)
-      |> set_bidding()
-      |> add_event(:round_ended, %{})
-      |> ok()
+      awarded_points =
+        game
+        |> clear_last_trick()
+        |> award_points()
+
+      case awarded_points do
+        %__MODULE__{state: :done} ->
+          {:error, awarded_points, "Game is finished"}
+
+        _ ->
+          awarded_points
+          |> increment_play_order()
+          |> deal(true)
+          |> set_bidding()
+          |> add_event(:round_ended, %{})
+          |> ok()
+      end
     else
       ok(game)
     end
@@ -472,12 +536,17 @@ defmodule Spades.Game do
       |> Player.get_score()
       |> Player.update_score(east_west)
 
+    ns_points = north_south_score.points + north_south_score.bags
+    ew_points = east_west_score.points + east_west_score.bags
+    is_done = ns_points >= 300 || ew_points >= 300
+
     %__MODULE__{
       game
       | scores: %{
           north_south: north_south_score,
           east_west: east_west_score
-        }
+        },
+        state: if(is_done, do: :done, else: game.state)
     }
   end
 

@@ -5,7 +5,7 @@ defmodule Spades.Game.Hand do
   alias Spades.Game
   alias Spades.Game.Card
 
-  @type call :: 0..13 | -1
+  @type call :: -1..13
 
   typedstruct do
     field :cards, list(Card.t()), enforce: true

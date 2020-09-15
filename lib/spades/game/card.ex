@@ -30,6 +30,14 @@ defmodule Spades.Game.Card do
     end)
   end
 
+  def min_of_suit(cards, suit) when is_list(cards) do
+    cards
+    |> Enum.filter(fn %{card: card} -> card.suit == suit end)
+    |> Enum.min_by(fn %{card: card} -> if card.value == 1, do: 14, else: card.value end, fn ->
+      nil
+    end)
+  end
+
   @spec get_value(t()) :: value()
   def get_value(%__MODULE__{value: 1}), do: 14
   def get_value(%__MODULE__{value: value}), do: value
@@ -55,6 +63,10 @@ defmodule Spades.Game.Card do
   def value_text(%__MODULE__{value: 11}), do: "J"
   def value_text(%__MODULE__{value: 12}), do: "Q"
   def value_text(%__MODULE__{value: 13}), do: "K"
+
+  def sorted_by_value(cards) when is_list(cards) do
+    Enum.sort(cards, fn a, b -> get_value(a) <= get_value(b) end)
+  end
 end
 
 defimpl String.Chars, for: Spades.Game.Card do

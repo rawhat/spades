@@ -67,10 +67,10 @@ defmodule Spades.Game.GameTest do
     assert g.current_player == p1.position
 
     assert g.last_trick == [
-             %{id: p1.id, card: Enum.at(deck, 0)},
-             %{id: p2.id, card: Enum.at(deck, 1)},
-             %{id: p3.id, card: Enum.at(deck, 2)},
-             %{id: p4.id, card: Enum.at(deck, 3)}
+             %{player_id: p1.id, card: Enum.at(deck, 0)},
+             %{player_id: p2.id, card: Enum.at(deck, 1)},
+             %{player_id: p3.id, card: Enum.at(deck, 2)},
+             %{player_id: p4.id, card: Enum.at(deck, 3)}
            ]
   end
 
@@ -137,7 +137,7 @@ defmodule Spades.Game.GameTest do
       Game.play_card(game, p1.id, Enum.at(deck, 0))
       |> Game.play_card(p2.id, Enum.at(deck, 5))
 
-    assert g.trick == [%{id: p1.id, card: Enum.at(deck, 0)}]
+    assert g.trick == [%{player_id: p1.id, card: Enum.at(deck, 0)}]
   end
 
   test "spades not broken, can't lead with spades", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -188,7 +188,7 @@ defmodule Spades.Game.GameTest do
       |> Game.make_call(p4.id, 1)
       |> Game.play_card(p1.id, Card.new(:spades, 2))
 
-    assert game.trick == [%{id: p1.id, card: Card.new(:spades, 2)}]
+    assert game.trick == [%{player_id: p1.id, card: Card.new(:spades, 2)}]
   end
 
   test "once spades are broken, they can be lead", %{p1: p1, p2: p2, p3: p3, p4: p4} do
@@ -225,7 +225,7 @@ defmodule Spades.Game.GameTest do
       |> Game.play_card(p4.id, Enum.at(deck, 7))
       |> Game.play_card(p4.id, Enum.at(deck, 11))
 
-    assert game.trick == [%{id: p4.id, card: Enum.at(deck, 11)}]
+    assert game.trick == [%{player_id: p4.id, card: Enum.at(deck, 11)}]
   end
 
   test "leading suit with all offsuit wins", %{p1: p1, p2: p2, p3: p3, p4: p4} do
