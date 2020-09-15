@@ -158,7 +158,6 @@ defmodule Spades.Game do
       |> call(id, call)
       |> next_player()
       |> start_game()
-      |> take_bot_action()
       |> chain()
     else
       {:error, game, "player #{id} cannot make call"}
@@ -183,7 +182,6 @@ defmodule Spades.Game do
       |> award_trick()
       |> end_hand()
       |> end_round()
-      |> take_bot_action()
       |> chain()
     else
       {:error, game, "#{id} cannot play card"}
@@ -252,15 +250,21 @@ defmodule Spades.Game do
   defp chain({:error, game, err}), do: {:error, %{game | events: []}, err}
   defp chain({%__MODULE__{}, _events} = return), do: return
 
-  defp take_bot_action(
-         %__MODULE__{
-           bots: bots,
-           current_player: current_player,
-           player_position: player_position,
-           players: players,
-           state: state
-         } = game
-       ) do
+  def is_bot_turn?(%__MODULE__{bots: bots, current_player: current_player} = game) do
+    Enum.member?(bots, current_player)
+  end
+
+  # TODO:  Remove these from the other methods and `let the aura of the Game
+  # Manager take control!`
+  def take_bot_action(
+        %__MODULE__{
+          bots: bots,
+          current_player: current_player,
+          player_position: player_position,
+          players: players,
+          state: state
+        } = game
+      ) do
     current_id = Map.get(player_position, current_player)
     current = Map.get(players, current_id)
 
@@ -278,8 +282,8 @@ defmodule Spades.Game do
     end
   end
 
-  defp take_bot_action({:ok, %__MODULE__{} = game}), do: take_bot_action(game)
-  defp take_bot_action({:error, _game, _reason} = with_error), do: with_error
+  def take_bot_action({:ok, %__MODULE__{} = game}), do: take_bot_action(game)
+  def take_bot_action({:error, _game, _reason} = with_error), do: with_error
 
   @spec get_player_list(t()) :: list(Player.public_player())
   defp get_player_list(%__MODULE__{
@@ -328,7 +332,6 @@ defmodule Spades.Game do
        when map_size(players) == 4 do
     set_bidding(game)
     |> add_event(:state_changed, %{old: :waiting, new: :bidding})
-    |> take_bot_action()
     |> ok()
   end
 

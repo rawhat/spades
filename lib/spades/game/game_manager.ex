@@ -2,6 +2,7 @@ defmodule Spades.Game.GameManager do
   use GenServer
 
   alias Spades.Game
+  alias Spades.Game.Event
   alias Spades.Game.Player
 
   # Client
@@ -105,20 +106,23 @@ defmodule Spades.Game.GameManager do
     {:reply, new_game, new_game}
   end
 
+  # TODO:  Check if `is_bot_turn?`, and if so, `send_after(self(), 1000)` a
+  # take_bot_action message
+
   @impl true
   def handle_call({:add_player, player_id, name, position}, _from, game) do
     player = Player.new(player_id, name, position)
 
     game
     |> Game.add_player(player)
-    |> handle_error()
+    |> handle_return()
   end
 
   @impl true
   def handle_call({:add_bot, position}, _from, game) do
     game
     |> Game.add_bot(position)
-    |> handle_error()
+    |> handle_return()
   end
 
   @impl true
@@ -142,18 +146,51 @@ defmodule Spades.Game.GameManager do
   def handle_call({:make_call, player_id, value}, _from, game) do
     game
     |> Game.make_call(player_id, value)
-    |> handle_error()
+    |> handle_return()
   end
 
   @impl true
   def handle_call({:play_card, player_id, card}, _from, game) do
     game
     |> Game.play_card(player_id, card)
-    |> handle_error()
+    |> handle_return()
   end
 
-  @spec handle_error(Game.return()) ::
-          {:reply, {:error, String.t()}, Game.t()} | {:reply, :ok, Game.return()}
+  @impl true
+  def handle_info(:take_bot_action, game) do
+    {game, events} = Game.take_bot_action(game)
+
+    if Event.has_event?(events, :called) do
+      SpadesWeb.Endpoint.broadcast!("game:#{game.id}", "make_call", %{"events" => events})
+    end
+
+    if Event.has_event?(events, :played_card) do
+      SpadesWeb.Endpoint.broadcast!("game:#{game.id}", "play_card", %{"events" => events})
+    end
+
+    if Game.is_bot_turn?(game) do
+      send_bot_action()
+    end
+
+    {:noreply, game}
+  end
+
+  def send_bot_action(), do: Process.send_after(self(), :take_bot_action, 1000)
+
+  @type return_type :: {:reply, {:error, String.t()}, Game.t()} | {:reply, :ok, Game.return()}
+
+  @spec handle_return(Game.return()) :: return_type()
+  def handle_return({:error, _game, _reason} = return), do: handle_error(return)
+
+  def handle_return({%Game{} = game, _events} = return) do
+    if Game.is_bot_turn?(game) do
+      send_bot_action()
+    end
+
+    handle_error(return)
+  end
+
+  @spec handle_error(Game.return()) :: return_type()
   defp handle_error({:error, game, reason}), do: {:reply, {:error, reason}, game}
   defp handle_error({%Game{} = game, events}), do: {:reply, {:ok, game, events}, game}
 end

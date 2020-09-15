@@ -26,4 +26,9 @@ defmodule Spades.Game.Event do
       data: data
     }
   end
+
+  @spec has_event?(list(t()), event_type()) :: boolean
+  def has_event?(events, type) when is_list(events) do
+    Enum.any?(events, &(&1.type == type))
+  end
 end
