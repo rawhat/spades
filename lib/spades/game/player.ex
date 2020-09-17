@@ -184,6 +184,9 @@ defmodule Spades.Game.Player do
          (card.suit == :spades && broken))
   end
 
+  @spec has_card?(t(), Card.t()) :: boolean()
+  def has_card?(%__MODULE__{hand: hand}, card), do: Enum.member?(hand.cards, card)
+
   @spec play_card(t(), Card.t()) :: t()
   def play_card(%__MODULE__{hand: hand} = player, card) do
     %__MODULE__{player | hand: Hand.play(hand, card)}
