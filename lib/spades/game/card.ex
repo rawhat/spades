@@ -10,7 +10,7 @@ defmodule Spades.Game.Card do
     field :value, value(), enforce: true
   end
 
-  @suit_value %{:spades => 0, :diamonds => 1, :clubs => 2, :hearts => 3}
+  @suit_value %{:spades => 3, :diamonds => 2, :clubs => 1, :hearts => 0}
 
   @spec new(suit(), value()) :: t()
   def new(suit, value) do

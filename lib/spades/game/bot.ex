@@ -88,41 +88,81 @@ defmodule Spades.Game.Bot do
   def play(%Game{} = game, %Player{hand: %Hand{call: -1}} = bot), do: play_for_nil(game, bot)
   def play(%Game{} = game, %Player{hand: %Hand{call: _call}} = bot), do: play_to_win(game, bot)
 
-  def play_to_win(game, %Player{hand: %Hand{cards: _cards}} = bot) do
+  def play_to_win(%Game{trick: trick} = game, %Player{hand: %Hand{cards: _cards}} = bot) do
     Logger.info("Bot #{bot.id} is playing")
     lead_suit = get_lead_suit(game)
     trick_leader = get_trick_leader(game)
     teammate = get_teammate(bot, game)
+    teammate_call = teammate.hand.call
 
     Logger.info("Win bot has hand #{inspect(sorted_hand(bot))}")
 
     card =
       cond do
         !is_nil(trick_leader) && trick_leader.player_id == teammate.id ->
-          case {trick_leader.card, lowest_of_suit(bot, lead_suit)} do
-            {_value, nil} ->
+          case lowest_of_suit(bot, lead_suit) do
+            nil ->
               Logger.info(
                 "Win bot, but teammate is leading with #{to_string(trick_leader.card)}. No cards of suit"
               )
 
-              random_low_card(bot)
+              random_low_card(game, bot)
 
-            {leader, _card} when leader.value < 10 ->
-              high = highest_unseen_of_suit(card.suit)
-              higher_cards = Enum.filter(bot.hand.cards, &Card.compare(leader, &1))
-              # if Enum.member?(higher_cards, high)
-              # if Player.has_card?(bot, high) do
-              # Logger.info
-              # else
-              Logger.info(
-                "Win bot, but teammate is leading with #{to_string(trick_leader.card)}. Playing lowest suited card"
-              )
-
+            card when length(trick) == 3 and (teammate_call != 0 or teammate_call != -1) ->
+              Logger.info("Win bot, teammate is winning and we're last. Let em' win")
               card
 
-            # end
-            {_leader, card} ->
-              card
+            card ->
+              Logger.info("Win bot, teammate technically winning, but need to check for higher")
+
+              remaining_higher =
+                game
+                |> cards_remaining()
+                |> Enum.filter(&(&1.suit == trick_leader.card.suit))
+                |> Enum.filter(&Card.compare(card, &1))
+                |> Enum.split_with(&Enum.member?(bot.hand.cards, &1))
+
+              case remaining_higher do
+                {_bot_cards, []} ->
+                  Logger.info("Bot has some higher, suited cards, but other players don't")
+                  random_low_card(game, bot)
+
+                {[], [_ | _]} ->
+                  Logger.info("Bot has nothing higher, but opponents do")
+                  random_low_card(game, bot)
+
+                {[], []} ->
+                  Logger.info("Nobody has anything higher")
+                  random_low_card(game, bot)
+
+                {bot_cards, opponent_cards} ->
+                  highest =
+                    bot_cards
+                    |> Enum.map(&{&1, true})
+                    |> Enum.concat(Enum.map(opponent_cards, &{&1, false}))
+                    |> Enum.sort(fn {c1, _}, {c2, _} -> Card.compare(c2, c1) end)
+
+                  case highest do
+                    [{c, true} | _] ->
+                      Logger.info("Bot has highest, playing it")
+                      c
+
+                    _ ->
+                      if teammate_call == 0 || teammate_call == -1 do
+                        Logger.info("Bot can't win, but covering teammate")
+                        teammate_card = Enum.find(trick, &(&1.player_id == teammate.id)).card
+
+                        valid_cards = Enum.filter(bot.hand.cards, &(&1.suit == lead_suit))
+
+                        case next_highest(valid_cards, teammate_card) do
+                          nil -> random_high_card(game, bot)
+                          higher -> higher
+                        end
+                      else
+                        random_low_card(game, bot)
+                      end
+                  end
+              end
           end
 
         # Otherwise, try to win
@@ -138,7 +178,7 @@ defmodule Spades.Game.Bot do
 
   def play_for_nil(%Game{trick: trick} = game, %Player{hand: %Hand{cards: cards}} = bot) do
     Logger.info("Bot #{bot.id} is playing")
-    Logger.info("Nil bot has hand: #{inspect(sorted_hand(cards))}")
+    Logger.info("Nil bot has hand: #{inspect(sorted_hand(bot))}")
 
     card =
       case trick do
@@ -147,7 +187,7 @@ defmodule Spades.Game.Bot do
         # want to try to break/bag them out.
         [] ->
           Logger.info("Nil bot is leading (might be broken)")
-          random_low_card(bot)
+          random_low_card(game, bot)
 
         [%{card: lead} | _] ->
           has_suit = Enum.any?(cards, &(&1.suit == lead.suit))
@@ -183,7 +223,7 @@ defmodule Spades.Game.Bot do
                 _ ->
                   Logger.info("Nil bot out of suit, no spades, but bot might only have spades")
 
-                  random_high_card(bot)
+                  random_high_card(game, bot)
               end
 
             {false, spade} ->
@@ -193,7 +233,7 @@ defmodule Spades.Game.Bot do
                 [] ->
                   Logger.info("Nil bot, no suit and spade has been played, but bot has no spades")
 
-                  random_high_card(bot)
+                  random_high_card(game, bot)
 
                 s ->
                   Logger.info("Nil bot, no suit and spade has been played")
@@ -290,8 +330,13 @@ defmodule Spades.Game.Bot do
           end)
 
         case higher_cards do
-          [card | _] -> card
-          [] -> random_low_card(bot)
+          [card | _] ->
+            Logger.info("Bot has higher stuff than what's been seen")
+            card
+
+          [] ->
+            Logger.info("Bot hasn't seen anything higher")
+            random_low_card(game, bot)
         end
 
       [%{card: lead} | _] ->
@@ -300,15 +345,19 @@ defmodule Spades.Game.Bot do
             spade = outspade(game, bot)
 
             if !is_nil(spade) do
+              Logger.info("Bot can outspade")
               spade
             else
-              random_low_card(bot)
+              Logger.info("Bot is playing random low card")
+              random_low_card(game, bot)
             end
 
           card ->
             if Card.compare(card, lead) do
+              Logger.info("Bot card is lower than lead, playing lowest")
               lowest_of_suit(bot, lead.suit)
             else
+              Logger.info("Bot can win, let's go")
               card
             end
         end
@@ -338,7 +387,7 @@ defmodule Spades.Game.Bot do
     Card.sorted_by_value(cards)
   end
 
-  def outspade(%Game{trick: trick}, %Player{} = bot) do
+  def outspade(%Game{trick: trick} = game, %Player{} = bot) do
     Logger.info("Bot is outspading")
 
     max_trick_spade =
@@ -359,14 +408,14 @@ defmodule Spades.Game.Bot do
           |> Enum.drop_while(&Card.compare(&1, trick_spade))
 
         case next_highest do
-          [] -> random_low_card(bot)
+          [] -> random_low_card(game, bot)
           [card | _] -> card
         end
     end
   end
 
-  def random_low_card(%Player{hand: %Hand{cards: _cards}} = bot) do
-    Logger.info("Bot is playing random low card")
+  def random_low_card(%Game{trick: []}, %Player{hand: %Hand{cards: _cards}} = bot) do
+    Logger.info("Bot is playing random real low card")
     ordered_cards = ordered_cards_by_value(bot)
 
     case Enum.filter(ordered_cards, &(&1.suit != :spades)) do
@@ -380,8 +429,29 @@ defmodule Spades.Game.Bot do
     end
   end
 
-  def random_high_card(%Player{hand: %Hand{cards: _cards}} = bot) do
-    Logger.info("Bot is playing random high card")
+  def random_low_card(
+        %Game{trick: [%{card: lead} | _]},
+        %Player{hand: %Hand{cards: _cards}} = bot
+      ) do
+    Logger.info("Bot is playing random low card")
+    ordered_cards = ordered_cards_by_value(bot)
+
+    case Enum.filter(ordered_cards, &(&1.suit == lead.suit)) do
+      [] ->
+        Logger.info("Bot has no suited cards, playing lowest non-spade")
+
+        ordered_cards
+        |> Enum.filter(&(&1.suit != :spades))
+        |> Enum.at(0)
+
+      [low | _] ->
+        Logger.info("Bot playing lowest suited card")
+        low
+    end
+  end
+
+  def random_high_card(%Game{trick: []}, %Player{hand: %Hand{cards: _cards}} = bot) do
+    Logger.info("Bot is playing random high card into empty trick")
 
     ordered_cards =
       bot
@@ -392,11 +462,46 @@ defmodule Spades.Game.Bot do
       [high | _] ->
         high
 
-      # Player only has spades, so pick the highest
+      # Player only has spades or offsuit, so pick the highest
       [] ->
-        Logger.info("Bot only has spades")
-        Enum.at(ordered_cards, 0)
+        bot
+        |> ordered_cards_by_value()
+        |> Enum.reverse()
+        |> Enum.at(0)
     end
+  end
+
+  def random_high_card(
+        %Game{trick: [%{card: lead} | _]},
+        %Player{hand: %Hand{cards: _cards}} = bot
+      ) do
+    Logger.info("Bot is playing random high card")
+
+    ordered_cards =
+      bot
+      |> ordered_cards_by_value()
+      |> Enum.filter(&(&1.suit == lead.suit))
+      |> Enum.reverse()
+
+    case Enum.filter(ordered_cards, &(&1.suit != :spades)) do
+      [high | _] ->
+        high
+
+      # Player only has spades, or offsuit, so pick the highest
+      [] ->
+        Logger.info("Bot only has spades or offsuit")
+
+        bot
+        |> ordered_cards_by_value()
+        |> Enum.reverse()
+        |> Enum.at(0)
+    end
+  end
+
+  def next_highest(cards, card) do
+    cards
+    |> Enum.drop_while(&Card.compare(&1, card))
+    |> Enum.at(0)
   end
 
   def closest_to(card, other_cards) do
