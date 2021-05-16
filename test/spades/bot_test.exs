@@ -12,15 +12,20 @@ defmodule Spades.Game.BotTest do
       |> Game.add_bot(:west)
       |> Stream.iterate(fn game ->
         case game do
-          {:error, _g, _reason} -> game
-          {g, _events} -> Game.take_bot_action(g)
-          g -> Game.take_bot_action(g)
+          {:error, _g, _reason} ->
+            game
+
+          {g, _events} ->
+            Game.take_bot_action(g)
+
+          g ->
+            Game.take_bot_action(g)
         end
       end)
       |> Stream.drop_while(fn game ->
         case game do
-          {_g, _events} -> true
           {:error, _g, "Game is finished"} -> false
+          {_g, _events} -> true
           _g -> true
         end
       end)
