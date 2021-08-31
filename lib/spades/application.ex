@@ -16,7 +16,8 @@ defmodule Spades.Application do
       SpadesWeb.Endpoint,
       # Starts a worker by calling: Spades.Worker.start_link(arg)
       # {Spades.Worker, arg},
-      {Registry, keys: :unique, name: Spades.Game.Registry}
+      {Registry, keys: :unique, name: Spades.Game.Registry},
+      SpadesWeb.Telemetry
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

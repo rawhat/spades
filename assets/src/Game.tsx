@@ -11,7 +11,7 @@ import GameView from "./GameView";
 
 function Game() {
   const dispatch = useDispatch();
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
 
   const username = useSelector(selectUsername);
 

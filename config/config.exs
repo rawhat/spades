@@ -5,7 +5,7 @@
 # is restricted to this project.
 
 # General application configuration
-use Mix.Config
+import Config
 
 config :spades,
   ecto_repos: [Spades.Repo]
@@ -16,7 +16,7 @@ config :spades, SpadesWeb.Endpoint,
   secret_key_base: "gNuWdW4suCqoW2P2OTszWMc6hNWRefgVutBXxTHb3jDSf1Jwq0QCfbC8Ppm6BID6",
   render_errors: [view: SpadesWeb.ErrorView, accepts: ~w(html json)],
   pubsub_server: Spades.PubSub,
-  live_view: [signing_salt: "AmbWDbkE"]
+  live_view: [signing_salt: "XjzB3l37ARAEdgGLgY7jyL3aM3cwDYdY"]
 
 # Configures Elixir's Logger
 config :logger, :console,

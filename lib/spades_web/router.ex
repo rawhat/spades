@@ -1,6 +1,8 @@
 defmodule SpadesWeb.Router do
   use SpadesWeb, :router
 
+  import Phoenix.LiveDashboard.Router
+
   alias Spades.Game.GameManager
 
   pipeline :browser do
@@ -47,6 +49,8 @@ defmodule SpadesWeb.Router do
 
   scope "/", SpadesWeb do
     pipe_through :browser
+
+    live_dashboard "/dashboard", metrics: SpadesWeb.Telemetry, ecto_repos: [Spades.Repo]
 
     get "/*path", PageController, :index
   end

@@ -19,10 +19,10 @@ defmodule Spades.Game.Bot do
     field :player, Player.t(), enforce: true
   end
 
-  def call2(%Game{} = game, %Player{} = bot) do
+  def call2(%Game{} = _game, %Player{} = bot) do
     calculated_score = score_hand(bot)
 
-    score =
+    _score =
       cond do
         true -> calculated_score
       end
@@ -53,9 +53,7 @@ defmodule Spades.Game.Bot do
         bot_call = Enum.max([hand_score, ceil(total * 3.0 / 2.0)])
 
         Logger.info(
-          "Bot teammate going nil, compensating for this. Calling #{bot_call} over calculated score #{
-            hand_score
-          } with hand #{inspect(sorted_hand(bot))}"
+          "Bot teammate going nil, compensating for this. Calling #{bot_call} over calculated score #{hand_score} with hand #{inspect(sorted_hand(bot))}"
         )
 
         Game.make_call(game, bot.id, bot_call)
@@ -65,9 +63,7 @@ defmodule Spades.Game.Bot do
         # and we don't have the ace of spades.  Probably worth trying
         # to go nil
         Logger.info(
-          "Bot going nil since hand scored #{hand_score} with total #{total} and hand #{
-            inspect(sorted_hand(bot))
-          }"
+          "Bot going nil since hand scored #{hand_score} with total #{total} and hand #{inspect(sorted_hand(bot))}"
         )
 
         Game.make_call(game, bot.id, 0)
@@ -76,9 +72,7 @@ defmodule Spades.Game.Bot do
         # We want to call more, but there just aren't enough to risk breaking
         # ourselves.  So call down to 12 just to leave the bag on the table
         Logger.info(
-          "Bot was going to call #{hand_score}, but it would be too close to 13, so calling up to #{
-            13 - total
-          } with hand #{inspect(sorted_hand(bot))}"
+          "Bot was going to call #{hand_score}, but it would be too close to 13, so calling up to #{13 - total} with hand #{inspect(sorted_hand(bot))}"
         )
 
         Game.make_call(game, bot.id, 13 - total)

@@ -14,5 +14,5 @@ fi
 
 DATABASE_URL="ecto://${DB_USER}:${DB_PASS}@${DB_HOST}/spades"
 
-docker build -t spades -f Dockerfile.release ./
+docker build -t spades -f release.Dockerfile ./
 docker run --env SECRET_KEY_BASE=$SECRET_KEY_BASE --env DATABASE_URL=$DATABASE_URL -p 4000:4000 -d spades

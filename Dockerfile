@@ -18,4 +18,6 @@ RUN mix local.hex --force && \
 
 RUN cd assets && npm install
 
-CMD ["mix", "phx.server"]
+COPY startup.sh .
+
+CMD ["./startup.sh"]
