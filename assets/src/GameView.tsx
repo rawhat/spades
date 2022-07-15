@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useCallback } from "react";
-import { useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 
@@ -21,6 +20,7 @@ import {
   selectPlayersById,
 } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
+import { useAppDispatch } from "./app/store";
 
 import EventStream from "./EventStream";
 import PlayArea from "./PlayArea";
@@ -241,7 +241,6 @@ interface GamePositionProps {
 }
 
 const GamePosition = ({
-  canAddBot,
   canJoin,
   orientation,
   player,
@@ -287,7 +286,7 @@ interface JoinPositionProps {
 }
 
 const JoinPosition = ({ position }: JoinPositionProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const username = useSelector(selectUsername);
   const { id } = useParams();
 
@@ -300,7 +299,7 @@ const JoinPosition = ({ position }: JoinPositionProps) => {
 };
 
 const AddBotButton = ({ position }: JoinPositionProps) => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { id } = useParams();
 
   const join = useCallback(() => {

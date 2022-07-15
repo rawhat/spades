@@ -1,25 +1,15 @@
 import * as React from "react";
-import { Redirect } from "react-router-dom";
-import { Route } from "react-router-dom";
-import { RouteProps } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import { selectUsername } from "./features/user/userSlice";
 
-const Authenticated: React.FC<RouteProps> = ({ children, ...rest }) => {
+const Authenticated = ({ children }: React.PropsWithChildren<{}>) => {
   const username = useSelector(selectUsername);
-  return (
-    <Route
-      {...rest}
-      render={({ location }) =>
-        username ? (
-          children
-        ) : (
-          <Redirect to={{ pathname: "/", state: { from: location } }} />
-        )
-      }
-    />
-  );
+  if (!username) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
 };
 
 export default Authenticated;

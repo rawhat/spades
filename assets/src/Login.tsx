@@ -1,8 +1,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { useEffect } from "react";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useState } from "react";
 
@@ -11,6 +10,7 @@ import {
   selectLoginError,
   selectUsername,
 } from "./features/user/userSlice";
+import { useAppDispatch } from "./app/store";
 
 import { Button } from "./Button";
 import { Columns, Column, Container, PaddedVerticalLayout } from "./Layout";
@@ -19,12 +19,12 @@ import { HorizontalForm, Input } from "./Form";
 import { Bold } from "./Text";
 
 function Login() {
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const onLogin = (e: React.SyntheticEvent<HTMLButtonElement>) => {
     e.preventDefault();
     dispatch(login({ username, password }));
@@ -37,9 +37,9 @@ function Login() {
   const sessionUsername = useSelector(selectUsername);
   useEffect(() => {
     if (sessionUsername) {
-      history.push("/lobby");
+      navigate("/lobby");
     }
-  }, [history, sessionUsername]);
+  }, [navigate, sessionUsername]);
 
   return (
     <Container>

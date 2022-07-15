@@ -20,8 +20,8 @@ function PlayArea() {
   const events = useSelector(selectEvents);
 
   const shouldDelay = useCallback(
-    (previousState, currentState) => {
-      return (
+    (previousState: State | undefined, currentState: State | undefined) => {
+      return Boolean(
         previousState &&
         currentState &&
         previousState === State.Playing &&

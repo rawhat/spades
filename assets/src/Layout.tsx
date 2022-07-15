@@ -2,7 +2,9 @@ import * as React from "react";
 import { useMemo } from "react";
 import classnames from "classnames";
 
-interface ContainerProps extends React.CSSProperties {}
+interface ContainerProps extends React.CSSProperties {
+  children?: React.ReactNode;
+}
 
 export const Container: React.FC<ContainerProps> = (props) => {
   return (
@@ -69,10 +71,10 @@ export const PaddedHorizontalLayout: React.FC<PaddedProps> = ({
 
 type Align = "stretch" | "flex-start" | "flex-end" | "center" | "space-between";
 
-interface RowsProps {
+type RowsProps = React.PropsWithChildren<{
   alignItems?: Align;
   justifyContent?: Align;
-}
+}>
 
 export const Rows: React.FC<RowsProps> = ({
   alignItems,
@@ -96,9 +98,9 @@ Rows.defaultProps = {
   justifyContent: "flex-start",
 };
 
-interface RowProps {
+type RowProps = React.PropsWithChildren<{
   height: string | number;
-}
+}>
 
 export const Row: React.FC<RowProps> = ({ children, height }) => {
   const style = useMemo(
@@ -110,10 +112,10 @@ export const Row: React.FC<RowProps> = ({ children, height }) => {
   return <div style={style}>{children}</div>;
 };
 
-interface ColumnsProps {
+type ColumnsProps = React.PropsWithChildren<{
   oneLine?: boolean;
   gapless?: boolean;
-}
+}>
 
 export const Columns: React.FC<ColumnsProps> = ({
   children,
@@ -134,7 +136,7 @@ Columns.defaultProps = {
   gapless: false,
 };
 
-interface ColumnProps {
+type ColumnProps = React.PropsWithChildren<{
   lg?: number | "auto";
   margin?: "left" | "right" | "auto";
   md?: number | "auto";
@@ -142,7 +144,7 @@ interface ColumnProps {
   width?: number;
   xl?: number | "auto";
   xs?: number | "auto";
-}
+}>
 
 export const Column: React.FC<ColumnProps> = ({
   children,
@@ -196,14 +198,14 @@ Divider.defaultProps = {
   orientation: "vertical",
 };
 
-export const Center: React.FC = ({ children }) => (
+export const Center = ({ children }: React.PropsWithChildren<{}>) => (
   <div className="p-centered">{children}</div>
 );
 
-export const Header: React.FC = ({ children }) => (
+export const Header = ({ children }: React.PropsWithChildren<{}>) => (
   <span className="h1">{children}</span>
 );
 
-export const SubHeader: React.FC = ({ children }) => (
+export const SubHeader = ({ children }: React.PropsWithChildren<{}>) => (
   <span className="h3">{children}</span>
 );

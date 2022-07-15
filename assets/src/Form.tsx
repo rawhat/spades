@@ -1,19 +1,23 @@
 import * as React from "react";
 import classnames from "classnames";
 
-export const Form: React.FC = ({ children }) => <form>{children}</form>;
+export const Form = ({ children }: React.PropsWithChildren<{}>) => (
+  <form>{children}</form>
+);
 
-export const HorizontalForm: React.FC = ({ children }) => (
+export const HorizontalForm = ({
+  children,
+}: React.PropsWithChildren<{}>) => (
   <form className="horizontal" onSubmit={(e) => e.preventDefault()}>
     {children}
   </form>
 );
 
-interface FormGroupProps {
+type FormGroupProps = React.PropsWithChildren<{
   error?: string;
-}
+}>;
 
-export const FormGroup: React.FC<FormGroupProps> = ({ children, error }) => (
+export const FormGroup = ({ children, error }: FormGroupProps) => (
   <div className={classnames("form-group", { "has-error": !!error })}>
     {children}
   </div>
@@ -28,7 +32,7 @@ interface InputProps {
   value: string;
 }
 
-export const FormHint: React.FC = ({ children }) => (
+export const FormHint = ({ children }: React.PropsWithChildren<{}>) => (
   <p className="form-input-hint">{children}</p>
 );
 
@@ -80,11 +84,11 @@ export function Select({ onChange, options }: SelectProps) {
   );
 }
 
-interface SwitchProps {
+type SwitchProps = React.PropsWithChildren<{
   onChange: (value: boolean) => void;
-}
+}>;
 
-export const Switch: React.FC<SwitchProps> = ({ children, onChange }) => (
+export const Switch = ({ children, onChange }: SwitchProps) => (
   <div className="form-group">
     <label className="form-switch">
       <input

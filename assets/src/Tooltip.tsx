@@ -1,16 +1,12 @@
 import * as React from "react";
 import classnames from "classnames";
 
-interface TooltipProps extends React.FC {
+type TooltipProps = React.PropsWithChildren<{
   position?: "bottom" | "left" | "right" | "top";
   text: string;
-}
+}>;
 
-export const Tooltip: React.FC<TooltipProps> = ({
-  children,
-  position,
-  text,
-}) => (
+export const Tooltip = ({ children, position, text }: TooltipProps) => (
   <div
     className={classnames("tooltip", { [`tooltip-${position}`]: position })}
     //@ts-ignore

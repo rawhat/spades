@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useDispatch } from "react-redux";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -7,10 +6,12 @@ import { useSelector } from "react-redux";
 import { loadGameState, observeGame } from "./features/game/gameSlice";
 import { selectUsername } from "./features/user/userSlice";
 
+import { useAppDispatch } from "./app/store";
+
 import GameView from "./GameView";
 
 function Game() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const { id } = useParams<{ id: string }>();
 
   const username = useSelector(selectUsername);

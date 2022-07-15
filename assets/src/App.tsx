@@ -1,8 +1,8 @@
 import * as React from "react";
 import { BrowserRouter as Router } from "react-router-dom";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Route } from "react-router-dom";
-import { Switch } from "react-router-dom";
+import { Routes } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useEffect } from "react";
 
@@ -15,7 +15,7 @@ import Login from "./Login";
 import "spectre.css";
 import "./App.css";
 
-import TopNav from "./TopNav";
+import { TopNav } from "./TopNav";
 import { Divider, VerticalLayout } from "./Layout";
 import { Progress, getRequest } from "./app/client";
 import { useQuery } from "./useQuery";
@@ -45,23 +45,30 @@ function App() {
       <Router>
         <TopNav />
         <Divider orientation="horizontal" />
-        <Switch>
-          <Route exact={true} path={["/", "/login"]}>
+        <Routes>
+          <Route path="/">
+            <Login />
+          </Route>
+          <Route path="/login">
             <Login />
           </Route>
           <Route path="/create_user">
             <CreateAccount />
           </Route>
-          <Authenticated path="/lobby">
-            <Lobby />
+          <Authenticated>
+            <Route path="lobby">
+              <Lobby />
+            </Route>
           </Authenticated>
-          <Authenticated path="/game/:id">
-            <Game />
+          <Authenticated>
+            <Route path="/game/:id">
+              <Game />
+            </Route>
           </Authenticated>
-          <Route>
-            <Redirect to="/" />
+          <Route path="*">
+            <Navigate to="/" replace />
           </Route>
-        </Switch>
+        </Routes>
       </Router>
     </VerticalLayout>
   );

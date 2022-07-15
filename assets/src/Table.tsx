@@ -1,31 +1,37 @@
 import * as React from "react";
 import classnames from "classnames";
 
-interface TableProps {
+type TableProps = React.PropsWithChildren<{
   striped?: boolean;
   hover?: boolean;
-}
+}>;
 
-export const Table: React.FC<TableProps> = ({ children, hover, striped }) => (
+export const Table = ({ children, hover, striped }: TableProps) => (
   <table className={classnames("table", { hover, striped })}>{children}</table>
 );
 
-export const TableHeader: React.FC = ({ children }) => (
+export const TableHeader = ({ children }: React.PropsWithChildren<{}>) => (
   <thead>
     <tr>{children}</tr>
   </thead>
 );
 
-export const TableHeaderCell: React.FC = ({ children }) => <th>{children}</th>;
+export const TableHeaderCell = ({ children }: React.PropsWithChildren<{}>) => (
+  <th>{children}</th>
+);
 
-export const TableBody: React.FC = ({ children }) => <tbody>{children}</tbody>;
+export const TableBody = ({ children }: React.PropsWithChildren<{}>) => (
+  <tbody>{children}</tbody>
+);
 
-interface TableRowProps {
+type TableRowProps = React.PropsWithChildren<{
   active?: boolean;
-}
+}>;
 
-export const TableRow: React.FC<TableRowProps> = ({ active, children }) => (
+export const TableRow = ({ active, children }: TableRowProps) => (
   <tr className={classnames({ active })}>{children}</tr>
 );
 
-export const TableCell: React.FC = ({ children }) => <td>{children}</td>;
+export const TableCell = ({ children }: React.PropsWithChildren<{}>) => (
+  <td>{children}</td>
+);

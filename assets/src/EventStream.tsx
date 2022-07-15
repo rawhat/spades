@@ -56,7 +56,7 @@ function EventStream() {
             case "state_changed": {
               return (
                 <GameEvent key={eventText}>
-                  Game changed from {event.data.old} to {event.data.new}
+                  <>Game changed from {event.data.old} to {event.data.new}</>
                 </GameEvent>
               );
             }
@@ -80,11 +80,7 @@ function EventStream() {
 
 export default EventStream;
 
-interface GameEventProps {
-  children: React.ReactNode;
-}
-
-function GameEvent({ children }: GameEventProps) {
+function GameEvent({ children }: React.PropsWithChildren<{}>) {
   return (
     <Container borderRadius={3} border="1px solid lightgray" padding="2 4">
       {children}

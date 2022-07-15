@@ -1,28 +1,28 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { useCallback } from "react";
-import { useDispatch } from "react-redux";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 
 import { selectUsername, setUsername } from "./features/user/userSlice";
 import { deleteRequest, request } from "./app/client";
+import { useAppDispatch } from "./app/store";
 
 import { Button } from "./Button";
 import { Navbar, NavbarSection } from "./Navbar";
 import { Header, PaddedHorizontalLayout } from "./Layout";
 
-function TopNav() {
-  const dispatch = useDispatch();
-  const history = useHistory();
+export function TopNav() {
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const username = useSelector(selectUsername);
 
   const onLogout = useCallback(() => {
     request(deleteRequest("/session")).then(() => {
       dispatch(setUsername(undefined));
-      history.push("/");
+      navigate("/");
     });
-  }, [dispatch, history]);
+  }, [dispatch, navigate]);
 
   return (
     <Navbar>
@@ -46,5 +46,3 @@ function TopNav() {
     </Navbar>
   );
 }
-
-export default TopNav;

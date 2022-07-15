@@ -1,18 +1,15 @@
 import * as React from "react";
 import classnames from "classnames";
 
-export const Navbar: React.FC = ({ children }) => (
+export const Navbar = ({ children }: React.PropsWithChildren<{}>) => (
   <header className="navbar">{children}</header>
 );
 
-interface NavbarSectionProps {
+type NavbarSectionProps = React.PropsWithChildren<{
   center?: boolean;
-}
+}>;
 
-export const NavbarSection: React.FC<NavbarSectionProps> = ({
-  center,
-  children,
-}) => (
+export const NavbarSection = ({ center, children }: NavbarSectionProps) => (
   <section
     className={classnames({
       "navbar-section": !center,

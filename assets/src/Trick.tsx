@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 
 import {
   PlayedCard,
+  TrickByPlayerId,
   isEvent,
   selectEvents,
   selectOrderedPlayers,
@@ -22,19 +23,22 @@ function Trick() {
   const events = useSelector(selectEvents);
 
   const shouldDelay = useCallback(
-    (previousTrick, currentTrick) => {
-      return (
+    (
+      previousTrick: TrickByPlayerId | undefined,
+      currentTrick: TrickByPlayerId | undefined
+    ) => {
+      return Boolean(
         previousTrick &&
-        currentTrick &&
-        size(previousTrick) === 3 &&
-        size(currentTrick) === 0 &&
-        events.some(isEvent("awarded_trick"))
+          currentTrick &&
+          size(previousTrick) === 3 &&
+          size(currentTrick) === 0 &&
+          events.some(isEvent("awarded_trick"))
       );
     },
     [events]
   );
   const addPlayedEvent = useCallback(
-    (trick) => {
+    (trick: TrickByPlayerId) => {
       const playedCardEvent = events.find(isEvent("played_card"));
       if (!playedCardEvent) {
         return trick;
@@ -57,7 +61,8 @@ function Trick() {
   const rightCard = right && trick[right.id];
 
   const winner =
-    trick.length === 4 && events.find(isEvent("awarded_trick"))?.data.winner;
+    Object.keys(trick).length === 4 &&
+    events.find(isEvent("awarded_trick"))?.data.winner;
 
   return (
     <HorizontalLayout alignItems="center">

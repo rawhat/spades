@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useCallback } from "react";
 import { useEffect } from "react";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import { FetchArguments, Progress, postRequest } from "./app/client";
@@ -13,7 +13,7 @@ import { Input } from "./Form";
 import { PaddedHorizontalLayout } from "./Layout";
 
 function NewGame() {
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -33,9 +33,9 @@ function NewGame() {
 
   useEffect(() => {
     if (data) {
-      history.push(`/game/${data.id}`);
+      navigate(`/game/${data.id}`);
     }
-  }, [data, history]);
+  }, [data, navigate]);
 
   return (
     <>

@@ -2,7 +2,7 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { useEffect } from "react";
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 import { FetchArguments, postRequest } from "./app/client";
@@ -16,7 +16,7 @@ import { HorizontalForm, Input } from "./Form";
 import { Bold } from "./Text";
 
 function CreateAccount() {
-  const history = useHistory();
+  const navigate = useNavigate();
 
   const [username, setUser] = useState("");
   const [password, setPassword] = useState("");
@@ -38,9 +38,9 @@ function CreateAccount() {
   useEffect(() => {
     if (data) {
       dispatch(setUsername(data.username));
-      history.push("/lobby");
+      navigate("/lobby");
     }
-  }, [data, dispatch, history]);
+  }, [data, dispatch, navigate]);
 
   return (
     <Container>

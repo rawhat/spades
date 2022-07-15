@@ -38,7 +38,7 @@ export function useLobbySocket(): LobbySocket {
       .receive("ok", (data: { games: GameResponse[] }) => {
         setGameList(data.games);
       })
-      .receive("err", (err: any) => {
+      .receive("error", (err: any) => {
         setError(`Error connecting to lobby socket: ${JSON.stringify(err)}`);
       });
 

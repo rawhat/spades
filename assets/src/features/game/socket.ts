@@ -50,7 +50,7 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
             next(setGameState(msg));
           }
         })
-        .receive("err", (err: any) => {
+        .receive("error", (err: any) => {
           next(socketError(err));
         });
 

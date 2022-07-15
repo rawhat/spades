@@ -1,7 +1,7 @@
 import * as React from "react";
 import classnames from "classnames";
 
-interface ButtonProps {
+type ButtonProps = React.PropsWithChildren<{
   active?: boolean;
   block?: boolean;
   color?: "primary" | "link" | "success" | "error";
@@ -10,9 +10,9 @@ interface ButtonProps {
   loading?: boolean;
   onClick: (e: React.SyntheticEvent<HTMLButtonElement>) => void;
   size?: "sm" | "lg";
-}
+}>;
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button = ({
   active,
   block,
   children,
@@ -22,7 +22,7 @@ export const Button: React.FC<ButtonProps> = ({
   loading,
   size,
   ...props
-}) => (
+}: ButtonProps) => (
   <button
     className={classnames("btn", {
       [`btn-${color}`]: color,
@@ -39,14 +39,11 @@ export const Button: React.FC<ButtonProps> = ({
   </button>
 );
 
-interface ButtonGroupProps {
+type ButtonGroupProps = React.PropsWithChildren<{
   block?: boolean;
-}
+}>;
 
-export const ButtonGroup: React.FC<ButtonGroupProps> = ({
-  block,
-  children,
-}) => (
+export const ButtonGroup = ({ block, children }: ButtonGroupProps) => (
   <div className={classnames("btn-group", { "btn-group-block": block })}>
     {children}
   </div>
