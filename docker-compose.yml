@@ -4,9 +4,13 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    environment:
+      DB_NAME: spades_dev
+      DB_USER: spades
+      DB_PASS: spades
+      DB_HOST: db
     volumes:
-      - /opt/app/deps
-      - /opt/app/_build
+      - /opt/app/build
       - /opt/app/assets/node_modules
       - ./:/opt/app
     ports:
@@ -21,5 +25,7 @@ services:
       POSTGRES_USER: spades
       POSTGRES_PASSWORD: spades
       POSTGRES_DB: spades_dev
+    ports:
+      - "5432:5432"
     volumes:
       - /var/lib/postgresql/data

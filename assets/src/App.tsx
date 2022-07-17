@@ -46,28 +46,26 @@ function App() {
         <TopNav />
         <Divider orientation="horizontal" />
         <Routes>
-          <Route path="/">
-            <Login />
-          </Route>
-          <Route path="/login">
-            <Login />
-          </Route>
-          <Route path="/create_user">
-            <CreateAccount />
-          </Route>
-          <Authenticated>
-            <Route path="lobby">
-              <Lobby />
-            </Route>
-          </Authenticated>
-          <Authenticated>
-            <Route path="/game/:id">
-              <Game />
-            </Route>
-          </Authenticated>
-          <Route path="*">
-            <Navigate to="/" replace />
-          </Route>
+          <Route path="/" element={<Login />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/create_user" element={<CreateAccount />} />
+          <Route
+            path="lobby"
+            element={
+              <Authenticated>
+                <Lobby />
+              </Authenticated>
+            }
+          />
+          <Route
+            path="/game/:id"
+            element={
+              <Authenticated>
+                <Game />
+              </Authenticated>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </VerticalLayout>
