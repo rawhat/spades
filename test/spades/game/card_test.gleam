@@ -127,7 +127,7 @@ pub fn hand_sorting_test() {
 
 pub fn make_deck_test() {
   let actual = card.make_deck()
-  
+
   actual
   |> list.at(0)
   |> should.equal(Ok(Card(Clubs, Number(2))))

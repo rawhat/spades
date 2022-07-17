@@ -1,4 +1,3 @@
-import gleam/bit_builder.{BitBuilder}
 import gleam/bit_string
 import gleam/dynamic.{Decoder}
 import gleam/erlang/atom.{Atom}
@@ -26,15 +25,12 @@ pub fn create(
   username: String,
   password: String,
 ) -> Result(PublicUser, Nil) {
-  assert Ok(encoded) =
-    password
-    |> hash_password(salt)
-    |> base64_encode
-    |> bit_string.to_string
+  let encoded = hash_password(password, salt)
 
-  assert Ok(returned) =
+  try returned =
     "insert into users (username, password_hash, created_at) values ($1, $2, now()) returning *"
     |> pgo.execute(db, [pgo.text(username), pgo.text(encoded)], decoder())
+    |> result.replace_error(Nil)
 
   assert [user] = returned.rows
 
@@ -44,7 +40,7 @@ pub fn create(
 }
 
 pub fn list(db: Connection) -> Result(List(PublicUser), Nil) {
-  "select id, username, password_hash, inserted_at from users"
+  "select id, username, password_hash, created_at from users"
   |> pgo.execute(db, [], decoder())
   |> result.map(fn(returned) { returned.rows })
   |> result.map(fn(rows) { list.map(rows, to_public) })
@@ -53,13 +49,23 @@ pub fn list(db: Connection) -> Result(List(PublicUser), Nil) {
 
 pub fn login(
   db: Connection,
+  salt: String,
   username: String,
   password: String,
-) -> Result(PublicUser, Nil) {
-  todo
+) -> Result(User, Nil) {
+  let hashed = hash_password(password, salt)
+  io.debug(#("selecting", username, hashed))
+
+  try response =
+    "select id, username, password_hash, created_at from users where username = $1 and password_hash = $2"
+    |> pgo.execute(db, [pgo.text(username), pgo.text(hashed)], decoder())
+    |> result.replace_error(Nil)
+
+  response.rows
+  |> list.at(0)
 }
 
-fn decoder() -> Decoder(User) {
+pub fn decoder() -> Decoder(User) {
   dynamic.decode4(
     User,
     dynamic.element(0, dynamic.int),
@@ -111,11 +117,15 @@ pub external fn pbkdf2(
 ) -> BitString =
   "pubkey_pbe" "pbdkdf2"
 
-fn hash_password(password: String, salt: String) -> BitString {
+fn hash_password(password: String, salt: String) -> String {
   let pw = bit_string.from_string(password)
   let salt = bit_string.from_string(salt)
   let sha = atom.create_from_string("sha")
-  pbkdf2(pw, salt, 4096, 20, pbkdf2_hmac, sha, 20)
+  assert Ok(hashed) =
+    pbkdf2(pw, salt, 4096, 20, pbkdf2_hmac, sha, 20)
+    |> base64_encode
+    |> bit_string.to_string
+  hashed
 }
 
 external fn base64_encode(bs: BitString) -> BitString =

@@ -5,6 +5,7 @@ import gleam/erlang/charlist.{Charlist}
 import gleam/http.{Get, Post}
 import gleam/http/request.{Request}
 import gleam/http/response
+import gleam/io
 import gleam/json
 import gleam/map
 import gleam/otp/process.{Sender}
@@ -16,8 +17,8 @@ import mist/http.{BitBuilderBody, Body, FileBody, HandlerResponse, Response}
 import spades/encoder
 import spades/game_manager.{ManagerAction}
 import spades/games
+import spades/session.{SessionAction}
 import spades/user
-import gleam/io
 
 pub type AppError {
   NotFound
@@ -30,6 +31,7 @@ pub type AppRequest {
     req: Request(Body),
     static_root: String,
     salt: String,
+    session_manager: Sender(SessionAction),
   )
 }
 
@@ -60,10 +62,12 @@ pub fn app_middleware(
   db: pgo.Connection,
   static_root: String,
   salt: String,
+  session_manager: Sender(SessionAction),
 ) -> Middleware(AppRequest, HandlerResponse, Request(Body), HandlerResponse) {
   fn(next) {
     fn(req) {
-      let app_request = AppRequest(db, manager, req, static_root, salt)
+      let app_request =
+        AppRequest(db, manager, req, static_root, salt, session_manager)
       next(app_request)
     }
   }
@@ -97,15 +101,51 @@ pub fn router(app_req: AppRequest) -> AppResult {
       assert Ok(user_req) = map.get(request_map, "user")
       assert Ok(username) = map.get(user_req, "username")
       assert Ok(password) = map.get(user_req, "password")
-      assert Ok(public_user) =
-        user.create(app_req.db, app_req.salt, username, password)
-      let resp =
-        json.object([
-          #("id", json.int(public_user.id)),
-          #("username", json.string(public_user.username)),
-        ])
-        |> json.to_string
-      json_response(200, resp)
+      user.create(app_req.db, app_req.salt, username, password)
+      |> result.map(fn(public_user) {
+        let resp =
+          json.object([
+            #("id", json.int(public_user.id)),
+            #("username", json.string(public_user.username)),
+          ])
+          |> json.to_string
+        json_response(200, resp)
+      })
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
+    }
+    Post, ["api", "session"] -> {
+      assert Ok(req) = http.read_body(app_req.req)
+      assert Ok(body_string) = bit_string.to_string(req.body)
+      assert Ok(request_map) =
+        json.decode(
+          body_string,
+          dynamic.map(
+            dynamic.string,
+            dynamic.map(dynamic.string, dynamic.string),
+          ),
+        )
+      // TODO:  probably make this a custom type?
+      assert Ok(user_req) = map.get(request_map, "session")
+      assert Ok(username) = map.get(user_req, "username")
+      assert Ok(password) = map.get(user_req, "password")
+      io.debug(#("username is", username))
+      user.login(app_req.db, app_req.salt, username, password)
+      |> result.map(fn(user) {
+        let resp =
+          json.object([
+            #("id", json.int(user.id)),
+            #("username", json.string(user.username)),
+          ])
+          |> json.to_string
+        process.send(
+          app_req.session_manager,
+          session.Add(user.id, user.password_hash),
+        )
+        json_response(200, resp)
+      })
+      |> result.map_error(fn(_err) { empty_response(403) })
+      |> result.unwrap_both
     }
     _, _ -> empty_response(404)
   }

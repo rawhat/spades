@@ -4,6 +4,9 @@ import gleam/int
 import gleam/option.{Some}
 import gleam/pgo
 import gleam/result
+// TODO:  logger
+import gleam/io
+import gleam/string
 
 fn get_db_config() -> pgo.Config {
   let db_host =
@@ -52,18 +55,15 @@ pub fn migrate(db: pgo.Connection) -> Result(Nil, Nil) {
       "create_users_table",
       "create table if not exists users (
         id serial primary key,
-        username text,
-        password_hash text,
-        created_at timestamp
-      )"
+        username text unique not null,
+        password_hash text not null,
+        created_at timestamp not null
+      )",
     )
 
   Ok(Nil)
 }
 
-// TODO:  logger
-import gleam/io
-import gleam/string
 fn run(db: pgo.Connection, name: String, sql: String) -> Result(Nil, Nil) {
   io.println(string.concat(["Running migration `", name, "`"]))
   pgo.execute(sql, db, [], dynamic.dynamic)

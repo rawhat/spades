@@ -121,7 +121,8 @@ pub fn hand_sort(cards: List(Card)) -> List(Card) {
   list.sort(cards, compare)
 }
 
-pub type Deck = List(Card)
+pub type Deck =
+  List(Card)
 
 pub fn make_deck() -> Deck {
   let suits = iterator.from_list([Clubs, Diamonds, Hearts, Spades])

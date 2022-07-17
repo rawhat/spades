@@ -16,12 +16,7 @@ pub type Team {
 }
 
 pub type Player {
-  Player(
-    id: String,
-    name: String,
-    position: Position,
-    hand: Hand,
-  )
+  Player(id: String, name: String, position: Position, hand: Hand)
 }
 
 pub type PublicPlayer {

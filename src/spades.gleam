@@ -8,6 +8,7 @@ import mist
 import spades/database
 import spades/game_manager
 import spades/router.{app_middleware, result_to_response, router}
+import spades/session
 
 external fn get_cwd() -> Result(String, Nil) =
   "file" "get_cwd"
@@ -22,9 +23,17 @@ pub fn main() {
 
   assert Ok(salt) = os.get_env("PASSWORD_SALT")
 
+  assert Ok(session_manager) = session.start()
+
   let middleware =
     result_to_response()
-    |> function.compose(app_middleware(manager, db, static_root, salt))
+    |> function.compose(app_middleware(
+      manager,
+      db,
+      static_root,
+      salt,
+      session_manager,
+    ))
 
   try _ =
     middleware(router)

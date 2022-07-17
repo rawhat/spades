@@ -8,11 +8,7 @@ import spades/game/game.{Game, GameReturn, Success}
 import spades/game/player.{Player, Position}
 
 pub type GameEntry {
-  GameEntry(
-    id: Int,
-    name: String,
-    created_by: String
-  )
+  GameEntry(id: Int, name: String, created_by: String)
 }
 
 pub type ManagerAction {
@@ -98,7 +94,6 @@ pub fn start() -> Result(Sender(ManagerAction), actor.StartError) {
             GameEntry(game.id, game.name, game.created_by)
           })
           |> process.send(caller, _)
-
           actor.Continue(state)
         }
       }
