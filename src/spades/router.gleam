@@ -6,6 +6,7 @@ import gleam/http.{Get, Post}
 import gleam/http/cookie
 import gleam/http/request.{Request}
 import gleam/http/response
+import gleam/io
 import gleam/json
 import gleam/list
 import gleam/map
@@ -16,6 +17,7 @@ import gleam/result
 import gleam/string
 import mist/file
 import mist/http.{BitBuilderBody, Body, FileBody, HandlerResponse, Response}
+import mist/websocket
 import spades/encoder
 import spades/game_manager.{ManagerAction}
 import spades/games
@@ -175,6 +177,38 @@ pub fn router(app_req: AppRequest) -> AppResult {
       })
       |> result.map_error(fn(_err) { empty_response(403) })
       |> result.unwrap_both
+    }
+    Get, ["socket", "lobby", "websocket"] -> {
+      io.debug(#("upgrading", app_req.req))
+      websocket.with_handler(fn(msg, sender) {
+        io.debug(#("got a msg", msg))
+        Ok(Nil)
+      })
+      |> websocket.on_init(fn(sender) {
+        io.debug(#("init lobby"))
+        Nil
+      })
+      |> websocket.on_close(fn(sender) {
+        io.debug(#("close lobby"))
+        Nil
+      })
+      |> http.Upgrade
+    }
+    Get, ["socket", "game", "websocket"] -> {
+      io.debug(#("upgrading", app_req.req))
+      websocket.with_handler(fn(msg, sender) {
+        io.debug(#("got a msg", msg))
+        Ok(Nil)
+      })
+      |> websocket.on_init(fn(sender) {
+        io.debug(#("init lobby"))
+        Nil
+      })
+      |> websocket.on_close(fn(sender) {
+        io.debug(#("close lobby"))
+        Nil
+      })
+      |> http.Upgrade
     }
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
