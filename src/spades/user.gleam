@@ -128,8 +128,8 @@ fn hash_password(password: String, salt: String) -> String {
   hashed
 }
 
-external fn base64_encode(bs: BitString) -> BitString =
+pub external fn base64_encode(bs: BitString) -> BitString =
   "base64" "encode"
 
-external fn base64_decode(bs: BitString) -> BitString =
+pub external fn base64_decode(bs: BitString) -> BitString =
   "base64" "decode"

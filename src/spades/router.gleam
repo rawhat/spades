@@ -3,12 +3,14 @@ import gleam/bit_string
 import gleam/dynamic
 import gleam/erlang/charlist.{Charlist}
 import gleam/http.{Get, Post}
+import gleam/http/cookie
 import gleam/http/request.{Request}
 import gleam/http/response
-import gleam/io
 import gleam/json
+import gleam/list
 import gleam/map
 import gleam/otp/process.{Sender}
+import gleam/pair
 import gleam/pgo
 import gleam/result
 import gleam/string
@@ -17,7 +19,7 @@ import mist/http.{BitBuilderBody, Body, FileBody, HandlerResponse, Response}
 import spades/encoder
 import spades/game_manager.{ManagerAction}
 import spades/games
-import spades/session.{SessionAction}
+import spades/session.{SessionAction, Validate}
 import spades/user
 
 pub type AppError {
@@ -82,9 +84,6 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.map(encoder.games_list)
       |> result.map(json_response(200, _))
       |> result.unwrap(empty_response(400))
-    Get, ["favicon.ico"] ->
-      serve_static_file(["favicon.ico"], app_req.static_root)
-    Get, [] | Get, _ -> serve_static_file(["index.html"], app_req.static_root)
     Post, ["api", "user"] -> {
       // TODO:  make this a function?  at least most of it
       assert Ok(req) = http.read_body(app_req.req)
@@ -114,6 +113,37 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
     }
+    Get, ["api", "session"] ->
+      app_req.req
+      |> request.get_header("cookie")
+      |> result.map(cookie.parse)
+      |> result.then(fn(cookies) {
+        list.find(
+          cookies,
+          fn(p) {
+            case p {
+              #("session", _session) -> True
+              _ -> False
+            }
+          },
+        )
+      })
+      |> result.map(pair.second)
+      |> result.then(session.read_cookie_header)
+      |> result.then(fn(value) {
+        process.try_call(
+          app_req.session_manager,
+          fn(caller) { Validate(caller, value.id, value.password) },
+          500,
+        )
+        |> result.map(fn(_ok) {
+          json_response(200, session.to_json(value))
+          |> session.add_cookie_header(value)
+        })
+        |> result.replace_error(Nil)
+      })
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
     Post, ["api", "session"] -> {
       assert Ok(req) = http.read_body(app_req.req)
       assert Ok(body_string) = bit_string.to_string(req.body)
@@ -129,24 +159,26 @@ pub fn router(app_req: AppRequest) -> AppResult {
       assert Ok(user_req) = map.get(request_map, "session")
       assert Ok(username) = map.get(user_req, "username")
       assert Ok(password) = map.get(user_req, "password")
-      io.debug(#("username is", username))
       user.login(app_req.db, app_req.salt, username, password)
       |> result.map(fn(user) {
-        let resp =
-          json.object([
-            #("id", json.int(user.id)),
-            #("username", json.string(user.username)),
-          ])
-          |> json.to_string
+        let value = session.Session(user.id, user.username, user.password_hash)
         process.send(
           app_req.session_manager,
           session.Add(user.id, user.password_hash),
         )
-        json_response(200, resp)
+        json_response(200, session.to_json(value))
+        |> session.add_cookie_header(session.Session(
+          user.id,
+          user.username,
+          user.password_hash,
+        ))
       })
       |> result.map_error(fn(_err) { empty_response(403) })
       |> result.unwrap_both
     }
+    Get, ["favicon.ico"] ->
+      serve_static_file(["favicon.ico"], app_req.static_root)
+    Get, [] | Get, _ -> serve_static_file(["index.html"], app_req.static_root)
     _, _ -> empty_response(404)
   }
   |> Ok
