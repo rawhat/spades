@@ -6,7 +6,6 @@ import gleam/http.{Get, Post}
 import gleam/http/cookie
 import gleam/http/request.{Request}
 import gleam/http/response
-import gleam/io
 import gleam/json
 import gleam/list
 import gleam/map
@@ -19,8 +18,9 @@ import mist/file
 import mist/http.{BitBuilderBody, Body, FileBody, HandlerResponse, Response}
 import mist/websocket
 import spades/encoder
-import spades/game_manager.{ManagerAction}
+import spades/game_manager.{ManagerAction, NewGame}
 import spades/games
+import spades/lobby.{LobbyAction}
 import spades/session.{SessionAction, Validate}
 import spades/user
 
@@ -31,11 +31,12 @@ pub type AppError {
 pub type AppRequest {
   AppRequest(
     db: pgo.Connection,
-    manager: Sender(ManagerAction),
+    game_manager: Sender(ManagerAction),
     req: Request(Body),
     static_root: String,
     salt: String,
     session_manager: Sender(SessionAction),
+    lobby_manager: Sender(LobbyAction),
   )
 }
 
@@ -67,11 +68,20 @@ pub fn app_middleware(
   static_root: String,
   salt: String,
   session_manager: Sender(SessionAction),
+  lobby_manager: Sender(LobbyAction),
 ) -> Middleware(AppRequest, HandlerResponse, Request(Body), HandlerResponse) {
   fn(next) {
     fn(req) {
       let app_request =
-        AppRequest(db, manager, req, static_root, salt, session_manager)
+        AppRequest(
+          db,
+          manager,
+          req,
+          static_root,
+          salt,
+          session_manager,
+          lobby_manager,
+        )
       next(app_request)
     }
   }
@@ -81,23 +91,39 @@ pub fn router(app_req: AppRequest) -> AppResult {
   case app_req.req.method, request.path_segments(app_req.req) {
     Get, ["static", ..path] -> serve_static_file(path, app_req.static_root)
     Get, ["api", "game"] ->
-      app_req.manager
+      app_req.game_manager
       |> games.list
       |> result.map(encoder.games_list)
       |> result.map(json_response(200, _))
       |> result.unwrap(empty_response(400))
+    Post, ["api", "game"] -> {
+      let decoder = dynamic.map(dynamic.string, dynamic.string)
+      {
+        try body = get_json_body(app_req, decoder)
+        try game_name = map.get(body, "name")
+        try session = get_cookie_from_request(app_req)
+        try new_game =
+          process.try_call(
+            app_req.game_manager,
+            fn(caller) { NewGame(caller, session.username, game_name) },
+            500,
+          )
+          |> result.replace_error(Nil)
+        let game =
+          new_game
+          |> game_manager.return_to_entry
+          |> game_manager.game_entry_to_json
+        json_response(200, game)
+        |> session.add_cookie_header(session)
+        |> Ok
+      }
+      |> result.replace_error(empty_response(400))
+      |> result.unwrap_both
+    }
     Post, ["api", "user"] -> {
-      // TODO:  make this a function?  at least most of it
-      assert Ok(req) = http.read_body(app_req.req)
-      assert Ok(body_string) = bit_string.to_string(req.body)
-      assert Ok(request_map) =
-        json.decode(
-          body_string,
-          dynamic.map(
-            dynamic.string,
-            dynamic.map(dynamic.string, dynamic.string),
-          ),
-        )
+      let decoder =
+        dynamic.map(dynamic.string, dynamic.map(dynamic.string, dynamic.string))
+      assert Ok(request_map) = get_json_body(app_req, decoder)
       // TODO:  probably make this a custom type?
       assert Ok(user_req) = map.get(request_map, "user")
       assert Ok(username) = map.get(user_req, "username")
@@ -116,33 +142,11 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap_both
     }
     Get, ["api", "session"] ->
-      app_req.req
-      |> request.get_header("cookie")
-      |> result.map(cookie.parse)
-      |> result.then(fn(cookies) {
-        list.find(
-          cookies,
-          fn(p) {
-            case p {
-              #("session", _session) -> True
-              _ -> False
-            }
-          },
-        )
-      })
-      |> result.map(pair.second)
-      |> result.then(session.read_cookie_header)
-      |> result.then(fn(value) {
-        process.try_call(
-          app_req.session_manager,
-          fn(caller) { Validate(caller, value.id, value.password) },
-          500,
-        )
-        |> result.map(fn(_ok) {
-          json_response(200, session.to_json(value))
-          |> session.add_cookie_header(value)
-        })
-        |> result.replace_error(Nil)
+      app_req
+      |> get_cookie_from_request
+      |> result.map(fn(session) {
+        json_response(200, session.to_json(session))
+        |> session.add_cookie_header(session)
       })
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
@@ -178,38 +182,44 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.map_error(fn(_err) { empty_response(403) })
       |> result.unwrap_both
     }
-    Get, ["socket", "lobby", "websocket"] -> {
-      io.debug(#("upgrading", app_req.req))
-      websocket.with_handler(fn(msg, sender) {
-        io.debug(#("got a msg", msg))
-        Ok(Nil)
+    Get, ["socket", "lobby", "websocket"] ->
+      app_req
+      |> get_cookie_from_request
+      |> result.map(fn(session) {
+        websocket.with_handler(fn(_msg, _sender) { Ok(Nil) })
+        |> websocket.on_init(fn(sender) {
+          process.send(app_req.lobby_manager, lobby.Join(session, sender))
+          assert Ok(games) = games.list(app_req.game_manager)
+          games
+          |> game_manager.game_entries_to_json
+          |> websocket.TextMessage
+          |> websocket.send(sender)
+          Nil
+        })
+        |> websocket.on_close(fn(_sender) {
+          process.send(app_req.lobby_manager, lobby.Leave(session.id))
+          Nil
+        })
+        |> http.Upgrade
       })
-      |> websocket.on_init(fn(sender) {
-        io.debug(#("init lobby"))
-        Nil
-      })
-      |> websocket.on_close(fn(sender) {
-        io.debug(#("close lobby"))
-        Nil
-      })
-      |> http.Upgrade
-    }
-    Get, ["socket", "game", "websocket"] -> {
-      io.debug(#("upgrading", app_req.req))
-      websocket.with_handler(fn(msg, sender) {
-        io.debug(#("got a msg", msg))
-        Ok(Nil)
-      })
-      |> websocket.on_init(fn(sender) {
-        io.debug(#("init lobby"))
-        Nil
-      })
-      |> websocket.on_close(fn(sender) {
-        io.debug(#("close lobby"))
-        Nil
-      })
-      |> http.Upgrade
-    }
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
+    // Get, ["socket", "game", "websocket"] -> {
+    //   io.debug(#("upgrading", app_req.req))
+    //   websocket.with_handler(fn(msg, sender) {
+    //     io.debug(#("got a msg", msg))
+    //     Ok(Nil)
+    //   })
+    //   |> websocket.on_init(fn(sender) {
+    //     io.debug(#("init lobby"))
+    //     Nil
+    //   })
+    //   |> websocket.on_close(fn(sender) {
+    //     io.debug(#("close lobby"))
+    //     Nil
+    //   })
+    //   |> http.Upgrade
+    // }
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Get, [] | Get, _ -> serve_static_file(["index.html"], app_req.static_root)
@@ -275,4 +285,48 @@ fn json_response(status: Int, data: String) -> HandlerResponse {
   |> response.set_body(BitBuilderBody(bit_builder.from_string(data)))
   |> response.prepend_header("content-type", "application/json")
   |> http.Response
+}
+
+fn get_cookie_from_request(app_req: AppRequest) -> Result(session.Session, Nil) {
+  app_req.req
+  |> request.get_header("cookie")
+  |> result.map(cookie.parse)
+  |> result.then(fn(cookies) {
+    list.find(
+      cookies,
+      fn(p) {
+        case p {
+          #("session", _session) -> True
+          _ -> False
+        }
+      },
+    )
+  })
+  |> result.map(pair.second)
+  |> result.then(session.read_cookie_header)
+  |> result.then(fn(value) {
+    process.try_call(
+      app_req.session_manager,
+      fn(caller) { Validate(caller, value.id, value.password) },
+      500,
+    )
+    |> result.replace(value)
+    |> result.replace_error(Nil)
+  })
+}
+
+fn get_json_body(
+  app_req: AppRequest,
+  decoder: dynamic.Decoder(a),
+) -> Result(a, Nil) {
+  app_req.req
+  |> http.read_body
+  |> result.replace_error(Nil)
+  |> result.map(fn(req) { req.body })
+  |> result.then(bit_string.to_string)
+  |> result.then(fn(body) {
+    body
+    |> json.decode(decoder)
+    |> result.replace_error(Nil)
+  })
 }

@@ -1,3 +1,3 @@
 #!/bin/sh
 
-gleam run
+watchexec -r -e gleam -- gleam run

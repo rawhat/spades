@@ -1,3 +1,4 @@
+import gleam/json
 import gleam/list
 import gleam/map.{Map}
 import gleam/otp/actor
@@ -9,6 +10,30 @@ import spades/game/player.{Player, Position}
 
 pub type GameEntry {
   GameEntry(id: Int, name: String, created_by: String)
+}
+
+pub fn return_to_entry(return: GameReturn) -> GameEntry {
+  GameEntry(return.game.id, return.game.name, return.game.created_by)
+}
+
+fn entry_to_json(entry: GameEntry) -> json.Json {
+  json.object([
+    #("id", json.int(entry.id)),
+    #("name", json.string(entry.name)),
+    #("created_by", json.string(entry.created_by)),
+  ])
+}
+
+pub fn game_entry_to_json(entry: GameEntry) -> String {
+  entry
+  |> entry_to_json
+  |> json.to_string
+}
+
+pub fn game_entries_to_json(entries: List(GameEntry)) -> String {
+  entries
+  |> json.array(entry_to_json)
+  |> json.to_string
 }
 
 pub type ManagerAction {

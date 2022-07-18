@@ -7,6 +7,7 @@ import mist/http
 import mist
 import spades/database
 import spades/game_manager
+import spades/lobby
 import spades/router.{app_middleware, result_to_response, router}
 import spades/session
 
@@ -24,6 +25,7 @@ pub fn main() {
   assert Ok(salt) = os.get_env("PASSWORD_SALT")
 
   assert Ok(session_manager) = session.start()
+  assert Ok(lobby_manager) = lobby.start()
 
   let middleware =
     result_to_response()
@@ -33,6 +35,7 @@ pub fn main() {
       static_root,
       salt,
       session_manager,
+      lobby_manager,
     ))
 
   try _ =

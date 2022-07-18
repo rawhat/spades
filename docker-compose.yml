@@ -9,6 +9,7 @@ services:
       DB_USER: spades
       DB_PASS: spades
       DB_HOST: db
+      PASSWORD_SALT: 1234
     volumes:
       - /opt/app/build
       - /opt/app/assets/node_modules
