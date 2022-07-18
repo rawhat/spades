@@ -22,7 +22,7 @@ import mist/websocket
 import spades/encoder
 import spades/game_manager.{Join, Leave, ManagerAction, NewGame}
 import spades/games
-import spades/socket/lobby.{LobbyAction}
+import spades/socket/lobby.{GameUpdate, LobbyAction}
 import spades/session.{Session, SessionAction, Validate}
 import spades/user
 
@@ -127,6 +127,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
             500,
           )
           |> result.replace_error(Nil)
+        process.send(app_req.lobby_manager, GameUpdate(new_game.game))
         let game =
           new_game
           |> game_manager.return_to_entry
@@ -186,6 +187,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
           session.Add(user.id, user.password_hash),
         )
         json_response(200, session.to_json(value))
+        |> session.add_cookie_header(value)
       })
       |> result.map_error(fn(_err) { empty_response(403) })
       |> result.unwrap_both
@@ -193,7 +195,6 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Get, ["socket", "lobby"] ->
       app_req.session
       |> result.map(fn(session) {
-        io.debug(#("got a session", session))
         websocket.with_handler(fn(_msg, _sender) { Ok(Nil) })
         |> websocket.on_init(fn(sender) {
           process.send(app_req.lobby_manager, lobby.Join(session, sender))

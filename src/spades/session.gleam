@@ -109,7 +109,7 @@ pub fn add_cookie_header(
       "; Path=/",
       "; Expires=",
       one_week_from_now(),
-      "; HttpOnly",
+      "; HttpOnly; SameSite=Strict",
     ])
   resp
   |> response.prepend_header("Set-Cookie", cookie)

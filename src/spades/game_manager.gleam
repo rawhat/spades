@@ -14,7 +14,7 @@ import mist/websocket.{TextMessage}
 import glisten/tcp.{HandlerMessage}
 
 pub type GameEntry {
-  GameEntry(id: Int, name: String, created_by: String)
+  GameEntry(id: Int, name: String, players: Int)
 }
 
 pub type GameUser {
@@ -22,14 +22,14 @@ pub type GameUser {
 }
 
 pub fn return_to_entry(return: GameReturn) -> GameEntry {
-  GameEntry(return.game.id, return.game.name, return.game.created_by)
+  GameEntry(return.game.id, return.game.name, map.size(return.game.players))
 }
 
 fn entry_to_json(entry: GameEntry) -> json.Json {
   json.object([
     #("id", json.int(entry.id)),
     #("name", json.string(entry.name)),
-    #("created_by", json.string(entry.created_by)),
+    #("players", json.int(entry.players)),
   ])
 }
 
@@ -143,7 +143,7 @@ pub fn start() -> Result(Sender(ManagerAction), actor.StartError) {
           |> map.values
           |> list.map(fn(game_state) {
             let game = game_state.game
-            GameEntry(game.id, game.name, game.created_by)
+            GameEntry(game.id, game.name, map.size(game.players))
           })
           |> process.send(caller, _)
           actor.Continue(state)

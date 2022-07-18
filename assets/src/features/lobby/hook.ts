@@ -19,8 +19,8 @@ export function useLobbySocket(): LobbySocket {
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:4000/socket/lobby")
-    console.log("got a socket", socket, socket.readyState === socket.CLOSED)
+    const socket = new WebSocket("ws://localhost:4000/socket/lobby");
+    console.log("got a socket", socket, socket.readyState === socket.CLOSED);
 
     const setGameList = (games: GameResponse[]) => {
       setGames(
@@ -32,14 +32,14 @@ export function useLobbySocket(): LobbySocket {
     };
 
     socket.onopen = () => {
-      console.log("socket opened")
-    }
+      console.log("socket opened");
+    };
 
     socket.onmessage = ({ data }) => {
-      console.log("got a message", data)
+      console.log("got a message", data);
       const message: GameResponse[] = JSON.parse(data);
-      setGameList(message)
-    }
+      setGameList(message);
+    };
     // channel
     //   .join()
     //   .receive("ok", (data: { games: GameResponse[] }) => {
@@ -55,7 +55,7 @@ export function useLobbySocket(): LobbySocket {
     // });
 
     return () => {
-      console.log("closing socket")
+      console.log("closing socket");
       socket.close();
     };
   }, []);

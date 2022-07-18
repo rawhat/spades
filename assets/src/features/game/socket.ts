@@ -36,6 +36,10 @@ export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
       const params = action.payload;
       socket = new WebSocket(`ws://localhost:4000/socket/game/${params.id}`)
 
+      socket.onopen = () => {
+        console.log("opened game socket")
+      }
+
       socket.onmessage = ({ data }) => {
         console.log("got some data", data)
       }
