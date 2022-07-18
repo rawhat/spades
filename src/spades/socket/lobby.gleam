@@ -35,11 +35,10 @@ pub fn start() -> Result(Sender(LobbyAction), actor.StartError) {
           |> map.values
           |> list.map(fn(lobby_user) { lobby_user.sender })
           |> list.each(fn(existing) {
-            let message =
-              game
-              |> game_to_string
-              |> TextMessage
-            websocket.send(message, existing)
+            game
+            |> game_to_string
+            |> TextMessage
+            |> websocket.send(existing, _)
           })
           state
         }

@@ -1,3 +1,4 @@
+import gleam/json.{Json}
 import gleam/list
 import gleam/option.{None, Option, Some}
 import spades/game/card.{Card}
@@ -10,6 +11,14 @@ pub type Call {
   BlindNil
   Nil
   Count(Int)
+}
+
+pub fn call_to_json(call: Call) -> Json {
+  case call {
+    BlindNil -> json.int(-2)
+    Nil -> json.int(-1)
+    Count(n) -> json.int(n)
+  }
 }
 
 pub type Hand {
@@ -61,4 +70,8 @@ pub fn team_score(left: Hand, right: Hand) -> Score {
 
 pub fn remove_card(hand: Hand, card: Card) -> Hand {
   Hand(..hand, cards: list.filter(hand.cards, fn(c) { c != card }))
+}
+
+pub fn score_to_int(score: Score) -> Int {
+  score.points + score.bags
 }

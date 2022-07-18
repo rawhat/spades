@@ -6,6 +6,8 @@ import gleam/http.{Get, Post}
 import gleam/http/cookie
 import gleam/http/request.{Request}
 import gleam/http/response
+import gleam/int
+import gleam/io
 import gleam/json
 import gleam/list
 import gleam/map
@@ -18,10 +20,10 @@ import mist/file
 import mist/http.{BitBuilderBody, Body, FileBody, HandlerResponse, Response}
 import mist/websocket
 import spades/encoder
-import spades/game_manager.{ManagerAction, NewGame}
+import spades/game_manager.{Join, Leave, ManagerAction, NewGame}
 import spades/games
-import spades/lobby.{LobbyAction}
-import spades/session.{SessionAction, Validate}
+import spades/socket/lobby.{LobbyAction}
+import spades/session.{Session, SessionAction, Validate}
 import spades/user
 
 pub type AppError {
@@ -35,27 +37,19 @@ pub type AppRequest {
     req: Request(Body),
     static_root: String,
     salt: String,
-    session_manager: Sender(SessionAction),
     lobby_manager: Sender(LobbyAction),
+    session_manager: Sender(SessionAction),
+    session: Result(Session, Nil),
   )
 }
 
 pub type AppResult =
   Result(HandlerResponse, AppError)
 
-pub fn result_to_response() -> Middleware(
-  AppRequest,
-  AppResult,
-  AppRequest,
-  HandlerResponse,
-) {
-  fn(next) {
-    fn(req) {
-      case next(req) {
-        Ok(resp) -> resp
-        Error(NotFound) -> empty_response(404)
-      }
-    }
+pub fn result_to_response(resp: AppResult) -> HandlerResponse {
+  case resp {
+    Ok(resp) -> resp
+    Error(NotFound) -> empty_response(404)
   }
 }
 
@@ -63,31 +57,55 @@ pub type Middleware(in1, out1, in2, out2) =
   fn(fn(in1) -> out1) -> fn(in2) -> out2
 
 pub fn app_middleware(
+  next: fn(AppRequest) -> AppResult,
   manager: Sender(ManagerAction),
   db: pgo.Connection,
   static_root: String,
   salt: String,
   session_manager: Sender(SessionAction),
   lobby_manager: Sender(LobbyAction),
-) -> Middleware(AppRequest, HandlerResponse, Request(Body), HandlerResponse) {
-  fn(next) {
-    fn(req) {
-      let app_request =
-        AppRequest(
-          db,
-          manager,
-          req,
-          static_root,
-          salt,
-          session_manager,
-          lobby_manager,
-        )
-      next(app_request)
+) {
+  fn(req) {
+    let app_request =
+      AppRequest(
+        db,
+        manager,
+        req,
+        static_root,
+        salt,
+        lobby_manager,
+        session_manager,
+        session: Error(Nil),
+      )
+    next(app_request)
+  }
+}
+
+pub fn session_middleware(
+  next: fn(AppRequest) -> AppResult,
+) -> fn(AppRequest) -> AppResult {
+  fn(req) {
+    case get_cookie_from_request(req) {
+      Ok(session) ->
+        AppRequest(..req, session: Ok(session))
+        |> next
+        |> result.map(fn(resp) {
+          case resp {
+            http.Response(_resp) -> session.add_cookie_header(resp, session)
+            resp -> resp
+          }
+        })
+      Error(Nil) -> next(req)
     }
   }
 }
 
 pub fn router(app_req: AppRequest) -> AppResult {
+  io.debug(#(
+    "got a req",
+    app_req.req.method,
+    request.path_segments(app_req.req),
+  ))
   case app_req.req.method, request.path_segments(app_req.req) {
     Get, ["static", ..path] -> serve_static_file(path, app_req.static_root)
     Get, ["api", "game"] ->
@@ -101,11 +119,11 @@ pub fn router(app_req: AppRequest) -> AppResult {
       {
         try body = get_json_body(app_req, decoder)
         try game_name = map.get(body, "name")
-        try session = get_cookie_from_request(app_req)
+        try session = app_req.session
         try new_game =
           process.try_call(
             app_req.game_manager,
-            fn(caller) { NewGame(caller, session.username, game_name) },
+            fn(caller) { NewGame(caller, session, game_name) },
             500,
           )
           |> result.replace_error(Nil)
@@ -113,9 +131,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
           new_game
           |> game_manager.return_to_entry
           |> game_manager.game_entry_to_json
-        json_response(200, game)
-        |> session.add_cookie_header(session)
-        |> Ok
+        Ok(json_response(200, game))
       }
       |> result.replace_error(empty_response(400))
       |> result.unwrap_both
@@ -144,10 +160,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Get, ["api", "session"] ->
       app_req
       |> get_cookie_from_request
-      |> result.map(fn(session) {
-        json_response(200, session.to_json(session))
-        |> session.add_cookie_header(session)
-      })
+      |> result.map(fn(session) { json_response(200, session.to_json(session)) })
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
     Post, ["api", "session"] -> {
@@ -173,19 +186,14 @@ pub fn router(app_req: AppRequest) -> AppResult {
           session.Add(user.id, user.password_hash),
         )
         json_response(200, session.to_json(value))
-        |> session.add_cookie_header(session.Session(
-          user.id,
-          user.username,
-          user.password_hash,
-        ))
       })
       |> result.map_error(fn(_err) { empty_response(403) })
       |> result.unwrap_both
     }
-    Get, ["socket", "lobby", "websocket"] ->
-      app_req
-      |> get_cookie_from_request
+    Get, ["socket", "lobby"] ->
+      app_req.session
       |> result.map(fn(session) {
+        io.debug(#("got a session", session))
         websocket.with_handler(fn(_msg, _sender) { Ok(Nil) })
         |> websocket.on_init(fn(sender) {
           process.send(app_req.lobby_manager, lobby.Join(session, sender))
@@ -193,7 +201,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
           games
           |> game_manager.game_entries_to_json
           |> websocket.TextMessage
-          |> websocket.send(sender)
+          |> websocket.send(sender, _)
           Nil
         })
         |> websocket.on_close(fn(_sender) {
@@ -204,22 +212,24 @@ pub fn router(app_req: AppRequest) -> AppResult {
       })
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
-    // Get, ["socket", "game", "websocket"] -> {
-    //   io.debug(#("upgrading", app_req.req))
-    //   websocket.with_handler(fn(msg, sender) {
-    //     io.debug(#("got a msg", msg))
-    //     Ok(Nil)
-    //   })
-    //   |> websocket.on_init(fn(sender) {
-    //     io.debug(#("init lobby"))
-    //     Nil
-    //   })
-    //   |> websocket.on_close(fn(sender) {
-    //     io.debug(#("close lobby"))
-    //     Nil
-    //   })
-    //   |> http.Upgrade
-    // }
+    Get, ["socket", "game", id] ->
+      {
+        try id = int.parse(id)
+        try session = app_req.session
+        websocket.with_handler(fn(_msg, _sender) { Ok(Nil) })
+        |> websocket.on_init(fn(sender) {
+          process.send(app_req.game_manager, Join(id, sender, session))
+          Nil
+        })
+        |> websocket.on_close(fn(_sender) {
+          process.send(app_req.game_manager, Leave(id, session))
+          Nil
+        })
+        |> http.Upgrade
+        |> Ok
+      }
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Get, [] | Get, _ -> serve_static_file(["index.html"], app_req.static_root)

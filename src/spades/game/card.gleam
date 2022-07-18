@@ -1,5 +1,6 @@
 import gleam/int
 import gleam/iterator
+import gleam/json.{Json}
 import gleam/list
 import gleam/order.{Eq, Gt, Lt, Order}
 import gleam/result
@@ -108,6 +109,13 @@ pub fn value_to_string(value: Value) -> String {
     King -> "K"
     Ace -> "A"
   }
+}
+
+pub fn to_json(card: Card) -> Json {
+  json.object([
+    #("suit", json.string(suit_to_string(card.suit))),
+    #("value", json.string(value_to_string(card.value))),
+  ])
 }
 
 pub fn to_string(card: Card) -> String {

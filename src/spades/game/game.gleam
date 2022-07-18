@@ -1,4 +1,5 @@
 import gleam/iterator
+import gleam/json.{Json}
 import gleam/list
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
@@ -12,7 +13,14 @@ import spades/game/player.{
 import gleam/io
 
 pub type Play {
-  Play(player: String, card: Card)
+  Play(player: Int, card: Card)
+}
+
+pub fn play_to_json(play: Play) -> Json {
+  json.object([
+    #("player", json.int(play.player)),
+    #("card", card.to_json(play.card)),
+  ])
 }
 
 pub type Trick =
@@ -35,14 +43,47 @@ pub type Game {
     last_trick: Option(Trick),
     name: String,
     play_order: List(Position),
-    player_position: Map(Position, String),
-    players: Map(String, Player),
+    player_position: Map(Position, Int),
+    players: Map(Int, Player),
     scores: Map(Team, Score),
     spades_broken: Bool,
     state: State,
-    teams: Map(Team, List(String)),
+    teams: Map(Team, List(Int)),
     trick: Trick,
   )
+}
+
+pub fn player_position_to_json(positions: Map(Position, Int)) -> Json {
+  json.object([
+    #(
+      "north",
+      positions
+      |> map.get(North)
+      |> option.from_result
+      |> json.nullable(json.int),
+    ),
+    #(
+      "east",
+      positions
+      |> map.get(East)
+      |> option.from_result
+      |> json.nullable(json.int),
+    ),
+    #(
+      "south",
+      positions
+      |> map.get(South)
+      |> option.from_result
+      |> json.nullable(json.int),
+    ),
+    #(
+      "west",
+      positions
+      |> map.get(West)
+      |> option.from_result
+      |> json.nullable(json.int),
+    ),
+  ])
 }
 
 pub type ErrorReason {
@@ -127,7 +168,7 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
   |> advance_state
 }
 
-pub fn make_call(game: Game, player_id: String, call: Call) -> GameReturn {
+pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
   let game_state = game.state
   let attempting_player = map.get(game.players, player_id)
 
@@ -152,7 +193,7 @@ pub fn make_call(game: Game, player_id: String, call: Call) -> GameReturn {
   }
 }
 
-pub fn play_card(game: Game, player_id: String, card: Card) -> GameReturn {
+pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   let game_state = game.state
   assert Ok(attempting_player) = map.get(game.players, player_id)
   let has_card = player.has_card(attempting_player, card)
@@ -385,7 +426,7 @@ fn update_score(existing: Option(Score), new: Score) -> Score {
   }
 }
 
-fn find_winner(trick: Trick) -> String {
+fn find_winner(trick: Trick) -> Int {
   let [leading, ..] = trick
   let leading_suit = leading.card.suit
   assert Ok(max_leading) =

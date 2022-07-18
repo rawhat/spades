@@ -1,4 +1,3 @@
-import { Socket } from "phoenix";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useMemo } from "react";
@@ -20,9 +19,8 @@ export function useLobbySocket(): LobbySocket {
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const socket = new Socket("/socket/lobby");
-    socket.connect();
-    const channel = socket.channel("lobby:*");
+    const socket = new WebSocket("ws://localhost:4000/socket/lobby")
+    console.log("got a socket", socket, socket.readyState === socket.CLOSED)
 
     const setGameList = (games: GameResponse[]) => {
       setGames(
@@ -33,22 +31,32 @@ export function useLobbySocket(): LobbySocket {
       );
     };
 
-    channel
-      .join()
-      .receive("ok", (data: { games: GameResponse[] }) => {
-        setGameList(data.games);
-      })
-      .receive("error", (err: any) => {
-        setError(`Error connecting to lobby socket: ${JSON.stringify(err)}`);
-      });
+    socket.onopen = () => {
+      console.log("socket opened")
+    }
 
-    channel.on("list_games", setGameList);
-    channel.on("update_game", (game: GameResponse) => {
-      setGames((existing) => ({ ...existing, [game.id]: game }));
-    });
+    socket.onmessage = ({ data }) => {
+      console.log("got a message", data)
+      const message: GameResponse[] = JSON.parse(data);
+      setGameList(message)
+    }
+    // channel
+    //   .join()
+    //   .receive("ok", (data: { games: GameResponse[] }) => {
+    //     setGameList(data.games);
+    //   })
+    //   .receive("error", (err: any) => {
+    //     setError(`Error connecting to lobby socket: ${JSON.stringify(err)}`);
+    //   });
+
+    // channel.on("list_games", setGameList);
+    // channel.on("update_game", (game: GameResponse) => {
+    //   setGames((existing) => ({ ...existing, [game.id]: game }));
+    // });
 
     return () => {
-      channel.leave();
+      console.log("closing socket")
+      socket.close();
     };
   }, []);
 

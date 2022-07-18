@@ -29,8 +29,8 @@
     "typescript": "^4.7.4"
   },
   "scripts": {
-    "build": "node scripts/build.js",
-    "watch": "node scripts/watch.js"
+    "build": "tsc --noEmit && node scripts/build.js",
+    "watch": "tsc --noEmit && node scripts/watch.js"
   },
   "eslintConfig": {
     "extends": "react-app"

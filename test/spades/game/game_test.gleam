@@ -9,7 +9,7 @@ import spades/game/scaffold
 
 pub fn add_player_updates_game_test() {
   let g = game.new(1, "test-game", "1")
-  let player = Player(id: "1", name: "alex", position: North, hand: hand.new())
+  let player = Player(id: 1, name: "alex", position: North, hand: hand.new())
 
   assert Success(g, _events) = game.add_player(g, player)
 
@@ -20,7 +20,7 @@ pub fn add_player_updates_game_test() {
 
 pub fn add_duplicate_position_errors_test() {
   let g = game.new(1, "test-game", "1")
-  let player = Player(id: "1", name: "alex", position: North, hand: hand.new())
+  let player = Player(id: 1, name: "alex", position: North, hand: hand.new())
 
   assert Success(g, _events) = game.add_player(g, player)
 
@@ -30,9 +30,9 @@ pub fn add_duplicate_position_errors_test() {
 
 pub fn add_team_overflow_errors_test() {
   let g = game.new(1, "test-game", "1")
-  let p1 = Player(id: "1", name: "alex", position: North, hand: hand.new())
-  let p2 = Player(id: "2", name: "jon", position: South, hand: hand.new())
-  let p3 = Player(id: "3", name: "billy", position: North, hand: hand.new())
+  let p1 = Player(id: 1, name: "alex", position: North, hand: hand.new())
+  let p2 = Player(id: 2, name: "jon", position: South, hand: hand.new())
+  let p3 = Player(id: 3, name: "billy", position: North, hand: hand.new())
 
   assert Success(g, _events) = game.add_player(g, p1)
   assert Success(g, _events) = game.add_player(g, p2)
@@ -43,7 +43,7 @@ pub fn add_team_overflow_errors_test() {
 
 pub fn add_more_than_four_errors_test() {
   let #(g, _players) = scaffold.populate_game()
-  let p5 = Player(id: "5", name: "krampus", position: North, hand: hand.new())
+  let p5 = Player(id: 5, name: "krampus", position: North, hand: hand.new())
 
   game.add_player(g, p5)
   |> should.equal(Failure(g, game.GameFull))
@@ -54,7 +54,7 @@ pub fn add_player_to_start_bidding_test() {
 
   should.equal(g.state, game.Bidding)
 
-  assert Ok(p1) = map.get(g.players, "1")
+  assert Ok(p1) = map.get(g.players, 1)
 
   list.length(p1.hand.cards)
   |> should.equal(13)

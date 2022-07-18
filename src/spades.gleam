@@ -7,8 +7,10 @@ import mist/http
 import mist
 import spades/database
 import spades/game_manager
-import spades/lobby
-import spades/router.{app_middleware, result_to_response, router}
+import spades/socket/lobby
+import spades/router.{
+  app_middleware, result_to_response, router, session_middleware,
+}
 import spades/session
 
 external fn get_cwd() -> Result(String, Nil) =
@@ -27,19 +29,21 @@ pub fn main() {
   assert Ok(session_manager) = session.start()
   assert Ok(lobby_manager) = lobby.start()
 
-  let middleware =
-    result_to_response()
-    |> function.compose(app_middleware(
+  let handler =
+    router
+    |> session_middleware
+    |> app_middleware(
       manager,
       db,
       static_root,
       salt,
       session_manager,
       lobby_manager,
-    ))
+    )
+    |> function.compose(result_to_response)
 
   try _ =
-    middleware(router)
+    handler
     |> http.handler_func
     |> mist.serve(4000, _)
     |> result.replace_error("Failed to start")
