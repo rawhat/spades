@@ -1,4 +1,4 @@
-import gleam/erlang
+import gleam/erlang/process
 import gleam/erlang/os
 import gleam/function
 import gleam/result
@@ -48,7 +48,7 @@ pub fn main() {
     |> mist.serve(4000, _)
     |> result.replace_error("Failed to start")
 
-  erlang.sleep_forever()
+  process.sleep_forever()
 
   Ok(Nil)
 }
