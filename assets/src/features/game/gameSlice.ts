@@ -11,7 +11,7 @@ import { selectUsername } from "../user/userSlice";
 type CalledEvent = {
   type: "called";
   data: {
-    player: string;
+    player: number;
     call: number;
   };
 };
@@ -27,7 +27,7 @@ type StateChangedEvent = {
 export type PlayedCardEvent = {
   type: "played_card";
   data: {
-    player: string;
+    player: number;
     card: Card;
   };
 };
@@ -45,14 +45,14 @@ type RoundEndedEvent = {
 type AwardedTrickEvent = {
   type: "awarded_trick";
   data: {
-    winner: string;
+    winner: number;
   };
 };
 
 type RevealedCardsEvent = {
   type: "revealed_cards";
   data: {
-    player: string;
+    player: number;
   };
 };
 
@@ -129,20 +129,20 @@ export enum State {
 }
 
 export enum Suit {
-  Clubs = "clubs",
-  Diamonds = "diamonds",
-  Hearts = "hearts",
-  Spades = "spades",
+  Clubs = "C",
+  Diamonds = "D",
+  Hearts = "H",
+  Spades = "S",
 }
 
 export interface Card {
   suit: Suit;
-  value: number;
+  value: string;
 }
 
 export interface PlayedCard {
   card: Card;
-  player_id: string;
+  player: number;
 }
 
 export interface PublicPlayer {
@@ -201,15 +201,23 @@ export const {
   setGameState,
 } = gameSlice.actions;
 
+type GameResult =
+  | { type: "game_state"; data: GameStatus }
+  | { type: "player_state"; data: PlayerStatus };
+
 export const loadGameState = (id: string) => async (dispatch: Dispatch) => {
-  const data = await get<{ game: GameStatus }>(`/game/${id}`);
-  dispatch(setGameState(data.game));
+  const result = await get<GameResult>(`/game/${id}`);
+  if (result.type === "game_state") {
+    dispatch(setGameState(result.data));
+  } else {
+    dispatch(setPlayerState(result.data));
+  }
 };
 
 export const socketError = createAction<string>("game/socketError");
 
 interface JoinGamePayload {
-  id: string;
+  id: number;
   position: Position;
   username: string;
 }
@@ -219,9 +227,21 @@ export const observeGame = createAction<{ id: string; username?: string }>(
 );
 export const addBot = createAction<{ position: Position }>("game/addBot");
 
-export const revealCards = createAction("game/reveal");
-export const makeCall = createAction<number>("game/makeCall");
-export const playCard = createAction<Card>("game/playCard");
+export const revealCards = createAction<{ id: number }>("game/reveal");
+
+type Call = {
+  id: number;
+  call: { count: number } | "blind_nil" | "nil";
+};
+
+export const makeCall = createAction<Call>("game/makeCall");
+
+type PlayCard = {
+  id: number;
+  card: Card;
+};
+
+export const playCard = createAction<PlayCard>("game/playCard");
 
 export const { setPlayerState } = gameSlice.actions;
 
@@ -322,12 +342,12 @@ const defaultOrder = [
   Position.West,
 ];
 
-export type TrickByPlayerId = { [playerId: string]: PlayedCard };
+export type TrickByPlayerId = { [player: string]: PlayedCard };
 
 export const selectTrickByPlayerId = createSelector(
   selectTrick,
   (trick: PlayedCard[]): TrickByPlayerId =>
-    trick.reduce((acc, obj) => ({ ...acc, [obj.player_id]: obj }), {})
+    trick.reduce((acc, obj) => ({ ...acc, [obj.player]: obj }), {})
 );
 
 export const selectLastTrick = createSelector(
@@ -385,7 +405,7 @@ export const selectIsCreator = createSelector(
   (playerState, gameState, self) => {
     const createdBy = playerState?.created_by || gameState?.created_by;
     if (createdBy) {
-      return self?.id === createdBy;
+      return self?.name === createdBy;
     }
     return false;
   }

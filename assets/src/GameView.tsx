@@ -41,9 +41,8 @@ function GameView() {
   const lastTrick = useSelector(selectLastTrick);
   const playersById = useSelector(selectPlayersById);
   const error = useSelector(selectError);
-  const [bottomPlayer, leftPlayer, topPlayer, rightPlayer] = useSelector(
-    selectOrderedPlayers
-  );
+  const [bottomPlayer, leftPlayer, topPlayer, rightPlayer] =
+    useSelector(selectOrderedPlayers);
   const canJoin = !playerCards || !(bottomPlayer?.name === username);
   const isCreator = useSelector(selectIsCreator);
 
@@ -123,9 +122,9 @@ function GameView() {
             <VerticalLayout>
               <Bold>Last trick:</Bold>
               <HorizontalLayout flexWrap="wrap">
-                {lastTrick.map(({ player_id, card }) => (
-                  <VerticalLayout key={player_id}>
-                    <div>{playersById[player_id]?.name || player_id}</div>
+                {lastTrick.map(({ player, card }) => (
+                  <VerticalLayout key={player}>
+                    <div>{playersById[player]?.name || player}</div>
                     <PlayingCard card={card} size={3} />
                   </VerticalLayout>
                 ))}
@@ -292,7 +291,7 @@ const JoinPosition = ({ position }: JoinPositionProps) => {
 
   const join = useCallback(() => {
     if (id && username) {
-      dispatch(joinGame({ id, position, username }));
+      dispatch(joinGame({ id: parseInt(id), position, username }));
     }
   }, [dispatch, id, position, username]);
   return <Button onClick={join}>Join</Button>;

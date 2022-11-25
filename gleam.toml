@@ -10,12 +10,13 @@ repository = { type = "github", user = "rawhat", repo = "spades" }
 links = [{ title = "Website", href = "https://spades.rawhat.net" }]
 
 [dependencies]
-gleam_stdlib = "~> 0.22"
-gleam_http = "~> 3.0"
-gleam_erlang = "~> 0.9"
-mist = "~> 0.7"
+gleam_stdlib = "~> 0.25"
+gleam_http = "~> 3.1"
+gleam_erlang = "~> 0.17"
+mist = "~> 0.9"
 gleam_pgo = "~> 0.4"
 gleam_json = "~> 0.5"
+gleam_crypto = "~> 0.3"
 
 [dev-dependencies]
-gleeunit = "~> 0.6"
+gleeunit = "~> 0.7"

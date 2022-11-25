@@ -1,6 +1,8 @@
+import gleam/dynamic.{DecodeError, Decoder, field}
 import gleam/json.{Json}
 import gleam/list
 import gleam/option.{None, Option, Some}
+import gleam/result
 import spades/game/card.{Card}
 
 pub type Score {
@@ -11,6 +13,25 @@ pub type Call {
   BlindNil
   Nil
   Count(Int)
+}
+
+pub fn call_decoder() -> Decoder(Call) {
+  dynamic.any([
+    fn(value) {
+      dynamic.string(value)
+      |> result.then(fn(call) {
+        case call {
+          "blind_nil" -> Ok(BlindNil)
+          "nil" -> Ok(Nil)
+          _ -> Error([DecodeError("call", call, [])])
+        }
+      })
+    },
+    field("count", fn(value) {
+      dynamic.int(value)
+      |> result.map(Count)
+    }),
+  ])
 }
 
 pub fn call_to_json(call: Call) -> Json {

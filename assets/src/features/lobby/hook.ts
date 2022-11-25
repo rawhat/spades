@@ -22,14 +22,12 @@ export function useLobbySocket(): LobbySocket {
     const socket = new WebSocket("ws://localhost:4000/socket/lobby");
     console.log("got a socket", socket, socket.readyState === socket.CLOSED);
 
-    const setGameList = (games: GameResponse[]) => {
-      setGames(
-        games.reduce((acc, game) => {
-          acc[game.id] = game;
-          return acc;
-        }, {} as GameMap)
-      );
-    };
+    const updateGameInfo = (games: GameResponse | GameResponse[]) =>
+      Array.isArray(games)
+        ? setGames((existing) =>
+            games.reduce((acc, game) => ({ ...acc, [game.id]: game }), existing)
+          )
+        : setGames((existing) => ({ ...existing, [games.id]: games }));
 
     socket.onopen = () => {
       console.log("socket opened");
@@ -37,8 +35,8 @@ export function useLobbySocket(): LobbySocket {
 
     socket.onmessage = ({ data }) => {
       console.log("got a message", data);
-      const message: GameResponse[] = JSON.parse(data);
-      setGameList(message);
+      const message: GameResponse = JSON.parse(data);
+      updateGameInfo(message);
     };
     // channel
     //   .join()

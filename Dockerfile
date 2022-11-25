@@ -7,22 +7,27 @@ RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
 
 RUN apt install -y nodejs
 
-ADD https://github.com/gleam-lang/gleam/releases/download/v0.22.1/gleam-v0.22.1-linux-amd64.tar.gz gleam.tar.gz
+ADD https://github.com/gleam-lang/gleam/releases/download/v0.25.0/gleam-v0.25.0-x86_64-unknown-linux-musl.tar.gz gleam.tar.gz
 RUN tar xf gleam.tar.gz && mv gleam /bin/
 
 ADD https://github.com/watchexec/watchexec/releases/download/cli-v1.20.4/watchexec-1.20.4-x86_64-unknown-linux-gnu.tar.xz watchexec.tar.xz
 RUN tar xf watchexec.tar.xz && mv watchexec-1.20.4-x86_64-unknown-linux-gnu/watchexec /bin/
 
 RUN mkdir /opt/app
-
-COPY . /opt/app
-
 WORKDIR /opt/app
+
+COPY src/ src/
+COPY test/ /test/
+COPY gleam.toml gleam.toml
+COPY manifest.toml manifest.toml
+COPY startup.sh startup.sh
+COPY assets/package.json assets/package.json
+COPY assets/package-lock.json assets/package-lock.json
+COPY assets/tsconfig.json assets/tsconfig.json
+
 
 RUN gleam build
 
 RUN cd assets && npm install
-
-COPY startup.sh .
 
 CMD ["./startup.sh"]

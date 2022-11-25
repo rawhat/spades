@@ -2,6 +2,7 @@ import * as React from "react";
 import range from "lodash/range";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
+import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useState } from "react";
 
@@ -15,11 +16,27 @@ import { selectUsername } from "./features/user/userSlice";
 
 import viewStyle from "./CallBox.module.css";
 
-type CallAmount = -1 | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
+type CallAmount =
+  | -1
+  | 0
+  | 1
+  | 2
+  | 3
+  | 4
+  | 5
+  | 6
+  | 7
+  | 8
+  | 9
+  | 10
+  | 11
+  | 12
+  | 13;
 
 function CallBox() {
   const [call, setCall] = useState<CallAmount>();
   const dispatch = useDispatch();
+  const { id } = useParams();
 
   const currentPlayer = useSelector(selectCurrentPlayer);
   const username = useSelector(selectUsername);
@@ -34,13 +51,23 @@ function CallBox() {
   );
 
   const onSubmit = useCallback(() => {
-    if (call !== undefined) {
-      dispatch(makeCall(call));
+    if (id !== undefined && call !== undefined) {
+      let convertedCall;
+      if (call === -1) {
+        convertedCall = "blind_nil" as const;
+      } else if (call === 0) {
+        convertedCall = "nil" as const;
+      } else {
+        convertedCall = { count: call };
+      }
+      dispatch(makeCall({ id: parseInt(id), call: convertedCall }));
     }
   }, [call, dispatch]);
 
   let revealButton = (
-    <Call onClick={() => dispatch(revealCards())}>Reveal</Call>
+    <Call onClick={() => id && dispatch(revealCards({ id: parseInt(id) }))}>
+      Reveal
+    </Call>
   );
 
   if (!currentlyBidding && cardsRevealed) {

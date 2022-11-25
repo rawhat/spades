@@ -1,6 +1,7 @@
 version: '3'
 services:
   api:
+    tty: true
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -10,10 +11,11 @@ services:
       DB_PASS: spades
       DB_HOST: db
       PASSWORD_SALT: 1234
+      TERM: "xterm-256color"
     volumes:
-      - /opt/app/build
-      - /opt/app/assets/node_modules
       - ./:/opt/app
+      - /opt/app/build/
+      - /opt/app/assets/node_modules/
     ports:
       - "3000:3000"
       - "4000:4000"

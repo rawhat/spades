@@ -3,7 +3,7 @@ import gleam/erlang/os
 import gleam/function
 import gleam/result
 import gleam/string
-import mist/http
+import mist/handler
 import mist
 import spades/database
 import spades/game_manager
@@ -44,7 +44,7 @@ pub fn main() {
 
   try _ =
     handler
-    |> http.handler_func
+    |> handler.with_func
     |> mist.serve(4000, _)
     |> result.replace_error("Failed to start")
 

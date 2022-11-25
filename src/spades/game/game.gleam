@@ -1,3 +1,4 @@
+import gleam/io
 import gleam/iterator
 import gleam/json.{Json}
 import gleam/list
@@ -6,11 +7,10 @@ import gleam/option.{None, Option, Some}
 import gleam/result
 import spades/game/card.{Card, Deck, Spades}
 import spades/game/event.{Event}
-import spades/game/hand.{Call, Score}
+import spades/game/hand.{Call, Hand, Score}
 import spades/game/player.{
   East, EastWest, North, NorthSouth, Player, Position, South, Team, West,
 }
-import gleam/io
 
 pub type Play {
   Play(player: Int, card: Card)
@@ -136,6 +136,8 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
     |> result.map(list.length)
     |> result.unwrap(0)
 
+  io.debug(#("adding player with fields", player_count, has_player, team_size))
+
   case player_count, has_player, team_size {
     count, False, size if count < 4 && size < 2 ->
       Success(
@@ -244,6 +246,29 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   }
 }
 
+pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
+  assert Ok(player) = map.get(game.players, player_id)
+  case game.state, game.current_player, player {
+    Bidding, current, Player(
+      hand: Hand(revealed: False, call: None, ..),
+      position: position,
+      ..,
+    ) if current == position -> {
+      let new_players =
+        game.players
+        |> map.update(
+          player_id,
+          fn(p) {
+            assert Some(p) = p
+            Player(..p, hand: Hand(..p.hand, revealed: True))
+          },
+        )
+      Success(Game(..game, players: new_players), [])
+    }
+    _, _, _ -> Failure(game, InvalidAction)
+  }
+}
+
 pub fn advance_state(return: GameReturn) -> GameReturn {
   case return {
     Failure(_game, _reason) -> return
@@ -267,7 +292,6 @@ pub fn advance_state(return: GameReturn) -> GameReturn {
         Playing, _count, _called, True, True ->
           game
           |> complete_trick
-          |> io.debug
           |> complete_round
         Playing, _count, _called, False, True -> complete_trick(game)
         Playing, _count, _called, _, _ -> next_player(game)

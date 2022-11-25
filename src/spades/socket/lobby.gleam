@@ -1,28 +1,28 @@
+import gleam/erlang/process.{Subject}
 import gleam/json
 import gleam/list
 import gleam/map.{Map}
 import gleam/otp/actor
-import gleam/otp/process.{Sender}
-import glisten/tcp.{HandlerMessage}
+import glisten/handler.{HandlerMessage}
 import mist/websocket.{TextMessage}
 import spades/game/game.{Game}
 import spades/session.{Session}
 
 pub type LobbyAction {
-  Join(session: Session, sender: Sender(HandlerMessage))
+  Join(session: Session, sender: Subject(HandlerMessage))
   Leave(id: Int)
   GameUpdate(game: Game)
 }
 
 pub type LobbyUser {
-  LobbyUser(session: Session, sender: Sender(HandlerMessage))
+  LobbyUser(session: Session, sender: Subject(HandlerMessage))
 }
 
 pub type LobbyState {
   LobbyState(users: Map(Int, LobbyUser))
 }
 
-pub fn start() -> Result(Sender(LobbyAction), actor.StartError) {
+pub fn start() -> Result(Subject(LobbyAction), actor.StartError) {
   actor.start(
     LobbyState(map.new()),
     fn(msg, state) {

@@ -1,43 +1,47 @@
+import gleam/base
 import gleam/bit_string
 import gleam/dynamic
-import gleam/erlang/charlist.{Charlist}
+import gleam/erlang/process.{Subject}
 import gleam/http/response
+import gleam/io
 import gleam/json
 import gleam/map.{Map}
+import gleam/order.{Gt}
 import gleam/otp/actor
-import gleam/otp/process.{Sender}
 import gleam/result
 import gleam/string
-import mist/http.{HandlerResponse, Response}
-import spades/user.{base64_decode, base64_encode}
+import mist/handler.{HandlerResponse, Response}
+import spades/date.{Date}
 
 pub type SessionAction {
-  Add(id: Int, pass: String)
+  Add(id: Int, session: Session)
   Remove(id: Int)
-  Validate(caller: Sender(Result(Nil, Nil)), id: Int, pass: String)
+  Validate(caller: Subject(Result(Nil, Nil)), id: Int)
+}
+
+pub type Session {
+  Session(id: Int, username: String, expires_at: Date)
 }
 
 pub type SessionState {
-  SessionState(users: Map(Int, String))
+  SessionState(users: Map(Int, Session))
 }
 
-pub fn start() -> Result(Sender(SessionAction), actor.StartError) {
+pub fn start() -> Result(Subject(SessionAction), actor.StartError) {
   actor.start(
     SessionState(map.new()),
     fn(message, state) {
       case message {
-        Add(id, pass) -> SessionState(users: map.insert(state.users, id, pass))
+        Add(id, session) ->
+          session
+          |> map.insert(state.users, id, _)
+          |> SessionState
         Remove(id) -> SessionState(users: map.delete(state.users, id))
-        Validate(caller, id, pass) -> {
+        Validate(caller, id) -> {
           let resp =
             state.users
             |> map.get(id)
-            |> result.then(fn(hashed) {
-              case hashed == pass {
-                True -> Ok(Nil)
-                False -> Error(Nil)
-              }
-            })
+            |> result.replace(Nil)
           process.send(caller, resp)
           state
         }
@@ -47,23 +51,21 @@ pub fn start() -> Result(Sender(SessionAction), actor.StartError) {
   )
 }
 
-pub type Session {
-  Session(id: Int, username: String, password: String)
+pub fn new(id: Int, username: String) -> Session {
+  date.now()
+  |> date.add_days(7)
+  |> Session(id, username, _)
 }
 
 fn to_string(session: Session) -> String {
-  assert Ok(str) =
-    json.object([
-      #("id", json.int(session.id)),
-      #("username", json.string(session.username)),
-      #("password", json.string(session.password)),
-    ])
-    |> json.to_string
-    |> bit_string.from_string
-    |> base64_encode
-    |> bit_string.to_string
-
-  str
+  json.object([
+    #("id", json.int(session.id)),
+    #("username", json.string(session.username)),
+    #("expires_at", date.to_json(session.expires_at)),
+  ])
+  |> json.to_string
+  |> bit_string.from_string
+  |> base.encode64(False)
 }
 
 pub fn to_json(session: Session) -> String {
@@ -73,25 +75,23 @@ pub fn to_json(session: Session) -> String {
       json.object([
         #("id", json.int(session.id)),
         #("username", json.string(session.username)),
-        #("password", json.string(session.password)),
       ]),
     ),
   ])
   |> json.to_string
 }
 
-fn parse(str: String) -> Result(Session, Nil) {
+pub fn parse_cookie_header(str: String) -> Result(Session, Nil) {
   str
-  |> bit_string.from_string
-  |> base64_decode
-  |> bit_string.to_string
+  |> base.decode64
+  |> result.then(bit_string.to_string)
   |> result.then(fn(str) {
     str
     |> json.decode(dynamic.decode3(
       Session,
       dynamic.field("id", dynamic.int),
       dynamic.field("username", dynamic.string),
-      dynamic.field("password", dynamic.string),
+      dynamic.field("expires_at", date.decoder()),
     ))
     |> result.replace_error(Nil)
   })
@@ -102,13 +102,17 @@ pub fn add_cookie_header(
   session: Session,
 ) -> HandlerResponse {
   assert Response(resp) = res
+  let expiry =
+    session.expires_at
+    |> date.to_json()
+    |> json.to_string
   let cookie =
     string.concat([
       "session=",
       to_string(session),
       "; Path=/",
       "; Expires=",
-      one_week_from_now(),
+      expiry,
       "; HttpOnly; SameSite=Strict",
     ])
   resp
@@ -116,31 +120,9 @@ pub fn add_cookie_header(
   |> Response
 }
 
-pub fn read_cookie_header(cookie: String) -> Result(Session, Nil) {
-  parse(cookie)
-}
-
-pub fn one_week_from_now() -> String {
-  let #(#(year, month, day), #(hour, min, sec)) = universal_time()
-
-  #(#(year, month, day + 7), #(hour, min, sec))
-  |> iso8601_format
-}
-
-type UniversalTime =
-  #(#(Int, Int, Int), #(Int, Int, Int))
-
-external fn universal_time() -> UniversalTime =
-  "calendar" "universal_time"
-
-external fn iolib_format(String, List(a)) -> Charlist =
-  "io_lib" "format"
-
-fn iso8601_format(ut: UniversalTime) -> String {
-  let #(#(year, month, day), #(hour, min, sec)) = ut
-  iolib_format(
-    "~.4.0w-~.2.0w-~.2.0wT~.2.0w:~.2.0w:~.2.0wZ",
-    [year, month, day, hour, min, sec],
-  )
-  |> charlist.to_string
+pub fn validate(session: Session) -> Result(Nil, Nil) {
+  case date.compare(session.expires_at, date.now()) {
+    Gt -> Ok(Nil)
+    _ -> Error(Nil)
+  }
 }

@@ -1,3 +1,4 @@
+import gleam/dynamic.{DecodeError, Decoder, field}
 import gleam/int
 import gleam/iterator
 import gleam/json.{Json}
@@ -63,6 +64,50 @@ pub fn compare(left: Card, right: Card) -> Order {
 
 pub type Card {
   Card(suit: Suit, value: Value)
+}
+
+fn suit_decoder() -> Decoder(Suit) {
+  fn(value) {
+    value
+    |> dynamic.string
+    |> result.then(fn(suit) {
+      case suit {
+        "C" -> Ok(Clubs)
+        "D" -> Ok(Diamonds)
+        "H" -> Ok(Hearts)
+        "S" -> Ok(Spades)
+        _ -> Error([DecodeError("suit", suit, [])])
+      }
+    })
+  }
+}
+
+fn value_decoder() -> Decoder(Value) {
+  fn(value) {
+    value
+    |> dynamic.string
+    |> result.then(fn(value) {
+      case value {
+        "J" -> Ok(Jack)
+        "Q" -> Ok(Queen)
+        "K" -> Ok(King)
+        "A" -> Ok(Ace)
+        number ->
+          number
+          |> int.parse
+          |> result.map(Number)
+          |> result.replace_error([DecodeError("value", number, [])])
+      }
+    })
+  }
+}
+
+pub fn decoder() -> Decoder(Card) {
+  dynamic.decode2(
+    Card,
+    field("suit", suit_decoder()),
+    field("value", value_decoder()),
+  )
 }
 
 fn order_of(cards: List(Card), suit: Suit, order: Order) -> Result(Card, Nil) {
@@ -136,7 +181,7 @@ pub fn make_deck() -> Deck {
   let suits = iterator.from_list([Clubs, Diamonds, Hearts, Spades])
 
   let values =
-    list.range(2, 11)
+    list.range(2, 10)
     |> list.map(Number)
     |> list.append([Jack, Queen, King, Ace])
     |> iterator.from_list
@@ -153,6 +198,5 @@ pub fn make_deck() -> Deck {
 }
 
 pub fn shuffle(deck: Deck) -> Deck {
-  // TODO
-  deck
+  list.shuffle(deck)
 }

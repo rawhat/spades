@@ -12,6 +12,11 @@ interface UserState {
   username?: string;
 }
 
+interface Session {
+  id: number;
+  username: string;
+}
+
 const initialState: UserState = {
   status: Progress.Idle,
 };
@@ -26,12 +31,12 @@ export const login = createAsyncThunk<
   "user/login",
   async ({ username, password }: LoginRequest, { rejectWithValue, signal }) => {
     try {
-      const response = await post<{ username: string }>(
+      const response = await post<{ session: Session}>(
         "/session",
         { session: { username, password } },
         { signal }
       );
-      return response.username;
+      return response.session.username;
     } catch {
       return rejectWithValue("Invalid username or password");
     }

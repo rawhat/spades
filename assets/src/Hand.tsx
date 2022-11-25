@@ -2,6 +2,7 @@ import * as React from "react";
 import { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { useMemo } from "react";
+import { useParams } from "react-router-dom";
 
 import { Card, playCard } from "./features/game/gameSlice";
 
@@ -14,9 +15,10 @@ interface PlayerHandProps {
 
 export function PlayerHand({ cards }: PlayerHandProps) {
   const dispatch = useDispatch();
+  const { id } = useParams();
   const getOnClick = useCallback(
     (card: Card) => {
-      return () => dispatch(playCard(card));
+      return () => id && dispatch(playCard({ id: parseInt(id), card }));
     },
     [dispatch]
   );

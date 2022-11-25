@@ -2,6 +2,7 @@ require("esbuild")
   .build({
     entryPoints: ["src/index.tsx"],
     bundle: true,
+    sourcemap: "inline",
     outfile: "../priv/static/app.js",
     watch: {
       onRebuild(error, result) {

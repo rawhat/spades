@@ -3,23 +3,8 @@ import { useMemo } from "react";
 
 import { Card, Suit } from "./features/game/gameSlice";
 
-export function cardValue(value: number): string {
-  switch (value) {
-    case 1:
-      return "A";
-    case 11:
-      return "J";
-    case 12:
-      return "Q";
-    case 13:
-      return "K";
-    default:
-      return value.toString();
-  }
-}
-
 export function cardToString(card: Card): string {
-  return `${cardValue(card.value)} of ${card.suit}`;
+  return `${card.value} of ${card.suit}`;
 }
 
 const initialCode = 127137;
@@ -44,6 +29,21 @@ function suitToOffset(suit: Suit): number {
   }
 }
 
+function valueFromString(value: string): number {
+  switch (value) {
+    case "A":
+      return 1;
+    case "K":
+      return 13;
+    case "Q":
+      return 12;
+    case "J":
+      return 11;
+    default:
+      return parseInt(value);
+  }
+}
+
 function getUnicodeAndColorForCard({ value, suit }: Card): [string, string] {
   let color;
   switch (suit) {
@@ -61,9 +61,12 @@ function getUnicodeAndColorForCard({ value, suit }: Card): [string, string] {
 
   const offset = suitToOffset(suit);
 
+  const valueNumber = valueFromString(value);
+
   // The unicode character set contains the "Knight" card, between Jack and
   // Queen.  So we need to add an additional index here to skip over it.
-  let v = value === 12 || value === 13 ? value + 1 : value;
+  let v =
+    valueNumber === 12 || valueNumber === 13 ? valueNumber + 1 : valueNumber;
 
   const code = getCardCode(offset + v - 1);
   return [code, color];
