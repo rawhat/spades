@@ -223,6 +223,7 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
     True, suit_to_play, [Play(card: Card(suit: leading_suit, ..), ..), ..], _, True, _ if suit_to_play == leading_suit ->
       True
     True, _, _, _, False, _ -> True
+    True, Spades, [], False, _, False -> False
     True, _, [], _, _, _ -> True
     _, _, _, _, _, _ -> False
   }

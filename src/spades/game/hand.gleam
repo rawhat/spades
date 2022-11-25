@@ -27,10 +27,13 @@ pub fn call_decoder() -> Decoder(Call) {
         }
       })
     },
-    field("count", fn(value) {
-      dynamic.int(value)
-      |> result.map(Count)
-    }),
+    field(
+      "count",
+      fn(value) {
+        dynamic.int(value)
+        |> result.map(Count)
+      },
+    ),
   ])
 }
 

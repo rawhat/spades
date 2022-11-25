@@ -2,7 +2,7 @@ import gleeunit/should
 import gleam/list
 import gleam/map
 import spades/game/card.{Card}
-import spades/game/game.{Failure, Play, Success}
+import spades/game/game.{Failure, InvalidSuit, Play, Success}
 import spades/game/hand.{Count}
 import spades/game/player.{North, NorthSouth, Player, South}
 import spades/game/scaffold
@@ -216,4 +216,38 @@ pub fn find_winner_with_spade_test() {
   trick
   |> game.find_winner
   |> should.equal(3)
+}
+
+pub fn play_spades_when_having_other_suits_and_not_broken_test() {
+  let deck = [
+    Card(card.Diamonds, card.Number(2)),
+    Card(card.Diamonds, card.Number(8)),
+    Card(card.Diamonds, card.Number(7)),
+    Card(card.Diamonds, card.Number(6)),
+    Card(card.Hearts, card.Number(4)),
+    Card(card.Clubs, card.Number(2)),
+    Card(card.Hearts, card.Number(2)),
+    Card(card.Spades, card.Number(2)),
+    Card(card.Diamonds, card.Number(5)),
+    Card(card.Diamonds, card.Number(4)),
+    Card(card.Diamonds, card.Number(3)),
+    Card(card.Diamonds, card.Number(9)),
+  ]
+
+  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
+
+  assert Success(g, _events) =
+    g
+    |> game.make_call(p1.id, Count(1))
+    |> game.then(game.make_call(_, p3.id, Count(1)))
+    |> game.then(game.make_call(_, p2.id, Count(0)))
+    |> game.then(game.make_call(_, p4.id, Count(1)))
+    |> game.then(game.play_card(_, p1.id, Card(card.Diamonds, card.Number(9))))
+    |> game.then(game.play_card(_, p3.id, Card(card.Diamonds, card.Number(3))))
+    |> game.then(game.play_card(_, p2.id, Card(card.Diamonds, card.Number(4))))
+    |> game.then(game.play_card(_, p4.id, Card(card.Diamonds, card.Number(5))))
+
+  g
+  |> game.play_card(p1.id, Card(card.Spades, card.Number(2)))
+  |> should.equal(Failure(g, InvalidSuit))
 }

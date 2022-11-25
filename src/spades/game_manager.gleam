@@ -305,12 +305,12 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
               list.each(
                 game_state.users,
                 fn(user) {
-                let message =
-                  return.game
-                  |> state_for_player(user.session.id)
-                |> json.to_string
-                |> TextMessage
-                websocket.send(user.sender, message)
+                  let message =
+                    return.game
+                    |> state_for_player(user.session.id)
+                    |> json.to_string
+                    |> TextMessage
+                  websocket.send(user.sender, message)
                 },
               )
             })
