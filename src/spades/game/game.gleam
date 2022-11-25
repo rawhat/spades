@@ -46,6 +46,7 @@ pub type Game {
     player_position: Map(Position, Int),
     players: Map(Int, Player),
     scores: Map(Team, Score),
+    shuffle: fn(List(Card)) -> List(Card),
     spades_broken: Bool,
     state: State,
     teams: Map(Team, List(Int)),
@@ -114,6 +115,7 @@ pub fn new(id: Int, name: String, created_by: String) -> Game {
     player_position: map.new(),
     players: map.new(),
     scores: map.from_list([#(NorthSouth, Score(0, 0)), #(EastWest, Score(0, 0))]),
+    shuffle: list.shuffle,
     spades_broken: False,
     state: Waiting,
     teams: map.new(),
@@ -123,6 +125,10 @@ pub fn new(id: Int, name: String, created_by: String) -> Game {
 
 pub fn set_deck(game: Game, deck: Deck) -> Game {
   Game(..game, deck: deck)
+}
+
+pub fn set_shuffle(game: Game, shuffle: fn(List(Card)) -> List(Card)) -> Game {
+  Game(..game, shuffle: shuffle)
 }
 
 pub fn add_player(game: Game, new_player: Player) -> GameReturn {
@@ -135,8 +141,6 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
     |> map.get(team)
     |> result.map(list.length)
     |> result.unwrap(0)
-
-  io.debug(#("adding player with fields", player_count, has_player, team_size))
 
   case player_count, has_player, team_size {
     count, False, size if count < 4 && size < 2 ->
@@ -331,8 +335,11 @@ fn complete_trick(game: Game) -> Game {
         }
       },
     )
+  assert Ok(current_player) = map.get(game.players, winner)
   Game(
     ..game,
+    current_player: current_player.position,
+    last_trick: Some(game.trick),
     players: updated_players,
     trick: [],
     spades_broken: game.spades_broken || has_spade,
@@ -361,7 +368,7 @@ fn next_player(game: Game) -> Game {
 fn deal_cards(game: Game) -> Game {
   assert Ok(shuffled) =
     game.deck
-    |> iterator.iterate(card.shuffle)
+    |> iterator.iterate(game.shuffle)
     |> iterator.take(12)
     |> iterator.last
 
@@ -450,7 +457,7 @@ fn update_score(existing: Option(Score), new: Score) -> Score {
   }
 }
 
-fn find_winner(trick: Trick) -> Int {
+pub fn find_winner(trick: Trick) -> Int {
   let [leading, ..] = trick
   let leading_suit = leading.card.suit
   assert Ok(max_leading) =

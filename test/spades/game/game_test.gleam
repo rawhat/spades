@@ -2,7 +2,7 @@ import gleeunit/should
 import gleam/list
 import gleam/map
 import spades/game/card.{Card}
-import spades/game/game.{Failure, Success}
+import spades/game/game.{Failure, Play, Success}
 import spades/game/hand.{Count}
 import spades/game/player.{North, NorthSouth, Player, South}
 import spades/game/scaffold
@@ -154,9 +154,9 @@ pub fn playing_spade_when_not_broken_fails_test() {
 }
 
 pub fn playing_a_full_round_completes_trick_and_scores_test() {
-  let first_card = Card(card.Diamonds, card.Number(10))
+  let first_card = Card(card.Diamonds, card.Number(8))
   let second_card = Card(card.Diamonds, card.Number(9))
-  let third_card = Card(card.Diamonds, card.Number(8))
+  let third_card = Card(card.Diamonds, card.Number(10))
   let fourth_card = Card(card.Diamonds, card.Number(7))
   let deck = [fourth_card, third_card, second_card, first_card]
 
@@ -176,4 +176,44 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
   should.equal(g.state, game.Bidding)
   assert Ok(north_south_score) = map.get(g.scores, NorthSouth)
   should.equal(north_south_score, hand.Score(10, 0))
+  should.equal(g.current_player, player.South)
+}
+
+pub fn find_winner_with_same_suit_test() {
+  let trick = [
+    Play(player: 1, card: Card(card.Diamonds, card.Number(2))),
+    Play(player: 3, card: Card(card.Diamonds, card.Number(6))),
+    Play(player: 2, card: Card(card.Diamonds, card.Number(4))),
+    Play(player: 4, card: Card(card.Diamonds, card.Ace)),
+  ]
+
+  trick
+  |> game.find_winner
+  |> should.equal(4)
+}
+
+pub fn find_winner_with_all_else_offsuit_test() {
+  let trick = [
+    Play(player: 1, card: Card(card.Diamonds, card.Number(2))),
+    Play(player: 3, card: Card(card.Clubs, card.Number(6))),
+    Play(player: 2, card: Card(card.Hearts, card.Number(4))),
+    Play(player: 4, card: Card(card.Hearts, card.Ace)),
+  ]
+
+  trick
+  |> game.find_winner
+  |> should.equal(1)
+}
+
+pub fn find_winner_with_spade_test() {
+  let trick = [
+    Play(player: 1, card: Card(card.Diamonds, card.Number(2))),
+    Play(player: 3, card: Card(card.Spades, card.Jack)),
+    Play(player: 2, card: Card(card.Hearts, card.Number(4))),
+    Play(player: 4, card: Card(card.Spades, card.Number(7))),
+  ]
+
+  trick
+  |> game.find_winner
+  |> should.equal(3)
 }

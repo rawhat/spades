@@ -196,7 +196,3 @@ pub fn make_deck() -> Deck {
   })
   |> iterator.to_list
 }
-
-pub fn shuffle(deck: Deck) -> Deck {
-  list.shuffle(deck)
-}

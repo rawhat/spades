@@ -1,3 +1,4 @@
+import gleam/function
 import spades/game/game.{Game, Success}
 import spades/game/player.{East, North, Player, South, West}
 import spades/game/card.{Deck}
@@ -11,6 +12,7 @@ pub fn populate_game() -> #(Game, List(Player)) {
 
   assert Success(g, _events) =
     game.new(1, "test-game", "1")
+    |> game.set_shuffle(function.identity)
     |> game.add_player(p1)
     |> game.then(game.add_player(_, p2))
     |> game.then(game.add_player(_, p3))
@@ -27,6 +29,7 @@ pub fn populate_game_with_deck(deck: Deck) -> #(Game, List(Player)) {
 
   assert Success(g, _events) =
     game.new(1, "test-game", "1")
+    |> game.set_shuffle(function.identity)
     |> game.set_deck(deck)
     |> game.add_player(p1)
     |> game.then(game.add_player(_, p2))
