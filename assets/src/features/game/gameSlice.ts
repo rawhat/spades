@@ -10,55 +10,42 @@ import { selectUsername } from "../user/userSlice";
 
 type CalledEvent = {
   type: "called";
-  data: {
-    player: number;
-    call: number;
-  };
+  id: number;
+  call: number;
 };
 
 type StateChangedEvent = {
   type: "state_changed";
-  data: {
-    old: GameState;
-    new: GameState;
-  };
+  old: GameState;
+  new: GameState;
 };
 
 export type PlayedCardEvent = {
   type: "played_card";
-  data: {
-    player: number;
-    card: Card;
-  };
+  id: number;
+  card: Card;
 };
 
 type HandEndedEvent = {
   type: "hand_ended";
-  data: {};
 };
 
 type RoundEndedEvent = {
   type: "round_ended";
-  data: {};
 };
 
 type AwardedTrickEvent = {
   type: "awarded_trick";
-  data: {
-    winner: number;
-  };
+  winner: number;
 };
 
 type RevealedCardsEvent = {
   type: "revealed_cards";
-  data: {
-    player: number;
-  };
+  id: number;
 };
 
 type DealtCardsEvent = {
   type: "dealt_cards";
-  data: {};
 };
 
 export type Event =
@@ -142,7 +129,7 @@ export interface Card {
 
 export interface PlayedCard {
   card: Card;
-  player: number;
+  id: number;
 }
 
 export interface PublicPlayer {
@@ -225,7 +212,9 @@ export const joinGame = createAction<JoinGamePayload>("game/join");
 export const observeGame = createAction<{ id: string; username?: string }>(
   "game/observe"
 );
-export const addBot = createAction<{ position: Position }>("game/addBot");
+export const addBot = createAction<{ id: number; position: Position }>(
+  "game/addBot"
+);
 
 export const revealCards = createAction<{ id: number }>("game/reveal");
 
@@ -347,7 +336,7 @@ export type TrickByPlayerId = { [player: string]: PlayedCard };
 export const selectTrickByPlayerId = createSelector(
   selectTrick,
   (trick: PlayedCard[]): TrickByPlayerId =>
-    trick.reduce((acc, obj) => ({ ...acc, [obj.player]: obj }), {})
+    trick.reduce((acc, obj) => ({ ...acc, [obj.id]: obj }), {})
 );
 
 export const selectLastTrick = createSelector(

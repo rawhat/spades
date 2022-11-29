@@ -37,7 +37,7 @@ export function PlayerHand({ cards }: PlayerHandProps) {
 
 interface HiddenHandProps {
   cards: number;
-  position: "top" | "side";
+  position: "top" | "left" | "right";
 }
 
 export function HiddenHand({ cards, position }: HiddenHandProps) {
@@ -52,19 +52,22 @@ export function HiddenHand({ cards, position }: HiddenHandProps) {
 }
 
 interface HiddenCardProps {
-  position: "top" | "side";
+  position: "top" | "left" | "right";
 }
 
 export function HiddenCard({ position }: HiddenCardProps) {
   const style = useMemo((): React.CSSProperties => {
+    let transform;
+    if (position === "left") {
+      transform = "rotate(90deg)";
+    } else if (position === "right") {
+      transform = "rotate(90deg)";
+    }
     return {
-      fontSize: position === "top" ? "6em" : "2em",
-      transform: position === "top" ? undefined : "rotate(90deg)",
+      transform,
+      maxWidth: position === "top" ? "5%" : "100%",
+      width: "auto",
     };
   }, [position]);
-  return (
-    <div style={style}>
-      <span dangerouslySetInnerHTML={{ __html: "&#127136;" }} />
-    </div>
-  );
+  return <img style={style} src="/static/images/BLUE_BACK.svg" />;
 }

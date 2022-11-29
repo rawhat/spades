@@ -3,7 +3,6 @@ import gleam/bit_string
 import gleam/dynamic
 import gleam/erlang/process.{Subject}
 import gleam/http/response
-import gleam/io
 import gleam/json
 import gleam/map.{Map}
 import gleam/order.{Gt}

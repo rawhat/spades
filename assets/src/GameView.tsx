@@ -52,7 +52,7 @@ function GameView() {
         <GamePosition
           canAddBot={isCreator && !leftPlayer}
           canJoin={canJoin}
-          orientation="side"
+          orientation="right"
           player={leftPlayer}
           position={Position.East}
         />
@@ -92,7 +92,7 @@ function GameView() {
         <GamePosition
           canAddBot={isCreator && !rightPlayer}
           canJoin={canJoin}
-          orientation="side"
+          orientation="left"
           player={rightPlayer}
           position={Position.West}
         />
@@ -122,10 +122,10 @@ function GameView() {
             <VerticalLayout>
               <Bold>Last trick:</Bold>
               <HorizontalLayout flexWrap="wrap">
-                {lastTrick.map(({ player, card }) => (
-                  <VerticalLayout key={player}>
-                    <div>{playersById[player]?.name || player}</div>
-                    <PlayingCard card={card} size={3} />
+                {lastTrick.map(({ id, card }) => (
+                  <VerticalLayout key={id}>
+                    <div>{playersById[id]?.name || id}</div>
+                    <PlayingCard card={card} ratio={0.3} />
                   </VerticalLayout>
                 ))}
               </HorizontalLayout>
@@ -143,7 +143,7 @@ interface PlayerProps<T> {
   cards: T;
   name: string;
   current: boolean;
-  position: "top" | "side";
+  position: "top" | "left" | "right";
   tricks?: number;
 }
 
@@ -165,8 +165,10 @@ const Self = ({ call, cards, current, name, revealed, tricks }: SelfProps) => (
           <>{name}</>
           {current && <Marker />}
         </HorizontalLayout>
-        {call !== null && tricks !== undefined && (
-          <div style={{ flexShrink: 0 }}>{`${tricks} of ${call}`}</div>
+        {call && tricks !== undefined && (
+          <div style={{ flexShrink: 0 }}>
+            {`${tricks} of ${callToString(call)}`}
+          </div>
         )}
       </HorizontalLayout>
       {revealed ? (
@@ -182,7 +184,7 @@ interface PositionContainerProps {
   alignItems?: "center";
   children: React.ReactNode;
   justifyContent?: "center";
-  position: "top" | "side";
+  position: "top" | "left" | "right";
 }
 
 const PositionContainer = ({
@@ -206,6 +208,17 @@ const PositionContainer = ({
   );
 };
 
+export function callToString(call: number): string {
+  switch (call) {
+    case -2:
+      return "Blind Nil";
+    case -1:
+      return "Nil";
+    default:
+      return call.toString();
+  }
+}
+
 const Player = ({
   call,
   cards,
@@ -223,8 +236,10 @@ const Player = ({
           <>{name}</>
           {current && <Marker />}
         </HorizontalLayout>
-        {call !== null && tricks !== undefined && (
-          <div style={{ flexShrink: 0 }}>{`${tricks} of ${call}`}</div>
+        {call !== null && call !== undefined && tricks !== undefined && (
+          <div style={{ flexShrink: 0 }}>
+            {`${tricks} of ${callToString(call)}`}
+          </div>
         )}
       </NameComponent>
     </PositionContainer>
@@ -234,7 +249,7 @@ const Player = ({
 interface GamePositionProps {
   canAddBot: boolean;
   canJoin: boolean;
-  orientation: "side" | "top";
+  orientation: "top" | "left" | "right";
   player?: PublicPlayer;
   position: Position;
 }
@@ -303,7 +318,7 @@ const AddBotButton = ({ position }: JoinPositionProps) => {
 
   const join = useCallback(() => {
     if (id) {
-      dispatch(addBot({ position }));
+      dispatch(addBot({ id: parseInt(id), position }));
     }
   }, [dispatch, id, position]);
   return <Button onClick={join}>Add Bot</Button>;

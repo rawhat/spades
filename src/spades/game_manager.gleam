@@ -1,7 +1,7 @@
 import gleam/dynamic.{decode2, field}
 import gleam/erlang/process.{Subject}
-import gleam/json.{Json}
 import gleam/io
+import gleam/json.{Json}
 import gleam/list
 import gleam/map.{Map}
 import gleam/option.{Some}
@@ -49,6 +49,7 @@ pub fn game_entries_to_json(entries: List(GameEntry)) -> String {
 }
 
 pub type GameAction {
+  AddBot(game_id: Int, position: Position)
   AddPlayer(game_id: Int, position: Position)
   MakeCall(game_id: Int, call: Call)
   PlayCard(game_id: Int, card: Card)
@@ -70,14 +71,14 @@ pub type PublicGame {
     created_by: String,
     current_player: Position,
     id: Int,
-    last_trick: option.Option(game.Trick),
+    last_trick: option.Option(hand.Trick),
     name: String,
     players: List(player.PublicPlayer),
     player_position: Map(Position, Int),
     scores: Map(player.Team, hand.Score),
     spades_broken: Bool,
     state: game.State,
-    trick: game.Trick,
+    trick: hand.Trick,
   )
 }
 
@@ -108,7 +109,7 @@ pub fn public_to_json(game: PublicGame) -> Json {
       "last_trick",
       json.nullable(
         game.last_trick,
-        fn(trick) { json.array(trick, game.play_to_json) },
+        fn(trick) { json.array(trick, hand.play_to_json) },
       ),
     ),
     #("name", json.string(game.name)),
@@ -140,16 +141,8 @@ pub fn public_to_json(game: PublicGame) -> Json {
       ]),
     ),
     #("spades_broken", json.bool(game.spades_broken)),
-    #(
-      "state",
-      case game.state {
-        game.Waiting -> "waiting"
-        game.Bidding -> "bidding"
-        game.Playing -> "playing"
-      }
-      |> json.string,
-    ),
-    #("trick", json.array(game.trick, game.play_to_json)),
+    #("state", game.state_to_json(game.state)),
+    #("trick", json.array(game.trick, hand.play_to_json)),
   ])
 }
 
@@ -157,11 +150,11 @@ pub fn public_to_json(game: PublicGame) -> Json {
 //   fn get_public_players_json(Game) -> Json
 //   fn get_sorted_player_cards_json(Game) -> Json
 //   ...
-fn state_for_player(game: Game, player_id: Int) -> Json {
+fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
   game.players
   |> map.get(player_id)
   |> result.map(fn(player) {
-    json.object([
+    [
       #("type", json.string("player_state")),
       #(
         "data",
@@ -178,7 +171,7 @@ fn state_for_player(game: Game, player_id: Int) -> Json {
           #("id", json.int(game.id)),
           #(
             "last_trick",
-            json.nullable(game.last_trick, json.array(_, game.play_to_json)),
+            json.nullable(game.last_trick, json.array(_, hand.play_to_json)),
           ),
           #("name", json.string(game.name)),
           #(
@@ -231,16 +224,16 @@ fn state_for_player(game: Game, player_id: Int) -> Json {
             |> player.position_to_team
             |> player.team_to_json,
           ),
-          #("trick", json.array(game.trick, game.play_to_json)),
+          #("trick", json.array(game.trick, hand.play_to_json)),
           #("tricks", json.int(player.hand.tricks)),
         ]),
       ),
-    ])
+    ]
   })
-  |> result.unwrap(json.object([
+  |> result.unwrap([
     #("type", json.string("game_state")),
     #("data", game_to_json(game)),
-  ]))
+  ])
 }
 
 pub type GameState {
@@ -255,10 +248,16 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
   actor.start(
     ManagerState(map.new(), 1),
     fn(message, state) {
-      io.debug(#("game manager got a message", message))
+      // io.debug(#("game manager got a message", message))
       case message {
         Act(caller, session, action) -> {
           let #(game_id, action) = case action {
+            AddBot(game_id, position) -> #(
+              game_id,
+              fn(game_state: GameState) {
+                game.add_bot(game_state.game, position)
+              },
+            )
             AddPlayer(game_id, position) -> #(
               game_id,
               fn(game_state: GameState) {
@@ -305,12 +304,10 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
               list.each(
                 game_state.users,
                 fn(user) {
-                  let message =
-                    return.game
-                    |> state_for_player(user.session.id)
-                    |> json.to_string
-                    |> TextMessage
-                  websocket.send(user.sender, message)
+                  game_return_to_json(user.session.id, return)
+                  |> json.to_string
+                  |> TextMessage
+                  |> websocket.send(user.sender, _)
                 },
               )
             })
@@ -332,7 +329,8 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             state.games
             |> map.get(game_id)
             |> result.map(fn(game_state) { game_state.game })
-            |> result.map(state_for_player(_, player_id))
+            |> result.map(fn(game) { game.Success(game, []) })
+            |> result.map(game_return_to_json(player_id, _))
             |> result.map(process.send(caller, _))
           actor.Continue(state)
         }
@@ -396,13 +394,19 @@ pub fn handler(
   session: Session,
 ) -> Result(Nil, Nil) {
   assert websocket.TextMessage(data) = msg
-  io.debug(#("data is", data))
 
+  // io.debug(#("data is", data))
   field("type", dynamic.string)
   |> json.decode(data, _)
   |> result.replace_error(Nil)
   |> result.then(fn(msg_type) {
     case msg_type {
+      "add_bot" ->
+        decode2(
+          AddBot,
+          field("id", dynamic.int),
+          field("position", player.position_decoder()),
+        )
       "add_player" ->
         decode2(
           AddPlayer,
@@ -479,7 +483,7 @@ fn game_to_json(g: Game) -> Json {
       "last_trick",
       json.nullable(
         g.last_trick,
-        fn(trick) { json.array(trick, game.play_to_json) },
+        fn(trick) { json.array(trick, hand.play_to_json) },
       ),
     ),
     #("name", json.string(g.name)),
@@ -522,6 +526,15 @@ fn game_to_json(g: Game) -> Json {
       }
       |> json.string,
     ),
-    #("trick", json.array(g.trick, game.play_to_json)),
+    #("trick", json.array(g.trick, hand.play_to_json)),
   ])
+}
+
+fn game_return_to_json(id: Int, return: GameReturn) -> Json {
+  let game_json = state_for_player(return.game, id)
+  let events_json = case return {
+    game.Success(_game, events) -> json.array(events, game.serialize_event)
+    game.Failure(..) -> json.array([], game.serialize_event)
+  }
+  json.object([#("events", events_json), ..game_json])
 }

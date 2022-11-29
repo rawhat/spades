@@ -137,6 +137,19 @@ pub fn min_of_suit(cards: List(Card), suit: Suit) -> Result(Card, Nil) {
   order_of(cards, suit, Gt)
 }
 
+pub fn min_value(cards: List(Card)) -> Result(Card, Nil) {
+  cards
+  |> list.sort(compare)
+  |> list.at(0)
+}
+
+pub fn max_value(cards: List(Card)) -> Result(Card, Nil) {
+  cards
+  |> list.sort(compare)
+  |> list.reverse
+  |> list.at(0)
+}
+
 pub fn suit_to_string(suit: Suit) -> String {
   case suit {
     Clubs -> "C"

@@ -8,7 +8,6 @@ import gleam/http/cookie
 import gleam/http/request.{Request}
 import gleam/http/response
 import gleam/int
-import gleam/io
 import gleam/json
 import gleam/list
 import gleam/map
@@ -102,12 +101,12 @@ pub fn session_middleware(
 }
 
 pub fn router(app_req: AppRequest) -> AppResult {
-  io.debug(#(
-    "got a req",
-    app_req.session,
-    app_req.req.method,
-    request.path_segments(app_req.req),
-  ))
+  // io.debug(#(
+  //   "got a req",
+  //   app_req.session,
+  //   app_req.req.method,
+  //   request.path_segments(app_req.req),
+  // ))
   case app_req.req.method, request.path_segments(app_req.req) {
     Get, ["static", ..path] -> serve_static_file(path, app_req.static_root)
     Get, ["favicon.ico"] ->
@@ -263,7 +262,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
             try id = int.parse(id)
             try session = app_req.session
             websocket.with_handler(fn(msg, sender) {
-              io.debug(#("got a game socket msg", msg))
+              // io.debug(#("got a game socket msg", msg))
               game_manager.handler(msg, sender, app_req.game_manager, session)
             })
             |> websocket.on_init(fn(sender) {
@@ -322,6 +321,7 @@ fn content_type_from_extension(path: String) -> String {
     ".html" -> "text/html"
     ".css" -> "text/css"
     ".js" -> "application/javascript"
+    ".svg" -> "image/svg+xml"
     _ -> "application/octet-stream"
   }
 }

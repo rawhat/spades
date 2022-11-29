@@ -17,6 +17,7 @@ import { selectUsername } from "./features/user/userSlice";
 import viewStyle from "./CallBox.module.css";
 
 type CallAmount =
+  | -2
   | -1
   | 0
   | 1
@@ -53,9 +54,9 @@ function CallBox() {
   const onSubmit = useCallback(() => {
     if (id !== undefined && call !== undefined) {
       let convertedCall;
-      if (call === -1) {
+      if (call === -2) {
         convertedCall = "blind_nil" as const;
-      } else if (call === 0) {
+      } else if (call === -1) {
         convertedCall = "nil" as const;
       } else {
         convertedCall = { count: call };
@@ -81,7 +82,7 @@ function CallBox() {
   if (!cardsRevealed) {
     return (
       <div className={viewStyle.callBox}>
-        <Call onClick={getOnClick(-1)} selected={call === -1}>
+        <Call onClick={getOnClick(-2)} selected={call === -2}>
           Blind Nil
         </Call>
         {revealButton}
@@ -92,6 +93,9 @@ function CallBox() {
 
   return (
     <div className={viewStyle.callBox}>
+      <Call onClick={getOnClick(-1)} selected={call === -1}>
+        Nil
+      </Call>
       {range(0, 14).map((value) => (
         <Call
           key={value}

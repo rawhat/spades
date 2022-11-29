@@ -75,22 +75,23 @@ function getUnicodeAndColorForCard({ value, suit }: Card): [string, string] {
 interface PlayerCardProps {
   card: Card;
   onClick?: () => void;
-  size?: number;
+  ratio?: number;
 }
 
-export function PlayingCard({ card, onClick, size = 8 }: PlayerCardProps) {
-  const [code, color] = getUnicodeAndColorForCard(card);
+export function PlayingCard({ card, onClick, ratio = 0.075 }: PlayerCardProps) {
   const style = useMemo(() => {
     return {
       cursor: onClick && "pointer",
-      color,
-      fontSize: `${size}em`,
+      maxWidth: `${ratio * 100}%`,
+      height: "auto",
     };
-  }, [color, onClick, size]);
+  }, [onClick]);
   return (
-    <div onClick={onClick} style={style}>
-      <span dangerouslySetInnerHTML={{ __html: code }} />
-    </div>
+    <img
+      style={style}
+      onClick={onClick}
+      src={`/static/images/${card.value}${card.suit}.svg`}
+    />
   );
 }
 

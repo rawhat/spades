@@ -1,10 +1,11 @@
 import gleeunit/should
+import gleam/function
 import gleam/list
 import gleam/map
 import spades/game/card.{Card}
-import spades/game/game.{Failure, InvalidSuit, Play, Success}
-import spades/game/hand.{Count}
-import spades/game/player.{North, NorthSouth, Player, South}
+import spades/game/game.{Bidding, Failure, InvalidSuit, Playing, Success}
+import spades/game/hand.{Count, Play}
+import spades/game/player.{East, North, NorthSouth, Player, South, West}
 import spades/game/scaffold
 
 pub fn add_player_updates_game_test() {
@@ -92,7 +93,7 @@ pub fn playing_valid_card_adds_to_trick_test() {
     |> game.then(game.make_call(_, p4.id, Count(3)))
     |> game.then(game.play_card(_, p1.id, first_card))
 
-  should.equal(g.trick, [game.Play(p1.id, first_card)])
+  should.equal(g.trick, [Play(p1.id, first_card)])
 }
 
 pub fn playing_not_leading_suit_fails_test() {
@@ -188,7 +189,7 @@ pub fn find_winner_with_same_suit_test() {
   ]
 
   trick
-  |> game.find_winner
+  |> hand.find_winner
   |> should.equal(4)
 }
 
@@ -201,7 +202,7 @@ pub fn find_winner_with_all_else_offsuit_test() {
   ]
 
   trick
-  |> game.find_winner
+  |> hand.find_winner
   |> should.equal(1)
 }
 
@@ -214,7 +215,7 @@ pub fn find_winner_with_spade_test() {
   ]
 
   trick
-  |> game.find_winner
+  |> hand.find_winner
   |> should.equal(3)
 }
 
@@ -250,4 +251,38 @@ pub fn play_spades_when_having_other_suits_and_not_broken_test() {
   g
   |> game.play_card(p1.id, Card(card.Spades, card.Number(2)))
   |> should.equal(Failure(g, InvalidSuit))
+}
+
+pub fn play_with_multiple_bots_proceeds_through_states_test() {
+  let deck = [
+    Card(card.Diamonds, card.Number(2)),
+    Card(card.Diamonds, card.Number(8)),
+    Card(card.Diamonds, card.Number(7)),
+    Card(card.Diamonds, card.Number(6)),
+    Card(card.Hearts, card.Number(4)),
+    Card(card.Clubs, card.Number(2)),
+    Card(card.Hearts, card.Number(2)),
+    Card(card.Spades, card.Number(2)),
+  ]
+  let human = player.new(1, "alex", North)
+
+  assert Success(g, _events) =
+    game.new(0, "test", "alex")
+    |> game.set_shuffle(function.identity)
+    |> game.set_deck(deck)
+    |> game.add_player(human)
+    |> game.then(game.add_bot(_, South))
+    |> game.then(game.add_bot(_, East))
+    |> game.then(game.add_bot(_, West))
+
+  should.equal(g.state, Bidding)
+
+  assert Success(g, _events) = game.make_call(g, human.id, Count(1))
+
+  should.equal(g.state, Playing)
+
+  assert Success(g, _events) =
+    game.play_card(g, human.id, Card(card.Diamonds, card.Number(6)))
+
+  should.equal(g.current_player, North)
 }

@@ -3,7 +3,7 @@ import gleam/json.{Json}
 import gleam/list
 import gleam/option.{None, Option, Some}
 import gleam/result
-import spades/game/card.{Card}
+import spades/game/card.{Card, Spades}
 
 pub type Score {
   Score(points: Int, bags: Int)
@@ -14,6 +14,44 @@ pub type Call {
   Nil
   Count(Int)
 }
+
+pub type Play {
+  Play(player: Int, card: Card)
+}
+
+pub fn find_winning_card(trick: Trick) -> Card {
+  let [leading, ..] = trick
+  let leading_suit = leading.card.suit
+  assert Ok(max_leading) =
+    trick
+    |> list.map(fn(play) { play.card })
+    |> card.max_of_suit(leading_suit)
+  let max_spade =
+    trick
+    |> list.map(fn(play) { play.card })
+    |> card.max_of_suit(Spades)
+
+  case max_spade, max_leading {
+    Ok(match), _ | Error(_), match -> match
+  }
+}
+
+pub fn find_winner(trick: Trick) -> Int {
+  let card = find_winning_card(trick)
+  assert Ok(Play(player: winner, ..)) =
+    list.find(trick, fn(t) { t.card == card })
+  winner
+}
+
+pub fn play_to_json(play: Play) -> Json {
+  json.object([
+    #("id", json.int(play.player)),
+    #("card", card.to_json(play.card)),
+  ])
+}
+
+pub type Trick =
+  List(Play)
 
 pub fn call_decoder() -> Decoder(Call) {
   dynamic.any([

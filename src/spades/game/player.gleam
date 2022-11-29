@@ -109,7 +109,7 @@ pub fn receive_cards(player: Player, cards: List(Card)) -> Player {
 }
 
 pub fn make_call(player: Player, call: Call) -> Player {
-  Player(..player, hand: Hand(..player.hand, call: Some(call)))
+  Player(..player, hand: Hand(..player.hand, call: Some(call), revealed: True))
 }
 
 pub fn has_card(player: Player, card: Card) -> Bool {

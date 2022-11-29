@@ -1,3 +1,4 @@
+import gleam/int
 import gleam/io
 import gleam/iterator
 import gleam/json.{Json}
@@ -5,26 +6,47 @@ import gleam/list
 import gleam/map.{Map}
 import gleam/option.{None, Option, Some}
 import gleam/result
+import spades/game/bot
 import spades/game/card.{Card, Deck, Spades}
-import spades/game/event.{Event}
-import spades/game/hand.{Call, Hand, Score}
+import spades/game/hand.{Call, Hand, Play, Score, Trick}
 import spades/game/player.{
   East, EastWest, North, NorthSouth, Player, Position, South, Team, West,
 }
 
-pub type Play {
-  Play(player: Int, card: Card)
+pub type Event {
+  AwardedTrick(winner: Int)
+  Called(id: Int, call: Call)
+  DealtCards
+  HandEnded
+  PlayedCard(id: Int, card: Card)
+  RevealedCards(id: Int)
+  RoundEnded
+  StateChanged(old: State, new: State)
 }
 
-pub fn play_to_json(play: Play) -> Json {
-  json.object([
-    #("player", json.int(play.player)),
-    #("card", card.to_json(play.card)),
-  ])
-}
+pub fn serialize_event(event: Event) -> Json {
+  let #(event_type, data) = case event {
+    AwardedTrick(winner) -> #("awarded_trick", [#("winner", json.int(winner))])
+    Called(id, call) -> #(
+      "called",
+      [#("id", json.int(id)), #("call", hand.call_to_json(call))],
+    )
+    DealtCards -> #("dealt_cards", [])
+    HandEnded -> #("hand_ended", [])
+    PlayedCard(id, card) -> #(
+      "played_card",
+      [#("id", json.int(id)), #("card", card.to_json(card))],
+    )
+    RevealedCards(id) -> #("revealed_cards", [#("id", json.int(id))])
+    RoundEnded -> #("round_ended", [])
+    StateChanged(old, new) -> #(
+      "state_changed",
+      [#("old", state_to_json(old)), #("new", state_to_json(new))],
+    )
+  }
 
-pub type Trick =
-  List(Play)
+  json.object([#("type", json.string(event_type)), ..data])
+}
 
 pub type State {
   Bidding
@@ -32,9 +54,17 @@ pub type State {
   Waiting
 }
 
+pub fn state_to_json(state: State) -> Json {
+  case state {
+    Waiting -> "waiting"
+    Bidding -> "bidding"
+    Playing -> "playing"
+  }
+  |> json.string
+}
+
 pub type Game {
   Game(
-    bots: List(Position),
     created_by: String,
     current_player: Position,
     deck: Deck,
@@ -103,7 +133,6 @@ pub type GameReturn {
 
 pub fn new(id: Int, name: String, created_by: String) -> Game {
   Game(
-    bots: [],
     created_by: created_by,
     current_player: North,
     deck: card.make_deck(),
@@ -129,6 +158,30 @@ pub fn set_deck(game: Game, deck: Deck) -> Game {
 
 pub fn set_shuffle(game: Game, shuffle: fn(List(Card)) -> List(Card)) -> Game {
   Game(..game, shuffle: shuffle)
+}
+
+pub fn add_bot(game: Game, position: Position) -> GameReturn {
+  case map.get(game.player_position, position) {
+    Error(Nil) -> {
+      let bot_id =
+        game.players
+        |> map.values
+        |> list.filter(fn(player) { player.id < 0 })
+        |> list.fold(-1, fn(min, bot) { int.min(min, bot.id - 1) })
+      let existing_names =
+        game.players
+        |> map.values
+        |> list.map(fn(player) { player.name })
+      assert Ok(name) =
+        iterator.repeatedly(bot_name)
+        |> iterator.drop_while(fn(name) { list.contains(existing_names, name) })
+        |> iterator.take(1)
+        |> iterator.at(0)
+      let new_bot = player.new(bot_id, name, position)
+      add_player(game, new_bot)
+    }
+    Ok(_) -> Failure(game, TeamFull)
+  }
 }
 
 pub fn add_player(game: Game, new_player: Player) -> GameReturn {
@@ -191,7 +244,7 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
           },
         ),
       )
-      |> fn(g) { Success(g, []) }
+      |> fn(g) { Success(g, [Called(player_id, call)]) }
       |> advance_state
     Bidding, current, Ok(Player(position: attempting, ..)) if current != attempting ->
       Failure(game, NotYourTurn)
@@ -210,6 +263,18 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
     [Play(card: Card(suit, ..), ..), ..] ->
       list.any(attempting_player.hand.cards, fn(card) { card.suit == suit })
   }
+  io.debug(#(
+    "player",
+    player_id,
+    "attempting to play",
+    card,
+    "and can play?",
+    has_card,
+    game.trick,
+    game.spades_broken,
+    has_leading_suit,
+    only_has_spades,
+  ))
   let can_play = case
     has_card,
     card.suit,
@@ -237,10 +302,10 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
         )
       Game(
         ..game,
-        trick: [Play(updated_player.id, card), ..game.trick],
+        trick: list.append(game.trick, [Play(updated_player.id, card)]),
         players: map.insert(game.players, player_id, updated_player),
       )
-      |> fn(g) { Success(g, []) }
+      |> Success([PlayedCard(player_id, card)])
       |> advance_state
     }
 
@@ -268,7 +333,7 @@ pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
             Player(..p, hand: Hand(..p.hand, revealed: True))
           },
         )
-      Success(Game(..game, players: new_players), [])
+      Success(Game(..game, players: new_players), [RevealedCards(player_id)])
     }
     _, _, _ -> Failure(game, InvalidAction)
   }
@@ -288,21 +353,50 @@ pub fn advance_state(return: GameReturn) -> GameReturn {
         |> map.values
         |> list.all(fn(p) { list.length(p.hand.cards) == 0 })
       let trick_finished = list.length(game.trick) == 4
+      io.debug(#(
+        "advance args",
+        game.state,
+        player_count,
+        all_called,
+        all_played,
+        trick_finished,
+      ))
       case game.state, player_count, all_called, all_played, trick_finished {
         Waiting, count, _called, _played, _finished if count == 4 ->
-          start_bidding(game)
-        Waiting, _, _, _, _ -> game
-        Bidding, _count, True, _played, _finished -> start_playing(game)
-        Bidding, _count, False, _played, _finished -> next_player(game)
-        Playing, _count, _called, True, True ->
           game
-          |> complete_trick
+          |> start_bidding
+          |> Success(list.append(events, [StateChanged(Waiting, Bidding)]))
+        Waiting, _, _, _, _ -> return
+        Bidding, 4, True, _played, _finished -> {
+          io.debug(#("gonna start bidding with existing events", events))
+          game
+          |> start_playing
+          |> Success(list.append(events, [StateChanged(Bidding, Playing)]))
+        }
+        Bidding, 4, _called, _played, _finished ->
+          game
+          |> next_player
+          |> Success(events)
+        Playing, 4, True, True, True ->
+          game
+          |> complete_trick(events)
           |> complete_round
-        Playing, _count, _called, False, True -> complete_trick(game)
-        Playing, _count, _called, _, _ -> next_player(game)
-        _, _, _, _, _ -> game
+        Playing, 4, True, False, True -> complete_trick(game, events)
+        Playing, 4, True, _, _ ->
+          game
+          |> next_player
+          |> Success(events)
+        _, _, _, _, _ -> return
       }
-      |> fn(g) { Success(g, events) }
+      |> fn(return) {
+        case return {
+          Success(game, events) -> {
+            assert Success(game, new_events) = perform_bot_action(game)
+            Success(game, list.append(events, new_events))
+          }
+          _ -> return
+        }
+      }
     }
   }
 }
@@ -319,9 +413,9 @@ fn start_playing(game: Game) -> Game {
   |> fn(game) { Game(..game, state: Playing) }
 }
 
-fn complete_trick(game: Game) -> Game {
+fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
   // find winner
-  let winner = find_winner(game.trick)
+  let winner = hand.find_winner(game.trick)
   // award trick
   let has_spade = list.any(game.trick, fn(trick) { trick.card.suit == Spades })
   let updated_players =
@@ -345,23 +439,30 @@ fn complete_trick(game: Game) -> Game {
     trick: [],
     spades_broken: game.spades_broken || has_spade,
   )
+  |> Success(list.append(events, [AwardedTrick(winner)]))
 }
 
-fn complete_round(game: Game) -> Game {
+fn complete_round(game_return: GameReturn) -> GameReturn {
+  assert Success(game, events) = game_return
   game
   |> update_scores
   |> advance_dealer
   |> reset_players
   |> start_bidding
+  |> Success(list.append(events, [StateChanged(Playing, Bidding)]))
 }
 
-fn next_player(game: Game) -> Game {
-  let next = case game.current_player {
+fn get_next_position(game: Game) -> Position {
+  case game.current_player {
     North -> East
     East -> South
     South -> West
     West -> North
   }
+}
+
+fn next_player(game: Game) -> Game {
+  let next = get_next_position(game)
 
   Game(..game, current_player: next)
 }
@@ -458,27 +559,6 @@ fn update_score(existing: Option(Score), new: Score) -> Score {
   }
 }
 
-pub fn find_winner(trick: Trick) -> Int {
-  let [leading, ..] = trick
-  let leading_suit = leading.card.suit
-  assert Ok(max_leading) =
-    trick
-    |> list.map(fn(play) { play.card })
-    |> card.max_of_suit(leading_suit)
-  let max_spade =
-    trick
-    |> list.map(fn(play) { play.card })
-    |> card.max_of_suit(Spades)
-
-  case max_spade, max_leading {
-    Ok(match), _ | Error(_), match -> {
-      assert Ok(Play(player: winner, ..)) =
-        list.find(trick, fn(t) { t.card == match })
-      winner
-    }
-  }
-}
-
 pub fn then(return: GameReturn, action: fn(Game) -> GameReturn) -> GameReturn {
   case return {
     Success(game, events) ->
@@ -489,4 +569,55 @@ pub fn then(return: GameReturn, action: fn(Game) -> GameReturn) -> GameReturn {
       }
     failure -> failure
   }
+}
+
+const names = [
+  "A-aron", "Billium", "Craiggg", "Dante", "Ephram", "Fangio", "Gordon",
+  "Hecate", "Izalith", "Jerome", "Krampus", "Leeroy", "Monte", "Neecey", "Oscar",
+  "Persephone", "Quenton", "Riggs", "Simon", "Thaddeus", "Uther", "Banessa",
+  "Whiskers", "Xena", "Ygritte", "Zenyatta",
+]
+
+pub fn bot_name() -> String {
+  let names_length = list.length(names)
+  assert Ok(name) =
+    int.random(0, names_length)
+    |> list.at(names, _)
+  name
+}
+
+fn perform_bot_action(game: Game) -> GameReturn {
+  game.current_player
+  |> map.get(game.player_position, _)
+  |> result.map(fn(id) {
+    case id < 0 {
+      True -> {
+        assert Ok(current_bot) = map.get(game.players, id)
+        case game.state {
+          Waiting -> Success(game, [])
+          Bidding -> {
+            let bot_call = bot.call(game.players, current_bot)
+            io.debug(#("bidding", bot_call, "for bot", id))
+            game
+            |> make_call(id, bot_call)
+          }
+          Playing -> {
+            io.debug(#("current trick is", game.trick))
+            let bot_card =
+              bot.play_card(
+                game.players,
+                game.spades_broken,
+                game.trick,
+                current_bot,
+              )
+            io.debug(#("playing", bot_card, "for bot", id))
+            game
+            |> play_card(id, bot_card)
+          }
+        }
+      }
+      False -> Success(game, [])
+    }
+  })
+  |> result.unwrap(Failure(game, NotYourTurn))
 }

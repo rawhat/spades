@@ -30,7 +30,7 @@
   },
   "scripts": {
     "build": "tsc --noEmit && node scripts/build.js",
-    "watch": "tsc --noEmit && node scripts/watch.js"
+    "watch": "watchexec 'tsc --noEmit; node scripts/watch.js'"
   },
   "eslintConfig": {
     "extends": "react-app"

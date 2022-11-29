@@ -6,6 +6,7 @@ import { selectEvents, selectPlayersById } from "./features/game/gameSlice";
 import { Bold } from "./Text";
 import { Container, PaddedVerticalLayout } from "./Layout";
 import { useDelayedRemove } from "./useDelayedRemove";
+import { callToString } from "./GameView";
 import { cardToString } from "./Card";
 
 function EventStream() {
@@ -23,8 +24,8 @@ function EventStream() {
             case "called": {
               return (
                 <GameEvent key={eventText}>
-                  {playersById[event.data.player]?.name || event.data.player}{" "}
-                  called {event.data.call}
+                  {playersById[event.id]?.name || event.id} called{" "}
+                  {callToString(event.call)}
                 </GameEvent>
               );
             }
@@ -37,8 +38,8 @@ function EventStream() {
             case "played_card": {
               return (
                 <GameEvent key={eventText}>
-                  {playersById[event.data.player]?.name || event.data.player}{" "}
-                  played {cardToString(event.data.card)}
+                  {playersById[event.id]?.name || event.id} played{" "}
+                  {cardToString(event.card)}
                 </GameEvent>
               );
             }
@@ -49,22 +50,23 @@ function EventStream() {
               return (
                 <GameEvent key={eventText}>
                   Awarded trick to{" "}
-                  {playersById[event.data.winner]?.name || event.data.winner}
+                  {playersById[event.winner]?.name || event.winner}
                 </GameEvent>
               );
             }
             case "state_changed": {
               return (
                 <GameEvent key={eventText}>
-                  <>Game changed from {event.data.old} to {event.data.new}</>
+                  <>
+                    Game changed from {event.old} to {event.new}
+                  </>
                 </GameEvent>
               );
             }
             case "revealed_cards": {
               return (
                 <GameEvent key={eventText}>
-                  {playersById[event.data.player]?.name || event.data.player}{" "}
-                  revealed their hand
+                  {playersById[event.id]?.name || event.id} revealed their hand
                 </GameEvent>
               );
             }

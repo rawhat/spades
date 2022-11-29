@@ -12,14 +12,13 @@ import {
   selectTrickByPlayerId,
 } from "./features/game/gameSlice";
 
-import useDelay from "./useDelay";
 import { HorizontalLayout, VerticalLayout } from "./Layout";
 import { EmptyCard, PlayingCard } from "./Card";
+import useDelay from "./useDelay";
 
 function Trick() {
   const [bottom, left, top, right] = useSelector(selectOrderedPlayers);
-
-  const trickById = useSelector(selectTrickByPlayerId);
+  const trickByPlayerId = useSelector(selectTrickByPlayerId);
   const events = useSelector(selectEvents);
 
   const shouldDelay = useCallback(
@@ -38,22 +37,22 @@ function Trick() {
     [events]
   );
   const addPlayedEvent = useCallback(
-    (trick: TrickByPlayerId): TrickByPlayerId => {
+    (trick: TrickByPlayerId) => {
       const playedCardEvent = events.find(isEvent("played_card"));
       if (!playedCardEvent) {
         return trick;
       }
       return {
         ...trick,
-        [playedCardEvent.data.player]: {
-          player: playedCardEvent.data.player,
-          card: playedCardEvent.data.card,
+        [playedCardEvent.id]: {
+          player_id: playedCardEvent.id.toString(),
+          card: playedCardEvent.card,
         },
       };
     },
     [events]
   );
-  const trick = useDelay(trickById, shouldDelay, addPlayedEvent) ?? {};
+  const trick = useDelay(trickByPlayerId, shouldDelay, addPlayedEvent) ?? {};
 
   const bottomCard = bottom && trick[bottom.id];
   const leftCard = left && trick[left.id];
@@ -61,28 +60,28 @@ function Trick() {
   const rightCard = right && trick[right.id];
 
   const winner =
-    Object.keys(trick).length === 4 &&
-    events.find(isEvent("awarded_trick"))?.data.winner;
+    Object.keys(trickByPlayerId).length === 4 &&
+    events.find(isEvent("awarded_trick"))?.winner;
 
   return (
     <HorizontalLayout alignItems="center">
       <TrickCard layout="horizontal" playedCard={leftCard}>
-        {winner && winner === leftCard?.player && <span>WINNER</span>}
-        {leftCard && <PlayingCard card={leftCard.card} />}
+        {winner && winner === leftCard?.id && <span>WINNER</span>}
+        {leftCard && <PlayingCard card={leftCard.card} ratio={0.5} />}
       </TrickCard>
       <VerticalLayout height="100%">
         <TrickCard layout="vertical" playedCard={topCard}>
-          {winner && winner === topCard?.player && <span>WINNER</span>}
-          {topCard && <PlayingCard card={topCard.card} />}
+          {winner && winner === topCard?.id && <span>WINNER</span>}
+          {topCard && <PlayingCard card={topCard.card} ratio={0.5} />}
         </TrickCard>
         <TrickCard layout="vertical" playedCard={bottomCard}>
-          {bottomCard && <PlayingCard card={bottomCard.card} />}
-          {winner && winner === bottomCard?.player && <span>WINNER</span>}
+          {bottomCard && <PlayingCard card={bottomCard.card} ratio={0.5} />}
+          {winner && winner === bottomCard?.id && <span>WINNER</span>}
         </TrickCard>
       </VerticalLayout>
       <TrickCard layout="horizontal" playedCard={rightCard}>
-        {rightCard && <PlayingCard card={rightCard.card} />}
-        {winner && winner === rightCard?.player && <span>WINNER</span>}
+        {rightCard && <PlayingCard card={rightCard.card} ratio={0.5} />}
+        {winner && winner === rightCard?.id && <span>WINNER</span>}
       </TrickCard>
     </HorizontalLayout>
   );
