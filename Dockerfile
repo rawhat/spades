@@ -3,10 +3,6 @@ FROM erlang:slim
 RUN apt update && \
     apt install -y inotify-tools curl xz-utils
 
-RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
-
-RUN apt install -y nodejs
-
 ADD https://github.com/gleam-lang/gleam/releases/download/v0.25.0/gleam-v0.25.0-x86_64-unknown-linux-musl.tar.gz gleam.tar.gz
 RUN tar xf gleam.tar.gz && mv gleam /bin/
 
@@ -21,13 +17,7 @@ COPY test/ /test/
 COPY gleam.toml gleam.toml
 COPY manifest.toml manifest.toml
 COPY startup.sh startup.sh
-COPY assets/package.json assets/package.json
-COPY assets/package-lock.json assets/package-lock.json
-COPY assets/tsconfig.json assets/tsconfig.json
-
 
 RUN gleam build
 
-RUN cd assets && npm install
-
-CMD ["./startup.sh"]
+CMD ["watchexec", "gleam", "run"]

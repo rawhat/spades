@@ -1,5 +1,15 @@
 version: '3'
 services:
+  ui:
+    build:
+      context: ./assets
+    volumes:
+      - ./assets/src:/opt/app/src
+    ports:
+      - "5000:5000"
+    depends_on:
+      - api
+
   api:
     tty: true
     build:
