@@ -65,7 +65,7 @@ export function HiddenCard({ position }: HiddenCardProps) {
     }
     return {
       transform,
-      maxWidth: position === "top" ? "5%" : "100%",
+      maxWidth: "2vw",
       width: "auto",
     };
   }, [position]);

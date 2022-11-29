@@ -30,8 +30,8 @@ import { HiddenHand } from "./Hand";
 import { Marker } from "./Marker";
 import { PlayerHand } from "./Hand";
 import { PlayingCard } from "./Card";
-import { Panel, PanelBody, PanelFooter, PanelHeader } from "./Panel";
-import { Column, HorizontalLayout, SubHeader, VerticalLayout } from "./Layout";
+import { Panel, PanelBody } from "./Panel";
+import { Column, Container, HorizontalLayout, VerticalLayout } from "./Layout";
 
 function GameView() {
   const username = useSelector(selectUsername);
@@ -89,25 +89,18 @@ function GameView() {
         </VerticalLayout>
       </Column>
       <Column width={1}>
-        <GamePosition
-          canAddBot={isCreator && !rightPlayer}
-          canJoin={canJoin}
-          orientation="left"
-          player={rightPlayer}
-          position={Position.West}
-        />
+        <Container height="100%">
+          <GamePosition
+            canAddBot={isCreator && !rightPlayer}
+            canJoin={canJoin}
+            orientation="left"
+            player={rightPlayer}
+            position={Position.West}
+          />
+        </Container>
       </Column>
       <Column width={2}>
         <VerticalLayout>
-          <Panel>
-            <PanelHeader>
-              <SubHeader>Chat</SubHeader>
-            </PanelHeader>
-            <PanelBody>
-              <div>This is the chat text.</div>
-            </PanelBody>
-            <PanelFooter>This will be an input.</PanelFooter>
-          </Panel>
           {error && (
             <Panel>
               <PanelBody>
@@ -123,9 +116,9 @@ function GameView() {
               <Bold>Last trick:</Bold>
               <HorizontalLayout flexWrap="wrap">
                 {lastTrick.map(({ id, card }) => (
-                  <VerticalLayout key={id}>
+                  <VerticalLayout key={id} alignItems="center">
                     <div>{playersById[id]?.name || id}</div>
-                    <PlayingCard card={card} ratio={0.3} />
+                    <PlayingCard card={card} ratio={4} />
                   </VerticalLayout>
                 ))}
               </HorizontalLayout>
@@ -227,11 +220,31 @@ const Player = ({
   position,
   tricks,
 }: PlayerProps<number>) => {
-  const NameComponent = position === "top" ? HorizontalLayout : VerticalLayout;
+  if (position === "left" || position === "right") {
+    return (
+      <VerticalLayout
+        alignItems="center"
+        justifyContent="space-evenly"
+        height="90%"
+      >
+        <HorizontalLayout alignItems="center">
+          <>{name}</>
+          {current && <Marker />}
+        </HorizontalLayout>
+        <HiddenHand cards={cards} position={position} />
+        {call !== null && call !== undefined && tricks !== undefined && (
+          <div style={{ flexShrink: 0 }}>
+            <span>{`${tricks} of ${callToString(call)}`}</span>
+          </div>
+        )}
+      </VerticalLayout>
+    );
+  }
+
   return (
-    <PositionContainer position={position}>
+    <VerticalLayout alignItems="center" justifyContent="center" width="100%">
       <HiddenHand cards={cards} position={position} />
-      <NameComponent justifyContent="space-between">
+      <HorizontalLayout justifyContent="space-between">
         <HorizontalLayout alignItems="center">
           <>{name}</>
           {current && <Marker />}
@@ -241,8 +254,8 @@ const Player = ({
             {`${tricks} of ${callToString(call)}`}
           </div>
         )}
-      </NameComponent>
-    </PositionContainer>
+      </HorizontalLayout>
+    </VerticalLayout>
   );
 };
 

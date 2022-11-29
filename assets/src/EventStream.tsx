@@ -17,7 +17,7 @@ function EventStream() {
   return (
     <PaddedVerticalLayout padding={5}>
       <Bold>Events:</Bold>
-      <PaddedVerticalLayout padding={2}>
+      <PaddedVerticalLayout padding={2} overflowY="auto" maxHeight="30vh">
         {eventStream.map((event, index) => {
           const eventText = `${index}-${JSON.stringify(event)}`;
           switch (event.type) {
