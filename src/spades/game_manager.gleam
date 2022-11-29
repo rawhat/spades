@@ -1,6 +1,5 @@
 import gleam/dynamic.{decode2, field}
 import gleam/erlang/process.{Subject}
-import gleam/io
 import gleam/json.{Json}
 import gleam/list
 import gleam/map.{Map}
