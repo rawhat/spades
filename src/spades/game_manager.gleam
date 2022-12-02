@@ -388,13 +388,11 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
 
 pub fn handler(
   msg: websocket.Message,
-  sender: Subject(HandlerMessage),
   game_manager: Subject(ManagerAction),
   session: Session,
 ) -> Result(Nil, Nil) {
   assert websocket.TextMessage(data) = msg
 
-  // io.debug(#("data is", data))
   field("type", dynamic.string)
   |> json.decode(data, _)
   |> result.replace_error(Nil)
@@ -439,16 +437,6 @@ pub fn handler(
     |> result.replace_error(Nil)
   })
   |> result.map(fn(game_return) {
-    assert Ok(data) =
-      process.try_call(
-        game_manager,
-        Read(_, game_return.game.id, session.id),
-        60,
-      )
-    data
-    |> json.to_string
-    |> websocket.TextMessage
-    |> websocket.send(sender, _)
     process.send(game_manager, Broadcast(game_return))
   })
   |> result.map_error(fn(err) {

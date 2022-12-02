@@ -3,8 +3,10 @@ services:
   ui:
     build:
       context: ./assets
+    user: 1000:1001
     volumes:
-      - ./assets/src:/opt/app/src
+      - ./assets:/opt/app
+      - node_modules:/opt/app/node_modules
     ports:
       - "5000:5000"
     depends_on:
@@ -43,3 +45,5 @@ services:
       - "5432:5432"
     volumes:
       - /var/lib/postgresql/data
+volumes:
+  node_modules:

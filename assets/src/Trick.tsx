@@ -1,11 +1,11 @@
 import * as React from "react";
-import size from "lodash/size";
-import { useCallback } from "react";
+import { useEffect } from "react";
 import { useSelector } from "react-redux";
+import { useState } from "react";
 
 import {
+  Event,
   PlayedCard,
-  TrickByPlayerId,
   isEvent,
   selectEvents,
   selectOrderedPlayers,
@@ -14,20 +14,53 @@ import {
 
 import { HorizontalLayout, VerticalLayout } from "./Layout";
 import { EmptyCard, PlayingCard } from "./Card";
-import useDelay from "./useDelay";
 
 function Trick() {
   const [bottom, left, top, right] = useSelector(selectOrderedPlayers);
   const trickByPlayerId = useSelector(selectTrickByPlayerId);
   const events = useSelector(selectEvents);
+  const [displayedTrick, setDisplayedTrick] = useState(trickByPlayerId);
 
-  const bottomCard = bottom && trickByPlayerId[bottom.id];
-  const leftCard = left && trickByPlayerId[left.id];
-  const topCard = top && trickByPlayerId[top.id];
-  const rightCard = right && trickByPlayerId[right.id];
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    // We only care about events that "require" some delay to be nice. These are
+    // adding cards to the trick, or when the trick is complete.
+    if (
+      events.some(isEvent("played_card")) ||
+      events.some(isEvent("awarded_trick"))
+    ) {
+      const performEvent = (event: Event) => {
+        if (isEvent("played_card")(event)) {
+          setDisplayedTrick((prev) => ({ ...prev, [event.id]: event }));
+        } else {
+          setDisplayedTrick({});
+        }
+      };
+      const [nextEvent, ...nextEvents] = events;
+      performEvent(nextEvent);
+      let index = 0;
+      interval = setInterval(() => {
+        const nextEvent = nextEvents[index++];
+        if (!nextEvent) {
+          clearInterval(interval);
+          return;
+        }
+        performEvent(nextEvent);
+      }, 750);
+    }
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [events, trickByPlayerId]);
+
+  const bottomCard = bottom && displayedTrick[bottom.id];
+  const leftCard = left && displayedTrick[left.id];
+  const topCard = top && displayedTrick[top.id];
+  const rightCard = right && displayedTrick[right.id];
 
   const winner =
-    Object.keys(trickByPlayerId).length === 4 &&
+    Object.keys(displayedTrick).length === 4 &&
     events.find(isEvent("awarded_trick"))?.winner;
 
   return (

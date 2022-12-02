@@ -27,6 +27,9 @@ export const gameSocketMiddleware = (_store: unknown) => (next: Dispatch) => {
 
   return (action: AnyAction) => {
     if (observeGame.match(action)) {
+      if (socket) {
+        socket.close();
+      }
       const params = action.payload;
       socket = new WebSocket(
         `ws://${window.location.host}/socket/game/${params.id}`

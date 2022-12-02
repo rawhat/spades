@@ -16,10 +16,10 @@ type LobbySocket = [GameResponse[], string?];
 
 export function useLobbySocket(): LobbySocket {
   const [games, setGames] = useState<GameMap>({});
-  const [error, setError] = useState<string | undefined>(undefined);
+  const [error, _setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:4000/socket/lobby");
+    const socket = new WebSocket(`ws://${window.location.host}/socket/lobby`);
     console.log("got a socket", socket, socket.readyState === socket.CLOSED);
 
     const updateGameInfo = (games: GameResponse | GameResponse[]) =>
@@ -38,19 +38,6 @@ export function useLobbySocket(): LobbySocket {
       const message: GameResponse = JSON.parse(data);
       updateGameInfo(message);
     };
-    // channel
-    //   .join()
-    //   .receive("ok", (data: { games: GameResponse[] }) => {
-    //     setGameList(data.games);
-    //   })
-    //   .receive("error", (err: any) => {
-    //     setError(`Error connecting to lobby socket: ${JSON.stringify(err)}`);
-    //   });
-
-    // channel.on("list_games", setGameList);
-    // channel.on("update_game", (game: GameResponse) => {
-    //   setGames((existing) => ({ ...existing, [game.id]: game }));
-    // });
 
     return () => {
       console.log("closing socket");

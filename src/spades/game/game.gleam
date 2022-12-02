@@ -538,7 +538,11 @@ fn update_scores(game: Game) -> Game {
 
 fn advance_dealer(game: Game) -> Game {
   let [current, next, ..rest] = game.play_order
-  Game(..game, play_order: list.append([next, ..rest], [current]))
+  Game(
+    ..game,
+    play_order: list.append([next, ..rest], [current]),
+    current_player: next,
+  )
 }
 
 fn reset_players(game: Game) -> Game {

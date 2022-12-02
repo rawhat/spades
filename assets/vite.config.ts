@@ -12,6 +12,10 @@ export default defineConfig({
         target: "http://api:4000",
         changeOrigin: true,
         secure: false,
+      },
+      "/socket": {
+        target: "http://api:4000",
+        changeOrigin: true,
         ws: true,
       },
       "/static": {

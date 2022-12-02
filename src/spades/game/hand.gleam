@@ -99,7 +99,9 @@ fn score_hand(call: Option(Call), tricks: Int) -> Score {
   assert Some(call) = call
   case call, tricks {
     Nil, n if n > 0 -> Score(-50, n)
+    Nil, _ -> Score(50, 0)
     BlindNil, n if n > 0 -> Score(-100, n)
+    BlindNil, _ -> Score(100, 0)
     Count(called), taken if taken >= called ->
       Score(called * 10, taken - called)
     Count(called), _ -> Score(called * 10 * -1, 0)

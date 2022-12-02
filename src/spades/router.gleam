@@ -261,9 +261,8 @@ pub fn router(app_req: AppRequest) -> AppResult {
           {
             try id = int.parse(id)
             try session = app_req.session
-            websocket.with_handler(fn(msg, sender) {
-              // io.debug(#("got a game socket msg", msg))
-              game_manager.handler(msg, sender, app_req.game_manager, session)
+            websocket.with_handler(fn(msg, _sender) {
+              game_manager.handler(msg, app_req.game_manager, session)
             })
             |> websocket.on_init(fn(sender) {
               process.send(app_req.game_manager, Join(sender, id, session))
