@@ -22,7 +22,7 @@ pub fn main() {
   let db = database.initialize()
   assert Ok(_) = database.migrate(db)
   assert Ok(cwd) = get_cwd()
-  let static_root = string.append(cwd, "/priv/static")
+  let static_root = string.append(cwd, "/static")
 
   assert Ok(salt) = os.get_env("PASSWORD_SALT")
 

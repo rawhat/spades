@@ -25,6 +25,7 @@ services:
     volumes:
       - ./src:/opt/app/src
       - ./test:/opt/app/test
+      - ./priv/static:/opt/app/static
       - /opt/app/build/
     ports:
       - "3000:3000"

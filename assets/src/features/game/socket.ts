@@ -13,33 +13,24 @@ import {
   playCard,
   revealCards,
   setConnected,
-  setError,
   setEvents,
   setGameState,
   setPlayerState,
-  socketError,
 } from "./gameSlice";
-
-interface ErrorPayload {
-  reason: string;
-}
-
-interface GameStatePayload {
-  events: any[];
-  state: PlayerStatus | GameStatus;
-}
 
 type GameMessage =
   | { type: "player_state"; data: PlayerStatus; events: Event[] }
   | { type: "game_state"; data: GameStatus; events: Event[] };
 
-export const gameSocketMiddleware = (_store: any) => (next: Dispatch) => {
+export const gameSocketMiddleware = (_store: unknown) => (next: Dispatch) => {
   let socket: WebSocket;
 
   return (action: AnyAction) => {
     if (observeGame.match(action)) {
       const params = action.payload;
-      socket = new WebSocket(`ws://localhost:4000/socket/game/${params.id}`);
+      socket = new WebSocket(
+        `ws://${window.location.host}/socket/game/${params.id}`
+      );
 
       socket.onmessage = ({ data }: MessageEvent<string>) => {
         const msg: GameMessage = JSON.parse(data);
