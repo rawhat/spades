@@ -1,5 +1,4 @@
 import gleam/int
-import gleam/io
 import gleam/iterator
 import gleam/json.{Json}
 import gleam/list
@@ -263,18 +262,6 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
     [Play(card: Card(suit, ..), ..), ..] ->
       list.any(attempting_player.hand.cards, fn(card) { card.suit == suit })
   }
-  io.debug(#(
-    "player",
-    player_id,
-    "attempting to play",
-    card,
-    "and can play?",
-    has_card,
-    game.trick,
-    game.spades_broken,
-    has_leading_suit,
-    only_has_spades,
-  ))
   let can_play = case
     has_card,
     card.suit,
@@ -353,26 +340,16 @@ pub fn advance_state(return: GameReturn) -> GameReturn {
         |> map.values
         |> list.all(fn(p) { list.length(p.hand.cards) == 0 })
       let trick_finished = list.length(game.trick) == 4
-      io.debug(#(
-        "advance args",
-        game.state,
-        player_count,
-        all_called,
-        all_played,
-        trick_finished,
-      ))
       case game.state, player_count, all_called, all_played, trick_finished {
         Waiting, count, _called, _played, _finished if count == 4 ->
           game
           |> start_bidding
           |> Success(list.append(events, [StateChanged(Waiting, Bidding)]))
         Waiting, _, _, _, _ -> return
-        Bidding, 4, True, _played, _finished -> {
-          io.debug(#("gonna start bidding with existing events", events))
+        Bidding, 4, True, _played, _finished ->
           game
           |> start_playing
           |> Success(list.append(events, [StateChanged(Bidding, Playing)]))
-        }
         Bidding, 4, _called, _played, _finished ->
           game
           |> next_player
@@ -601,12 +578,10 @@ fn perform_bot_action(game: Game) -> GameReturn {
           Waiting -> Success(game, [])
           Bidding -> {
             let bot_call = bot.call(game.players, current_bot)
-            io.debug(#("bidding", bot_call, "for bot", id))
             game
             |> make_call(id, bot_call)
           }
           Playing -> {
-            io.debug(#("current trick is", game.trick))
             let bot_card =
               bot.play_card(
                 game.players,
@@ -614,7 +589,6 @@ fn perform_bot_action(game: Game) -> GameReturn {
                 game.trick,
                 current_bot,
               )
-            io.debug(#("playing", bot_card, "for bot", id))
             game
             |> play_card(id, bot_card)
           }

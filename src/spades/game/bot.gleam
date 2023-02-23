@@ -1,6 +1,5 @@
 import gleam/float
 import gleam/int
-import gleam/io
 import gleam/list
 import gleam/map.{Map}
 import gleam/option.{Some}
@@ -200,7 +199,6 @@ fn winning_card(
   spades_broken: Bool,
   cards: List(Card),
 ) -> Card {
-  io.debug(#("trying to win", trick, "with", cards))
   case trick {
     [] -> {
       assert Ok(card) =

@@ -14,43 +14,32 @@ RUN npm run build
 
 # Build API release
 
-FROM elixir:alpine AS api
-
-WORKDIR /opt/app
-
-RUN mix local.hex --force && \
-    mix local.rebar --force
-
-ENV MIX_ENV=prod
-
-COPY mix.exs mix.lock ./
-COPY config config
-RUN mix do deps.get, deps.compile
-
-COPY --from=ui /opt/app/build priv
-
-RUN mix phx.digest
-
-# CMD ["/bin/sh"]
-
-COPY lib lib
-RUN MIX_ENV=prod mix do compile, release
-
-# Combine
-FROM alpine:latest
+FROM erlang:alpine as api
 
 RUN apk add --no-cache openssl ncurses-libs
 
 WORKDIR /opt/app
 
-COPY --from=api /opt/app/_build/prod/rel/spades ./
+ADD https://github.com/gleam-lang/gleam/releases/download/v0.26.2/gleam-v0.26.2-x86_64-unknown-linux-musl.tar.gz ./gleam.tar.gz
+RUN tar xfz gleam.tar.gz && chmod +x gleam && mv gleam /usr/bin/
+
+COPY gleam.toml ./
+COPY src src
+
+RUN gleam export erlang-shipment
+
+COPY --from=ui /opt/app/dist priv
 
 ENV HOME /opt/app
 
-ARG SECRET_KEY_BASE
-ARG DATABASE_URL
+ARG DB_USER
+ARG DB_PASS
+ARG DB_HOST
+ARG DB_NAME
 
-ENV SECRET_KEY_BASE $SECRET_KEY_BASE
-ENV DATABASE_URL $DATABASE_URL
+ENV DB_USER $DB_USER
+ENV DB_PASS $DB_PASS
+ENV DB_HOST $DB_HOST
+ENV DB_NAME $DB_NAME
 
-CMD ["bin/spades", "start"]
+CMD ["./build/erlang-shipment/entrypoint.sh", "run"]

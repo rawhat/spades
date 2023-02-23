@@ -25,7 +25,7 @@ export function PlayingCard({ card, onClick, ratio = 4 }: PlayerCardProps) {
     <img
       style={style}
       onClick={onClick}
-      src={`/static/images/${card.value}${card.suit}.svg`}
+      src={`/images/${card.value}${card.suit}.svg`}
     />
   );
 }

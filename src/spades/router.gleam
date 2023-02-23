@@ -101,14 +101,9 @@ pub fn session_middleware(
 }
 
 pub fn router(app_req: AppRequest) -> AppResult {
-  // io.debug(#(
-  //   "got a req",
-  //   app_req.session,
-  //   app_req.req.method,
-  //   request.path_segments(app_req.req),
-  // ))
   case app_req.req.method, request.path_segments(app_req.req) {
-    Get, ["static", ..path] -> serve_static_file(path, app_req.static_root)
+    Get, ["assets" as start, ..path] | Get, ["images" as start, ..path] ->
+      serve_static_file([start, ..path], app_req.static_root)
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Post, ["api", "session"] -> {

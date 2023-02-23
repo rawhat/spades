@@ -69,5 +69,5 @@ export function HiddenCard({ position }: HiddenCardProps) {
       width: "auto",
     };
   }, [position]);
-  return <img style={style} src="/static/images/BLUE_BACK.svg" />;
+  return <img style={style} src="/images/BLUE_BACK.svg" />;
 }

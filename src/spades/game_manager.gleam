@@ -247,7 +247,6 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
   actor.start(
     ManagerState(map.new(), 1),
     fn(message, state) {
-      // io.debug(#("game manager got a message", message))
       case message {
         Act(caller, session, action) -> {
           let #(game_id, action) = case action {
