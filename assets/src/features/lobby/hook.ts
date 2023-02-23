@@ -19,7 +19,11 @@ export function useLobbySocket(): LobbySocket {
   const [error, _setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
-    const socket = new WebSocket(`ws://${window.location.host}/socket/lobby`);
+    const socket = new WebSocket(
+      `ws${process.env.NODE_ENV === "production" ? "s" : ""}://${
+        window.location.host
+      }/socket/lobby`
+    );
     console.log("got a socket", socket, socket.readyState === socket.CLOSED);
 
     const updateGameInfo = (games: GameResponse | GameResponse[]) =>

@@ -32,7 +32,9 @@ export const gameSocketMiddleware = (_store: unknown) => (next: Dispatch) => {
       }
       const params = action.payload;
       socket = new WebSocket(
-        `ws://${window.location.host}/socket/game/${params.id}`
+        `ws${process.env.NODE_ENV === "production" ? "s" : ""}://${
+          window.location.host
+        }/socket/game/${params.id}`
       );
 
       socket.onmessage = ({ data }: MessageEvent<string>) => {
