@@ -1,24 +1,27 @@
-# spades
+# Spades
 
-[![Package Version](https://img.shields.io/hexpm/v/spades)](https://hex.pm/packages/spades)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/spades/)
+A team-based trick taking card game for 4 players.  [Wiki](https://en.wikipedia.org/wiki/Spades_(card_game)).
 
-A Gleam project
+The rules can vary wildly, so they are implemented as I learned them.
 
-## Quick start
+The game does support bots, but they are incredibly dumb at the moment.
 
-```sh
-gleam run   # Run the project
-gleam test  # Run the tests
-gleam shell # Run an Erlang shell
-```
+## Built with
 
-## Installation
+  * [gleam](https://gleam.run/)
+  * React
+  * [vite](https://vitejs.dev/)
+  * Postgres
 
-If available on Hex this package can be added to your Gleam project:
+## Running the application locally
 
-```sh
-gleam add spades
-```
+To run the application using `docker-compose`, run:
 
-and its documentation can be found at <https://hexdocs.pm/spades>.
+  * `docker compose build`
+  * `docker compose up`
+  * Navigate to `localhost:5000` in your browser
+
+Any file changes for the UI will recompile automatically and refresh the
+application.
+
+## "To break you, of course."
