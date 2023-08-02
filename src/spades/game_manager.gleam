@@ -356,7 +356,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
               |> map.update(
                 game_id,
                 fn(existing) {
-                  assert Some(GameState(users, game)) = existing
+                  let assert Some(GameState(users, game)) = existing
                   GameState([user, ..users], game)
                 },
               )
@@ -390,7 +390,7 @@ pub fn handler(
   game_manager: Subject(ManagerAction),
   session: Session,
 ) -> Result(Nil, Nil) {
-  assert websocket.TextMessage(data) = msg
+  let assert websocket.TextMessage(data) = msg
 
   field("type", dynamic.string)
   |> json.decode(data, _)
@@ -451,7 +451,7 @@ fn update_if_success(state: ManagerState, return: GameReturn) -> ManagerState {
       |> map.update(
         updated_game.id,
         fn(existing) {
-          assert Some(GameState(users, _game)) = existing
+          let assert Some(GameState(users, _game)) = existing
           GameState(users, updated_game)
         },
       )

@@ -12,7 +12,7 @@ pub fn add_player_updates_game_test() {
   let g = game.new(1, "test-game", "1")
   let player = Player(id: 1, name: "alex", position: North, hand: hand.new())
 
-  assert Success(g, _events) = game.add_player(g, player)
+  let assert Success(g, _events) = game.add_player(g, player)
 
   should.equal(g.players, map.from_list([#(player.id, player)]))
   should.equal(g.teams, map.from_list([#(NorthSouth, [player.id])]))
@@ -23,7 +23,7 @@ pub fn add_duplicate_position_errors_test() {
   let g = game.new(1, "test-game", "1")
   let player = Player(id: 1, name: "alex", position: North, hand: hand.new())
 
-  assert Success(g, _events) = game.add_player(g, player)
+  let assert Success(g, _events) = game.add_player(g, player)
 
   game.add_player(g, player)
   |> should.equal(Failure(g, game.TeamFull))
@@ -35,8 +35,8 @@ pub fn add_team_overflow_errors_test() {
   let p2 = Player(id: 2, name: "jon", position: South, hand: hand.new())
   let p3 = Player(id: 3, name: "billy", position: North, hand: hand.new())
 
-  assert Success(g, _events) = game.add_player(g, p1)
-  assert Success(g, _events) = game.add_player(g, p2)
+  let assert Success(g, _events) = game.add_player(g, p1)
+  let assert Success(g, _events) = game.add_player(g, p2)
 
   game.add_player(g, p3)
   |> should.equal(Failure(g, game.TeamFull))
@@ -55,7 +55,7 @@ pub fn add_player_to_start_bidding_test() {
 
   should.equal(g.state, game.Bidding)
 
-  assert Ok(p1) = map.get(g.players, 1)
+  let assert Ok(p1) = map.get(g.players, 1)
 
   list.length(p1.hand.cards)
   |> should.equal(13)
@@ -63,7 +63,7 @@ pub fn add_player_to_start_bidding_test() {
 
 pub fn bidding_finished_play_card_test() {
   let #(g, [p1, p2, p3, p4]) = scaffold.populate_game()
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(3))
     |> game.then(game.make_call(_, p3.id, Count(3)))
@@ -85,7 +85,7 @@ pub fn playing_valid_card_adds_to_trick_test() {
 
   let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(3))
     |> game.then(game.make_call(_, p3.id, Count(3)))
@@ -112,7 +112,7 @@ pub fn playing_not_leading_suit_fails_test() {
 
   let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(3))
     |> game.then(game.make_call(_, p3.id, Count(3)))
@@ -141,7 +141,7 @@ pub fn playing_spade_when_not_broken_fails_test() {
 
   let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(3))
     |> game.then(game.make_call(_, p3.id, Count(3)))
@@ -163,7 +163,7 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
 
   let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(1))
     |> game.then(game.make_call(_, p3.id, Count(1)))
@@ -175,7 +175,7 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
     |> game.then(game.play_card(_, p4.id, fourth_card))
 
   should.equal(g.state, game.Bidding)
-  assert Ok(north_south_score) = map.get(g.scores, NorthSouth)
+  let assert Ok(north_south_score) = map.get(g.scores, NorthSouth)
   should.equal(north_south_score, hand.Score(10, 0))
   should.equal(g.current_player, player.South)
 }
@@ -237,7 +237,7 @@ pub fn play_spades_when_having_other_suits_and_not_broken_test() {
 
   let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(1))
     |> game.then(game.make_call(_, p3.id, Count(1)))
@@ -266,7 +266,7 @@ pub fn play_with_multiple_bots_proceeds_through_states_test() {
   ]
   let human = player.new(1, "alex", North)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     game.new(0, "test", "alex")
     |> game.set_shuffle(function.identity)
     |> game.set_deck(deck)
@@ -277,11 +277,11 @@ pub fn play_with_multiple_bots_proceeds_through_states_test() {
 
   should.equal(g.state, Bidding)
 
-  assert Success(g, _events) = game.make_call(g, human.id, Count(1))
+  let assert Success(g, _events) = game.make_call(g, human.id, Count(1))
 
   should.equal(g.state, Playing)
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     game.play_card(g, human.id, Card(card.Diamonds, card.Number(6)))
 
   should.equal(g.current_player, North)

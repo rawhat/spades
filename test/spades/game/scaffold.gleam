@@ -10,7 +10,7 @@ pub fn populate_game() -> #(Game, List(Player)) {
   let p3 = Player(id: 3, name: "billy", position: East, hand: hand.new())
   let p4 = Player(id: 4, name: "jake", position: West, hand: hand.new())
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     game.new(1, "test-game", "1")
     |> game.set_shuffle(function.identity)
     |> game.add_player(p1)
@@ -27,7 +27,7 @@ pub fn populate_game_with_deck(deck: Deck) -> #(Game, List(Player)) {
   let p3 = Player(id: 3, name: "billy", position: East, hand: hand.new())
   let p4 = Player(id: 4, name: "jake", position: West, hand: hand.new())
 
-  assert Success(g, _events) =
+  let assert Success(g, _events) =
     game.new(1, "test-game", "1")
     |> game.set_shuffle(function.identity)
     |> game.set_deck(deck)

@@ -17,17 +17,17 @@ external fn get_cwd() -> Result(String, Nil) =
   "file" "get_cwd"
 
 pub fn main() {
-  assert Ok(manager) = game_manager.start()
+  let assert Ok(manager) = game_manager.start()
 
   let db = database.initialize()
-  assert Ok(_) = database.migrate(db)
-  assert Ok(cwd) = get_cwd()
+  let assert Ok(_) = database.migrate(db)
+  let assert Ok(cwd) = get_cwd()
   let static_root = string.append(cwd, "/priv")
 
-  assert Ok(salt) = os.get_env("PASSWORD_SALT")
+  let assert Ok(salt) = os.get_env("PASSWORD_SALT")
 
-  assert Ok(session_manager) = session.start()
-  assert Ok(lobby_manager) = lobby.start()
+  let assert Ok(session_manager) = session.start()
+  let assert Ok(lobby_manager) = lobby.start()
 
   let handler =
     router
@@ -42,11 +42,12 @@ pub fn main() {
     )
     |> function.compose(result_to_response)
 
-  try _ =
+  use _ <- result.then(
     handler
     |> handler.with_func
     |> mist.serve(4000, _)
-    |> result.replace_error("Failed to start")
+    |> result.replace_error("Failed to start"),
+  )
 
   process.sleep_forever()
 

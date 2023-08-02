@@ -49,17 +49,16 @@ pub fn initialize() -> pgo.Connection {
 
 // TODO:  errors
 pub fn migrate(db: pgo.Connection) -> Result(Nil, Nil) {
-  try _ =
-    run(
-      db,
-      "create_users_table",
-      "create table if not exists users (
+  use _ <- result.then(run(
+    db,
+    "create_users_table",
+    "create table if not exists users (
         id serial primary key,
         username text unique not null,
         password_hash text not null,
         created_at timestamp not null
       )",
-    )
+  ))
 
   Ok(Nil)
 }

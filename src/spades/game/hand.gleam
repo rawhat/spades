@@ -22,7 +22,7 @@ pub type Play {
 pub fn find_winning_card(trick: Trick) -> Card {
   let [leading, ..] = trick
   let leading_suit = leading.card.suit
-  assert Ok(max_leading) =
+  let assert Ok(max_leading) =
     trick
     |> list.map(fn(play) { play.card })
     |> card.max_of_suit(leading_suit)
@@ -38,7 +38,7 @@ pub fn find_winning_card(trick: Trick) -> Card {
 
 pub fn find_winner(trick: Trick) -> Int {
   let card = find_winning_card(trick)
-  assert Ok(Play(player: winner, ..)) =
+  let assert Ok(Play(player: winner, ..)) =
     list.find(trick, fn(t) { t.card == card })
   winner
 }
@@ -96,7 +96,7 @@ fn combine(left: Score, right: Score) -> Score {
 }
 
 fn score_hand(call: Option(Call), tricks: Int) -> Score {
-  assert Some(call) = call
+  let assert Some(call) = call
   case call, tricks {
     Nil, n if n > 0 -> Score(-50, n)
     Nil, _ -> Score(50, 0)
@@ -122,8 +122,8 @@ pub fn team_score(left: Hand, right: Hand) -> Score {
       combine(left, right)
     }
     [], [left, right] -> {
-      assert Some(Count(left_call)) = left.call
-      assert Some(Count(right_call)) = right.call
+      let assert Some(Count(left_call)) = left.call
+      let assert Some(Count(right_call)) = right.call
       score_hand(
         Some(Count(left_call + right_call)),
         left.tricks + right.tricks,

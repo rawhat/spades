@@ -23,7 +23,7 @@ fn update_call(
     players,
     id,
     fn(existing) {
-      assert Some(other1) = existing
+      let assert Some(other1) = existing
       player.make_call(other1, call)
     },
   )

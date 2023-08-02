@@ -100,7 +100,7 @@ pub fn add_cookie_header(
   res: HandlerResponse,
   session: Session,
 ) -> HandlerResponse {
-  assert Response(resp) = res
+  let assert Response(resp) = res
   let expiry =
     session.expires_at
     |> date.to_json()

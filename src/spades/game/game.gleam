@@ -171,7 +171,7 @@ pub fn add_bot(game: Game, position: Position) -> GameReturn {
         game.players
         |> map.values
         |> list.map(fn(player) { player.name })
-      assert Ok(name) =
+      let assert Ok(name) =
         iterator.repeatedly(bot_name)
         |> iterator.drop_while(fn(name) { list.contains(existing_names, name) })
         |> iterator.take(1)
@@ -238,7 +238,7 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
           game.players,
           player_id,
           fn(existing) {
-            assert Some(existing) = existing
+            let assert Some(existing) = existing
             player.make_call(existing, call)
           },
         ),
@@ -253,7 +253,7 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
 
 pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   let game_state = game.state
-  assert Ok(attempting_player) = map.get(game.players, player_id)
+  let assert Ok(attempting_player) = map.get(game.players, player_id)
   let has_card = player.has_card(attempting_player, card)
   let only_has_spades =
     list.all(attempting_player.hand.cards, fn(card) { card.suit == Spades })
@@ -304,7 +304,7 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
 }
 
 pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
-  assert Ok(player) = map.get(game.players, player_id)
+  let assert Ok(player) = map.get(game.players, player_id)
   case game.state, game.current_player, player {
     Bidding, current, Player(
       hand: Hand(revealed: False, call: None, ..),
@@ -316,7 +316,7 @@ pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
         |> map.update(
           player_id,
           fn(p) {
-            assert Some(p) = p
+            let assert Some(p) = p
             Player(..p, hand: Hand(..p.hand, revealed: True))
           },
         )
@@ -368,7 +368,7 @@ pub fn advance_state(return: GameReturn) -> GameReturn {
       |> fn(return) {
         case return {
           Success(game, events) -> {
-            assert Success(game, new_events) = perform_bot_action(game)
+            let assert Success(game, new_events) = perform_bot_action(game)
             Success(game, list.append(events, new_events))
           }
           _ -> return
@@ -400,14 +400,14 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
       game.players,
       winner,
       fn(existing) {
-        assert Some(existing) = existing
+        let assert Some(existing) = existing
         case existing.id == winner {
           True -> player.add_trick(existing)
           _ -> existing
         }
       },
     )
-  assert Ok(current_player) = map.get(game.players, winner)
+  let assert Ok(current_player) = map.get(game.players, winner)
   Game(
     ..game,
     current_player: current_player.position,
@@ -420,7 +420,7 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
 }
 
 fn complete_round(game_return: GameReturn) -> GameReturn {
-  assert Success(game, events) = game_return
+  let assert Success(game, events) = game_return
   game
   |> update_scores
   |> advance_dealer
@@ -445,7 +445,7 @@ fn next_player(game: Game) -> Game {
 }
 
 fn deal_cards(game: Game) -> Game {
-  assert Ok(shuffled) =
+  let assert Ok(shuffled) =
     game.deck
     |> iterator.iterate(game.shuffle)
     |> iterator.take(12)
@@ -470,15 +470,15 @@ fn deal_cards(game: Game) -> Game {
     |> map.values
     |> list.map(list.reverse)
 
-  assert Ok(north_id) = map.get(game.player_position, North)
-  assert Ok(east_id) = map.get(game.player_position, East)
-  assert Ok(south_id) = map.get(game.player_position, South)
-  assert Ok(west_id) = map.get(game.player_position, West)
+  let assert Ok(north_id) = map.get(game.player_position, North)
+  let assert Ok(east_id) = map.get(game.player_position, East)
+  let assert Ok(south_id) = map.get(game.player_position, South)
+  let assert Ok(west_id) = map.get(game.player_position, West)
 
-  assert Ok(north_player) = map.get(game.players, north_id)
-  assert Ok(east_player) = map.get(game.players, east_id)
-  assert Ok(south_player) = map.get(game.players, south_id)
-  assert Ok(west_player) = map.get(game.players, west_id)
+  let assert Ok(north_player) = map.get(game.players, north_id)
+  let assert Ok(east_player) = map.get(game.players, east_id)
+  let assert Ok(south_player) = map.get(game.players, south_id)
+  let assert Ok(west_player) = map.get(game.players, west_id)
 
   Game(
     ..game,
@@ -492,15 +492,15 @@ fn deal_cards(game: Game) -> Game {
 }
 
 fn update_scores(game: Game) -> Game {
-  assert Ok(north_id) = map.get(game.player_position, North)
-  assert Ok(east_id) = map.get(game.player_position, East)
-  assert Ok(south_id) = map.get(game.player_position, South)
-  assert Ok(west_id) = map.get(game.player_position, West)
+  let assert Ok(north_id) = map.get(game.player_position, North)
+  let assert Ok(east_id) = map.get(game.player_position, East)
+  let assert Ok(south_id) = map.get(game.player_position, South)
+  let assert Ok(west_id) = map.get(game.player_position, West)
 
-  assert Ok(north_player) = map.get(game.players, north_id)
-  assert Ok(east_player) = map.get(game.players, east_id)
-  assert Ok(south_player) = map.get(game.players, south_id)
-  assert Ok(west_player) = map.get(game.players, west_id)
+  let assert Ok(north_player) = map.get(game.players, north_id)
+  let assert Ok(east_player) = map.get(game.players, east_id)
+  let assert Ok(south_player) = map.get(game.players, south_id)
+  let assert Ok(west_player) = map.get(game.players, west_id)
 
   let north_south_score = hand.team_score(north_player.hand, south_player.hand)
   let east_west_score = hand.team_score(east_player.hand, west_player.hand)
@@ -531,7 +531,7 @@ fn reset_players(game: Game) -> Game {
 }
 
 fn update_score(existing: Option(Score), new: Score) -> Score {
-  assert Some(score) = existing
+  let assert Some(score) = existing
   let new_bags = score.bags + new.bags
   case new_bags {
     bags if bags >= 10 -> Score(score.points + new.points - 40, 0)
@@ -561,7 +561,7 @@ const names = [
 
 pub fn bot_name() -> String {
   let names_length = list.length(names)
-  assert Ok(name) =
+  let assert Ok(name) =
     int.random(0, names_length)
     |> list.at(names, _)
   name
@@ -573,7 +573,7 @@ fn perform_bot_action(game: Game) -> GameReturn {
   |> result.map(fn(id) {
     case id < 0 {
       True -> {
-        assert Ok(current_bot) = map.get(game.players, id)
+        let assert Ok(current_bot) = map.get(game.players, id)
         case game.state {
           Waiting -> Success(game, [])
           Bidding -> {

@@ -46,7 +46,7 @@ pub fn play_card(
   trick: List(Play),
   bot: Player,
 ) -> Card {
-  assert Some(call) = bot.hand.call
+  let assert Some(call) = bot.hand.call
   case call {
     BlindNil | NilCall -> play_for_nil(trick, bot)
     _ -> play_to_win(players, spades_broken, trick, bot)
@@ -85,7 +85,7 @@ fn get_teammate(players: Map(Int, Player), bot: Player) -> Player {
     East -> West
   }
 
-  assert Ok(teammate) =
+  let assert Ok(teammate) =
     players
     |> map.values
     |> list.find(fn(player) { player.position == position })
@@ -112,7 +112,7 @@ fn play_for_nil(trick: Trick, bot: Player) -> Card {
         |> card.min_value
       case non_spades {
         Error(Nil) -> {
-          assert Ok(min) = card.min_of_suit(bot.hand.cards, Spades)
+          let assert Ok(min) = card.min_of_suit(bot.hand.cards, Spades)
           min
         }
         Ok(min) -> min
@@ -128,7 +128,7 @@ fn play_for_nil(trick: Trick, bot: Player) -> Card {
           |> list.filter(fn(card) { card.suit != Spades })
           |> card.max_value
           |> result.lazy_unwrap(fn() {
-            assert Ok(min_spade) = card.min_of_suit(bot.hand.cards, Spades)
+            let assert Ok(min_spade) = card.min_of_suit(bot.hand.cards, Spades)
             min_spade
           })
         suited ->
@@ -136,7 +136,7 @@ fn play_for_nil(trick: Trick, bot: Player) -> Card {
           |> list.filter(fn(c) { card.compare(c, lead.card) == order.Lt })
           |> card.max_value
           |> result.lazy_unwrap(fn() {
-            assert Ok(broken) = card.max_value(suited)
+            let assert Ok(broken) = card.max_value(suited)
             broken
           })
       }
@@ -153,16 +153,16 @@ fn play_to_win(
   case trick {
     [] -> winning_card([], spades_broken, bot.hand.cards)
     trick -> {
-      assert Ok(lead_suit) =
+      let assert Ok(lead_suit) =
         trick
         |> list.at(0)
         |> result.map(fn(play) { play.card.suit })
-      assert Ok(trick_leader) =
+      let assert Ok(trick_leader) =
         trick
         |> hand.find_winner
         |> map.get(players, _)
       let teammate = get_teammate(players, bot)
-      assert Some(teammate_call) = teammate.hand.call
+      let assert Some(teammate_call) = teammate.hand.call
       let let_teammate_win =
         trick_leader.id == teammate.id && {
           teammate_call != BlindNil || teammate_call != NilCall
@@ -188,7 +188,7 @@ fn low_card(lead_suit: Suit, cards: List(Card)) -> Card {
     Error(Nil), Ok(card), _ -> card
     Error(Nil), Error(Nil), Ok(card) -> card
     _, _, _ -> {
-      assert [card, ..] = cards
+      let assert [card, ..] = cards
       card
     }
   }
@@ -201,7 +201,7 @@ fn winning_card(
 ) -> Card {
   case trick {
     [] -> {
-      assert Ok(card) =
+      let assert Ok(card) =
         cards
         |> list.sort(card.compare)
         |> list.reverse
@@ -223,7 +223,7 @@ fn winning_card(
           case highest_spade {
             Ok(spade) -> spade
             _ -> {
-              assert Ok(min) = card.min_value(cards)
+              let assert Ok(min) = card.min_value(cards)
               min
             }
           }
@@ -237,7 +237,7 @@ fn winning_card(
             }
           })
           |> result.lazy_unwrap(fn() {
-            assert Ok(min) = card.min_value(cards)
+            let assert Ok(min) = card.min_value(cards)
             highest_spade
             |> result.unwrap(min)
           })

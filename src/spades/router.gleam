@@ -107,9 +107,9 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Post, ["api", "session"] -> {
-      assert Ok(req) = mhttp.read_body(app_req.req)
-      assert Ok(body_string) = bit_string.to_string(req.body)
-      assert Ok(request_map) =
+      let assert Ok(req) = mhttp.read_body(app_req.req)
+      let assert Ok(body_string) = bit_string.to_string(req.body)
+      let assert Ok(request_map) =
         json.decode(
           body_string,
           dynamic.map(
@@ -118,9 +118,9 @@ pub fn router(app_req: AppRequest) -> AppResult {
           ),
         )
       // TODO:  probably make this a custom type?
-      assert Ok(user_req) = map.get(request_map, "session")
-      assert Ok(username) = map.get(user_req, "username")
-      assert Ok(password) = map.get(user_req, "password")
+      let assert Ok(user_req) = map.get(request_map, "session")
+      let assert Ok(username) = map.get(user_req, "username")
+      let assert Ok(password) = map.get(user_req, "password")
       user.login(app_req.db, app_req.salt, username, password)
       |> result.map(fn(user) {
         let value = session.new(user.id, user.username)
@@ -134,11 +134,11 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Post, ["api", "user"] -> {
       let decoder =
         dynamic.map(dynamic.string, dynamic.map(dynamic.string, dynamic.string))
-      assert Ok(request_map) = get_json_body(app_req, decoder)
+      let assert Ok(request_map) = get_json_body(app_req, decoder)
       // TODO:  probably make this a custom type?
-      assert Ok(user_req) = map.get(request_map, "user")
-      assert Ok(username) = map.get(user_req, "username")
-      assert Ok(password) = map.get(user_req, "password")
+      let assert Ok(user_req) = map.get(request_map, "user")
+      let assert Ok(username) = map.get(user_req, "username")
+      let assert Ok(password) = map.get(user_req, "password")
       user.create(app_req.db, app_req.salt, username, password)
       |> result.map(fn(public_user) {
         let value = session.new(public_user.id, public_user.username)
@@ -188,16 +188,17 @@ pub fn router(app_req: AppRequest) -> AppResult {
         fn() {
           let decoder = dynamic.map(dynamic.string, dynamic.string)
           {
-            try body = get_json_body(app_req, decoder)
-            try game_name = map.get(body, "name")
-            try session = app_req.session
-            try new_game =
+            use body <- result.then(get_json_body(app_req, decoder))
+            use game_name <- result.then(map.get(body, "name"))
+            use session <- result.then(app_req.session)
+            use new_game <- result.then(
               process.try_call(
                 app_req.game_manager,
                 fn(caller) { NewGame(caller, session, game_name) },
                 500,
               )
-              |> result.replace_error(Nil)
+              |> result.replace_error(Nil),
+            )
             process.send(app_req.lobby_manager, GameUpdate(new_game.game))
             let game =
               new_game
@@ -213,7 +214,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
       with_authentication(
         app_req,
         fn() {
-          assert Ok(session) = app_req.session
+          let assert Ok(session) = app_req.session
           game_id
           |> int.parse
           |> result.then(games.read(app_req.game_manager, _, session.id))
@@ -232,7 +233,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
             websocket.with_handler(fn(_msg, _sender) { Ok(Nil) })
             |> websocket.on_init(fn(sender) {
               process.send(app_req.lobby_manager, lobby.Join(session, sender))
-              assert Ok(games) = games.list(app_req.game_manager)
+              let assert Ok(games) = games.list(app_req.game_manager)
               games
               |> game_manager.game_entries_to_json
               |> websocket.TextMessage
@@ -254,14 +255,14 @@ pub fn router(app_req: AppRequest) -> AppResult {
         app_req,
         fn() {
           {
-            try id = int.parse(id)
-            try session = app_req.session
+            use id <- result.then(int.parse(id))
+            use session <- result.then(app_req.session)
             websocket.with_handler(fn(msg, _sender) {
               game_manager.handler(msg, app_req.game_manager, session)
             })
             |> websocket.on_init(fn(sender) {
               process.send(app_req.game_manager, Join(sender, id, session))
-              assert Ok(game) =
+              let assert Ok(game) =
                 process.try_call(
                   app_req.game_manager,
                   Read(_, id, session.id),

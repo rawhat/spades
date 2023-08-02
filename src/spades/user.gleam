@@ -29,12 +29,13 @@ pub fn create(
     |> bit_string.from_string
     |> crypto.sign_message(bit_string.from_string(salt), Sha256)
 
-  try returned =
+  use returned <- result.then(
     "insert into users (username, password_hash, created_at) values ($1, $2, now()) returning *"
     |> pgo.execute(db, [pgo.text(username), pgo.text(encoded)], decoder())
-    |> result.replace_error(Nil)
+    |> result.replace_error(Nil),
+  )
 
-  assert [user] = returned.rows
+  let assert [user] = returned.rows
 
   user
   |> to_public
