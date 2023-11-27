@@ -1,10 +1,10 @@
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/option.{Some}
 import gleeunit/should
 import spades/game/bot
 import spades/game/card.{Ace, Card, Diamonds, Hearts, King, Number, Spades}
-import spades/game/hand.{Call, Count, Nil, Play}
-import spades/game/player.{East, North, Player, South, West}
+import spades/game/hand.{type Call, Count, Nil, Play}
+import spades/game/player.{type Player, East, North, South, West}
 
 fn make_players() {
   map.from_list([

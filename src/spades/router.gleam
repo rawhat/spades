@@ -1,29 +1,29 @@
-import gleam/bit_builder
-import gleam/bit_string
+import gleam/bit_array
+import gleam/bytes_builder
 import gleam/dynamic
-import gleam/erlang/charlist.{Charlist}
-import gleam/erlang/process.{Subject}
+import gleam/erlang/charlist.{type Charlist}
+import gleam/erlang/process.{type Subject}
+import gleam/function
 import gleam/http.{Get, Post}
 import gleam/http/cookie
-import gleam/http/request.{Request}
-import gleam/http/response
+import gleam/http/request.{type Request}
+import gleam/http/response.{type Response, Response}
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/map
+import gleam/option.{None, Some}
+import gleam/otp/actor
 import gleam/pair
 import gleam/pgo
 import gleam/result
 import gleam/string
-import mist/file
-import mist/http.{BitBuilderBody, Body, FileBody} as mhttp
-import mist/handler.{HandlerResponse, Response}
-import mist/websocket
+import mist.{type Connection, type ResponseData}
 import spades/encoder
-import spades/game_manager.{Join, Leave, ManagerAction, NewGame, Read}
+import spades/game_manager.{type ManagerAction, Join, Leave, NewGame, Read}
 import spades/games
-import spades/socket/lobby.{GameUpdate, LobbyAction}
-import spades/session.{Session, SessionAction, Validate}
+import spades/session.{type Session, type SessionAction, Validate}
+import spades/socket/lobby.{type LobbyAction, GameUpdate}
 import spades/user
 
 pub type AppError {
@@ -34,7 +34,7 @@ pub type AppRequest {
   AppRequest(
     db: pgo.Connection,
     game_manager: Subject(ManagerAction),
-    req: Request(Body),
+    req: Request(Connection),
     static_root: String,
     salt: String,
     lobby_manager: Subject(LobbyAction),
@@ -44,9 +44,9 @@ pub type AppRequest {
 }
 
 pub type AppResult =
-  Result(HandlerResponse, AppError)
+  Result(Response(ResponseData), AppError)
 
-pub fn result_to_response(resp: AppResult) -> HandlerResponse {
+pub fn result_to_response(resp: AppResult) -> Response(ResponseData) {
   case resp {
     Ok(resp) -> resp
     Error(NotFound) -> empty_response(404)
@@ -91,7 +91,7 @@ pub fn session_middleware(
         |> next
         |> result.map(fn(resp) {
           case resp {
-            Response(_resp) -> session.add_cookie_header(resp, session)
+            Response(..) -> session.add_cookie_header(resp, session)
             resp -> resp
           }
         })
@@ -107,8 +107,8 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Post, ["api", "session"] -> {
-      let assert Ok(req) = mhttp.read_body(app_req.req)
-      let assert Ok(body_string) = bit_string.to_string(req.body)
+      let assert Ok(req) = mist.read_body(app_req.req, 1024 * 1024 * 10)
+      let assert Ok(body_string) = bit_array.to_string(req.body)
       let assert Ok(request_map) =
         json.decode(
           body_string,
@@ -230,21 +230,29 @@ pub fn router(app_req: AppRequest) -> AppResult {
         fn() {
           app_req.session
           |> result.map(fn(session) {
-            websocket.with_handler(fn(_msg, _sender) { Ok(Nil) })
-            |> websocket.on_init(fn(sender) {
-              process.send(app_req.lobby_manager, lobby.Join(session, sender))
-              let assert Ok(games) = games.list(app_req.game_manager)
-              games
-              |> game_manager.game_entries_to_json
-              |> websocket.TextMessage
-              |> websocket.send(sender, _)
-              Nil
-            })
-            |> websocket.on_close(fn(_sender) {
-              process.send(app_req.lobby_manager, lobby.Leave(session.id))
-              Nil
-            })
-            |> handler.Upgrade
+            mist.websocket(
+              request: app_req.req,
+              on_init: fn(conn) {
+                let subj = process.new_subject()
+                let selector =
+                  process.new_selector()
+                  |> process.selecting(subj, function.identity)
+
+                process.send(app_req.lobby_manager, lobby.Join(session, conn))
+                let assert Ok(games) = games.list(app_req.game_manager)
+                games
+                |> game_manager.game_entries_to_json
+                |> bit_array.from_string
+                |> mist.send_text_frame(conn, _)
+
+                #(Nil, Some(selector))
+              },
+              handler: fn(state, _conn, _msg) { actor.continue(state) },
+              on_close: fn(_state) {
+                process.send(app_req.lobby_manager, lobby.Leave(session.id))
+                Nil
+              },
+            )
           })
           |> result.replace_error(empty_response(403))
           |> result.unwrap_both
@@ -257,28 +265,31 @@ pub fn router(app_req: AppRequest) -> AppResult {
           {
             use id <- result.then(int.parse(id))
             use session <- result.then(app_req.session)
-            websocket.with_handler(fn(msg, _sender) {
-              game_manager.handler(msg, app_req.game_manager, session)
-            })
-            |> websocket.on_init(fn(sender) {
-              process.send(app_req.game_manager, Join(sender, id, session))
-              let assert Ok(game) =
-                process.try_call(
-                  app_req.game_manager,
-                  Read(_, id, session.id),
-                  60,
-                )
-              game
-              |> json.to_string
-              |> websocket.TextMessage
-              |> websocket.send(sender, _)
-              Nil
-            })
-            |> websocket.on_close(fn(_sender) {
-              process.send(app_req.game_manager, Leave(id, session))
-              Nil
-            })
-            |> handler.Upgrade
+            mist.websocket(
+              request: app_req.req,
+              on_init: fn(conn) {
+                process.send(app_req.game_manager, Join(conn, id, session))
+                let assert Ok(game) =
+                  process.try_call(
+                    app_req.game_manager,
+                    Read(_, id, session.id),
+                    60,
+                  )
+                game
+                |> json.to_string
+                |> bit_array.from_string
+                |> mist.send_text_frame(conn, _)
+                #(Nil, None)
+              },
+              handler: fn(state, _conn, msg) {
+                let _ = game_manager.handler(msg, app_req.game_manager, session)
+                actor.continue(state)
+              },
+              on_close: fn(_state) {
+                process.send(app_req.game_manager, Leave(id, session))
+                Nil
+              },
+            )
             |> Ok
           }
           |> result.replace_error(empty_response(403))
@@ -293,8 +304,8 @@ pub fn router(app_req: AppRequest) -> AppResult {
 
 fn with_authentication(
   req: AppRequest,
-  handler: fn() -> HandlerResponse,
-) -> HandlerResponse {
+  handler: fn() -> Response(ResponseData),
+) -> Response(ResponseData) {
   req.session
   |> result.then(session.validate)
   |> result.replace_error(empty_response(403))
@@ -302,8 +313,8 @@ fn with_authentication(
   |> result.unwrap_both
 }
 
-external fn do_file_extension(name: Charlist) -> Charlist =
-  "filename" "extension"
+@external(erlang, "filename", "extension")
+fn do_file_extension(name: Charlist) -> Charlist
 
 fn file_extension(name: String) -> String {
   let erl_name = charlist.from_string(name)
@@ -321,11 +332,10 @@ fn content_type_from_extension(path: String) -> String {
   }
 }
 
-fn serve_static_file(path: List(String), root: String) -> HandlerResponse {
+fn serve_static_file(path: List(String), root: String) -> Response(ResponseData) {
   let not_found =
     response.new(404)
-    |> response.set_body(BitBuilderBody(bit_builder.new()))
-    |> Response
+    |> response.set_body(mist.Bytes(bytes_builder.new()))
 
   let full_path =
     path
@@ -333,33 +343,29 @@ fn serve_static_file(path: List(String), root: String) -> HandlerResponse {
     |> string.append("/", _)
     |> string.append(root, _)
 
-  let file_path = bit_string.from_string(full_path)
-
-  case file.open(file_path) {
-    Error(_) -> not_found
-    Ok(fd) -> {
-      let size = file.size(file_path)
-      let content_type = content_type_from_extension(full_path)
-      response.new(200)
-      |> response.set_body(FileBody(fd, content_type, 0, size))
-      |> Response
-    }
-  }
+  full_path
+  |> mist.send_file(0, None)
+  |> result.map(fn(data) {
+    let content_type = content_type_from_extension(full_path)
+    response.new(200)
+    |> response.set_body(data)
+    |> response.prepend_header("content-type", content_type)
+  })
+  |> result.replace_error(not_found)
+  |> result.unwrap_both
 }
 
-fn empty_response(status: Int) -> HandlerResponse {
+fn empty_response(status: Int) -> Response(ResponseData) {
   status
   |> response.new
-  |> response.set_body(BitBuilderBody(bit_builder.new()))
-  |> Response
+  |> response.set_body(mist.Bytes(bytes_builder.new()))
 }
 
-fn json_response(status: Int, data: String) -> HandlerResponse {
+fn json_response(status: Int, data: String) -> Response(ResponseData) {
   status
   |> response.new
-  |> response.set_body(BitBuilderBody(bit_builder.from_string(data)))
+  |> response.set_body(mist.Bytes(bytes_builder.from_string(data)))
   |> response.prepend_header("content-type", "application/json")
-  |> Response
 }
 
 fn get_cookie_from_request(app_req: AppRequest) -> Result(session.Session, Nil) {
@@ -396,10 +402,10 @@ fn get_json_body(
   decoder: dynamic.Decoder(a),
 ) -> Result(a, Nil) {
   app_req.req
-  |> mhttp.read_body
+  |> mist.read_body(1024 * 1024 * 10)
   |> result.replace_error(Nil)
   |> result.map(fn(req) { req.body })
-  |> result.then(bit_string.to_string)
+  |> result.then(bit_array.to_string)
   |> result.then(fn(body) {
     body
     |> json.decode(decoder)

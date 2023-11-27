@@ -1,26 +1,26 @@
+import gleam/bit_array
 import gleam/dynamic.{decode2, field}
-import gleam/erlang/process.{Subject}
-import gleam/json.{Json}
+import gleam/erlang/process.{type Subject}
+import gleam/json.{type Json}
 import gleam/list
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
-import spades/game/card.{Card}
-import spades/game/hand.{Call}
-import spades/game/game.{Game, GameReturn, Success}
-import spades/game/player.{EastWest, North, NorthSouth, Player, Position}
-import spades/session.{Session}
-import mist/logger
-import mist/websocket.{TextMessage}
-import glisten/handler.{HandlerMessage}
+import spades/game/card.{type Card}
+import spades/game/hand.{type Call}
+import spades/game/game.{type Game, type GameReturn, Success}
+import spades/game/player.{type Position, EastWest, North, NorthSouth, Player}
+import spades/session.{type Session}
+import mist/internal/logger
+import mist.{type WebsocketConnection, type WebsocketMessage, Text}
 
 pub type GameEntry {
   GameEntry(id: Int, name: String, players: Int)
 }
 
 pub type GameUser {
-  GameUser(sender: Subject(HandlerMessage), session: Session)
+  GameUser(conn: WebsocketConnection, session: Session)
 }
 
 pub fn return_to_entry(return: GameReturn) -> GameEntry {
@@ -61,7 +61,7 @@ pub type ManagerAction {
   ListGames(caller: Subject(List(GameEntry)))
   NewGame(caller: Subject(GameReturn), session: Session, name: String)
   Read(caller: Subject(Json), game_id: Int, player_id: Int)
-  Join(caller: Subject(HandlerMessage), game_id: Int, session: Session)
+  Join(caller: WebsocketConnection, game_id: Int, session: Session)
   Leave(game_id: Int, session: Session)
 }
 
@@ -289,9 +289,9 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             process.send(caller, game_return)
             state
             |> update_if_success(game_return)
-            |> actor.Continue
+            |> actor.continue
           })
-          |> result.unwrap(actor.Continue(state))
+          |> result.unwrap(actor.continue(state))
         }
 
         Broadcast(return) -> {
@@ -304,12 +304,12 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
                 fn(user) {
                   game_return_to_json(user.session.id, return)
                   |> json.to_string
-                  |> TextMessage
-                  |> websocket.send(user.sender, _)
+                  |> bit_array.from_string
+                  |> mist.send_text_frame(user.conn, _)
                 },
               )
             })
-          actor.Continue(state)
+          actor.continue(state)
         }
 
         ListGames(caller) -> {
@@ -320,7 +320,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             GameEntry(game.id, game.name, map.size(game.players))
           })
           |> process.send(caller, _)
-          actor.Continue(state)
+          actor.continue(state)
         }
         Read(caller, game_id, player_id) -> {
           let _ =
@@ -330,7 +330,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             |> result.map(fn(game) { game.Success(game, []) })
             |> result.map(game_return_to_json(player_id, _))
             |> result.map(process.send(caller, _))
-          actor.Continue(state)
+          actor.continue(state)
         }
 
         NewGame(caller, session, game_name) -> {
@@ -346,7 +346,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
               state.next_id,
               GameState([], game_state.game),
             )
-          actor.Continue(ManagerState(new_games, state.next_id + 1))
+          actor.continue(ManagerState(new_games, state.next_id + 1))
         }
         Join(caller, game_id, session) -> {
           let user = GameUser(caller, session)
@@ -363,7 +363,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
               |> fn(games) { ManagerState(..state, games: games) }
             _ -> state
           }
-          |> actor.Continue
+          |> actor.continue
         }
         Leave(id, session) ->
           case map.get(state.games, id) {
@@ -379,21 +379,22 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             }
             _ -> state
           }
-          |> actor.Continue
+          |> actor.continue
       }
     },
   )
 }
 
 pub fn handler(
-  msg: websocket.Message,
+  msg: WebsocketMessage(Nil),
   game_manager: Subject(ManagerAction),
   session: Session,
 ) -> Result(Nil, Nil) {
-  let assert websocket.TextMessage(data) = msg
+  let assert Text(data) = msg
+  let assert Ok(msg) = bit_array.to_string(data)
 
   field("type", dynamic.string)
-  |> json.decode(data, _)
+  |> json.decode(msg, _)
   |> result.replace_error(Nil)
   |> result.then(fn(msg_type) {
     case msg_type {
@@ -428,7 +429,7 @@ pub fn handler(
       }
     }
     |> field("data", _)
-    |> json.decode(data, _)
+    |> json.decode(msg, _)
     |> result.replace_error(Nil)
   })
   |> result.then(fn(action) {

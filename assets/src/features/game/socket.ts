@@ -22,6 +22,8 @@ type GameMessage =
   | { type: "player_state"; data: PlayerStatus; events: Event[] }
   | { type: "game_state"; data: GameStatus; events: Event[] };
 
+const protocol = process.env.NODE_ENV === "production" ? "wss" : "ws";
+
 export const gameSocketMiddleware = (_store: unknown) => (next: Dispatch) => {
   let socket: WebSocket;
 
@@ -32,9 +34,11 @@ export const gameSocketMiddleware = (_store: unknown) => (next: Dispatch) => {
       }
       const params = action.payload;
       socket = new WebSocket(
-        `ws${process.env.NODE_ENV === "production" ? "s" : ""}://${
-          window.location.host
-        }/socket/game/${params.id}`
+        `${protocol}://${
+          process.env.NODE_ENV === "production"
+            ? window.location.host
+            : "localhost:5000"
+        }/socket/game/${params.id}`,
       );
 
       socket.onmessage = ({ data }: MessageEvent<string>) => {
@@ -55,7 +59,7 @@ export const gameSocketMiddleware = (_store: unknown) => (next: Dispatch) => {
     } else if (revealCards.match(action)) {
       next(clearError());
       socket.send(
-        JSON.stringify({ type: "reveal_hand", data: action.payload })
+        JSON.stringify({ type: "reveal_hand", data: action.payload }),
       );
     } else if (makeCall.match(action)) {
       next(clearError());

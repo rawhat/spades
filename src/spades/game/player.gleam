@@ -1,10 +1,10 @@
-import gleam/dynamic.{DecodeError, Decoder}
-import gleam/json.{Json}
+import gleam/dynamic.{type Decoder, DecodeError}
+import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{Option, Some}
+import gleam/option.{type Option, Some}
 import gleam/result
-import spades/game/hand.{Call, Hand}
-import spades/game/card.{Card}
+import spades/game/hand.{type Call, type Hand, Hand}
+import spades/game/card.{type Card}
 
 pub type Position {
   North

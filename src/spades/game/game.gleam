@@ -1,15 +1,16 @@
 import gleam/int
 import gleam/iterator
-import gleam/json.{Json}
+import gleam/json.{type Json}
 import gleam/list
-import gleam/map.{Map}
-import gleam/option.{None, Option, Some}
+import gleam/map.{type Map}
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import spades/game/bot
-import spades/game/card.{Card, Deck, Spades}
-import spades/game/hand.{Call, Hand, Play, Score, Trick}
+import spades/game/card.{type Card, type Deck, Card, Spades}
+import spades/game/hand.{type Call, type Score, type Trick, Hand, Play, Score}
 import spades/game/player.{
-  East, EastWest, North, NorthSouth, Player, Position, South, Team, West,
+  type Player, type Position, type Team, East, EastWest, North, NorthSouth,
+  Player, South, West,
 }
 
 pub type Event {
@@ -338,7 +339,7 @@ pub fn advance_state(return: GameReturn) -> GameReturn {
       let all_played =
         game.players
         |> map.values
-        |> list.all(fn(p) { list.length(p.hand.cards) == 0 })
+        |> list.all(fn(p) { p.hand.cards == [] })
       let trick_finished = list.length(game.trick) == 4
       case game.state, player_count, all_called, all_played, trick_finished {
         Waiting, count, _called, _played, _finished if count == 4 ->

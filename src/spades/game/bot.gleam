@@ -1,13 +1,17 @@
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/option.{Some}
 import gleam/order
 import gleam/result
-import spades/game/card.{Ace, Card, Jack, King, Queen, Spades, Suit, Value}
-import spades/game/hand.{BlindNil, Call, Count, Nil as NilCall, Play, Trick}
-import spades/game/player.{East, North, Player, South, West}
+import spades/game/card.{
+  type Card, type Suit, type Value, Ace, Jack, King, Queen, Spades,
+}
+import spades/game/hand.{
+  type Call, type Play, type Trick, BlindNil, Count, Nil as NilCall,
+}
+import spades/game/player.{type Player, East, North, South, West}
 
 pub fn call(players: Map(Int, Player), bot: Player) -> Call {
   let total_calls = existing_calls(players)

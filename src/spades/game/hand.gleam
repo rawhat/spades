@@ -1,9 +1,9 @@
-import gleam/dynamic.{DecodeError, Decoder, field}
-import gleam/json.{Json}
+import gleam/dynamic.{type Decoder, DecodeError, field}
+import gleam/json.{type Json}
 import gleam/list
-import gleam/option.{None, Option, Some}
+import gleam/option.{type Option, None, Some}
 import gleam/result
-import spades/game/card.{Card, Spades}
+import spades/game/card.{type Card, Spades}
 
 pub type Score {
   Score(points: Int, bags: Int)

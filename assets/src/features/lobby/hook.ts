@@ -14,22 +14,29 @@ interface GameMap {
 
 type LobbySocket = [GameResponse[], string?];
 
+const protocol = process.env.NODE_ENV === "production" ? "wss" : "ws";
+
 export function useLobbySocket(): LobbySocket {
   const [games, setGames] = useState<GameMap>({});
   const [error, _setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const socket = new WebSocket(
-      `ws${process.env.NODE_ENV === "production" ? "s" : ""}://${
-        window.location.host
-      }/socket/lobby`
+      `${protocol}://${
+        process.env.NODE_ENV === "production"
+          ? window.location.host
+          : "localhost:5000"
+      }/socket/lobby`,
     );
     console.log("got a socket", socket, socket.readyState === socket.CLOSED);
 
     const updateGameInfo = (games: GameResponse | GameResponse[]) =>
       Array.isArray(games)
         ? setGames((existing) =>
-            games.reduce((acc, game) => ({ ...acc, [game.id]: game }), existing)
+            games.reduce(
+              (acc, game) => ({ ...acc, [game.id]: game }),
+              existing,
+            ),
           )
         : setGames((existing) => ({ ...existing, [games.id]: games }));
 

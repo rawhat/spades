@@ -1,7 +1,7 @@
 import gleam/function
-import spades/game/game.{Game, Success}
-import spades/game/player.{East, North, Player, South, West}
-import spades/game/card.{Deck}
+import spades/game/game.{type Game, Success}
+import spades/game/player.{type Player, East, North, Player, South, West}
+import spades/game/card.{type Deck}
 import spades/game/hand
 
 pub fn populate_game() -> #(Game, List(Player)) {

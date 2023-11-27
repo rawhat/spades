@@ -1,16 +1,15 @@
-import gleam/base
-import gleam/bit_string
+import gleam/bit_array
 import gleam/dynamic
-import gleam/erlang/process.{Subject}
-import gleam/http/response
+import gleam/erlang/process.{type Subject}
+import gleam/http/response.{type Response}
 import gleam/json
-import gleam/map.{Map}
+import gleam/map.{type Map}
 import gleam/order.{Gt}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
-import mist/handler.{HandlerResponse, Response}
-import spades/date.{Date}
+import mist.{type ResponseData}
+import spades/date.{type Date}
 
 pub type SessionAction {
   Add(id: Int, session: Session)
@@ -45,7 +44,7 @@ pub fn start() -> Result(Subject(SessionAction), actor.StartError) {
           state
         }
       }
-      |> actor.Continue
+      |> actor.continue
     },
   )
 }
@@ -63,8 +62,8 @@ fn to_string(session: Session) -> String {
     #("expires_at", date.to_json(session.expires_at)),
   ])
   |> json.to_string
-  |> bit_string.from_string
-  |> base.encode64(False)
+  |> bit_array.from_string
+  |> bit_array.base64_encode(False)
 }
 
 pub fn to_json(session: Session) -> String {
@@ -82,8 +81,8 @@ pub fn to_json(session: Session) -> String {
 
 pub fn parse_cookie_header(str: String) -> Result(Session, Nil) {
   str
-  |> base.decode64
-  |> result.then(bit_string.to_string)
+  |> bit_array.base64_decode
+  |> result.then(bit_array.to_string)
   |> result.then(fn(str) {
     str
     |> json.decode(dynamic.decode3(
@@ -97,10 +96,9 @@ pub fn parse_cookie_header(str: String) -> Result(Session, Nil) {
 }
 
 pub fn add_cookie_header(
-  res: HandlerResponse,
+  res: Response(ResponseData),
   session: Session,
-) -> HandlerResponse {
-  let assert Response(resp) = res
+) -> Response(ResponseData) {
   let expiry =
     session.expires_at
     |> date.to_json()
@@ -114,9 +112,7 @@ pub fn add_cookie_header(
       expiry,
       "; HttpOnly; SameSite=Strict",
     ])
-  resp
-  |> response.prepend_header("Set-Cookie", cookie)
-  |> Response
+  response.prepend_header(res, "Set-Cookie", cookie)
 }
 
 pub fn validate(session: Session) -> Result(Nil, Nil) {

@@ -3,7 +3,6 @@ import gleam/erlang/os
 import gleam/function
 import gleam/result
 import gleam/string
-import mist/handler
 import mist
 import spades/database
 import spades/game_manager
@@ -13,8 +12,8 @@ import spades/router.{
 }
 import spades/session
 
-external fn get_cwd() -> Result(String, Nil) =
-  "file" "get_cwd"
+@external(erlang, "file", "get_cwd")
+fn get_cwd() -> Result(String, Nil)
 
 pub fn main() {
   let assert Ok(manager) = game_manager.start()
@@ -44,8 +43,9 @@ pub fn main() {
 
   use _ <- result.then(
     handler
-    |> handler.with_func
-    |> mist.serve(4000, _)
+    |> mist.new
+    |> mist.port(4000)
+    |> mist.start_http
     |> result.replace_error("Failed to start"),
   )
 

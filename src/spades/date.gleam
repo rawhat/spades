@@ -1,9 +1,9 @@
 import gleam/dynamic
 import gleam/function
 import gleam/int
-import gleam/json.{Json}
+import gleam/json.{type Json}
 import gleam/list.{Continue, Stop}
-import gleam/order.{Eq, Order}
+import gleam/order.{type Order, Eq}
 import gleam/result
 
 pub type Date {
@@ -39,8 +39,8 @@ pub fn add_days(date: Date, days: Int) -> Date {
 type UniversalTime =
   #(#(Int, Int, Int), #(Int, Int, Int))
 
-external fn universal_time() -> UniversalTime =
-  "calendar" "universal_time"
+@external(erlang, "calendar", "universal_time")
+fn universal_time() -> UniversalTime
 
 pub fn now() -> Date {
   let #(#(year, month, day), #(hour, min, sec)) = universal_time()

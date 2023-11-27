@@ -1,5 +1,5 @@
 import gleam/json.{array, int, object, string}
-import spades/game_manager.{GameEntry}
+import spades/game_manager.{type GameEntry}
 
 pub fn games_list(entries: List(GameEntry)) -> String {
   entries

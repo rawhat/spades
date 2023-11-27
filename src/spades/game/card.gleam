@@ -1,9 +1,9 @@
-import gleam/dynamic.{DecodeError, Decoder, field}
+import gleam/dynamic.{type Decoder, DecodeError, field}
 import gleam/int
 import gleam/iterator
-import gleam/json.{Json}
+import gleam/json.{type Json}
 import gleam/list
-import gleam/order.{Eq, Gt, Lt, Order}
+import gleam/order.{type Order, Eq, Gt, Lt}
 import gleam/result
 import gleam/string
 
