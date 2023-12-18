@@ -1,4 +1,4 @@
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleeunit/should
 import spades/game/bot
@@ -7,7 +7,7 @@ import spades/game/hand.{type Call, Count, Nil, Play}
 import spades/game/player.{type Player, East, North, South, West}
 
 fn make_players() {
-  map.from_list([
+  dict.from_list([
     #(2, player.new(2, "other1", East)),
     #(3, player.new(3, "other2", West)),
     #(4, player.new(4, "teammate", South)),
@@ -15,11 +15,11 @@ fn make_players() {
 }
 
 fn update_call(
-  players: Map(Int, Player),
+  players: Dict(Int, Player),
   id: Int,
   call: Call,
-) -> Map(Int, Player) {
-  map.update(
+) -> Dict(Int, Player) {
+  dict.update(
     players,
     id,
     fn(existing) {

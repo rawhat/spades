@@ -2,7 +2,7 @@ import gleam/int
 import gleam/iterator
 import gleam/json.{type Json}
 import gleam/list
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import spades/game/bot
@@ -73,44 +73,44 @@ pub type Game {
     last_trick: Option(Trick),
     name: String,
     play_order: List(Position),
-    player_position: Map(Position, Int),
-    players: Map(Int, Player),
-    scores: Map(Team, Score),
+    player_position: Dict(Position, Int),
+    players: Dict(Int, Player),
+    scores: Dict(Team, Score),
     shuffle: fn(List(Card)) -> List(Card),
     spades_broken: Bool,
     state: State,
-    teams: Map(Team, List(Int)),
+    teams: Dict(Team, List(Int)),
     trick: Trick,
   )
 }
 
-pub fn player_position_to_json(positions: Map(Position, Int)) -> Json {
+pub fn player_position_to_json(positions: Dict(Position, Int)) -> Json {
   json.object([
     #(
       "north",
       positions
-      |> map.get(North)
+      |> dict.get(North)
       |> option.from_result
       |> json.nullable(json.int),
     ),
     #(
       "east",
       positions
-      |> map.get(East)
+      |> dict.get(East)
       |> option.from_result
       |> json.nullable(json.int),
     ),
     #(
       "south",
       positions
-      |> map.get(South)
+      |> dict.get(South)
       |> option.from_result
       |> json.nullable(json.int),
     ),
     #(
       "west",
       positions
-      |> map.get(West)
+      |> dict.get(West)
       |> option.from_result
       |> json.nullable(json.int),
     ),
@@ -141,13 +141,16 @@ pub fn new(id: Int, name: String, created_by: String) -> Game {
     last_trick: None,
     name: name,
     play_order: [North, East, South, West],
-    player_position: map.new(),
-    players: map.new(),
-    scores: map.from_list([#(NorthSouth, Score(0, 0)), #(EastWest, Score(0, 0))]),
+    player_position: dict.new(),
+    players: dict.new(),
+    scores: dict.from_list([
+      #(NorthSouth, Score(0, 0)),
+      #(EastWest, Score(0, 0)),
+    ]),
     shuffle: list.shuffle,
     spades_broken: False,
     state: Waiting,
-    teams: map.new(),
+    teams: dict.new(),
     trick: [],
   )
 }
@@ -161,16 +164,16 @@ pub fn set_shuffle(game: Game, shuffle: fn(List(Card)) -> List(Card)) -> Game {
 }
 
 pub fn add_bot(game: Game, position: Position) -> GameReturn {
-  case map.get(game.player_position, position) {
+  case dict.get(game.player_position, position) {
     Error(Nil) -> {
       let bot_id =
         game.players
-        |> map.values
+        |> dict.values
         |> list.filter(fn(player) { player.id < 0 })
         |> list.fold(-1, fn(min, bot) { int.min(min, bot.id - 1) })
       let existing_names =
         game.players
-        |> map.values
+        |> dict.values
         |> list.map(fn(player) { player.name })
       let assert Ok(name) =
         iterator.repeatedly(bot_name)
@@ -185,13 +188,13 @@ pub fn add_bot(game: Game, position: Position) -> GameReturn {
 }
 
 pub fn add_player(game: Game, new_player: Player) -> GameReturn {
-  let player_count = map.size(game.players)
-  let has_player = map.has_key(game.players, new_player.id)
+  let player_count = dict.size(game.players)
+  let has_player = dict.has_key(game.players, new_player.id)
   let team = player.position_to_team(new_player)
 
   let team_size =
     game.teams
-    |> map.get(team)
+    |> dict.get(team)
     |> result.map(list.length)
     |> result.unwrap(0)
 
@@ -200,13 +203,13 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
       Success(
         Game(
           ..game,
-          players: map.insert(game.players, new_player.id, new_player),
-          player_position: map.insert(
+          players: dict.insert(game.players, new_player.id, new_player),
+          player_position: dict.insert(
             game.player_position,
             new_player.position,
             new_player.id,
           ),
-          teams: map.update(
+          teams: dict.update(
             game.teams,
             team,
             fn(existing) {
@@ -229,13 +232,13 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
 
 pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
   let game_state = game.state
-  let attempting_player = map.get(game.players, player_id)
+  let attempting_player = dict.get(game.players, player_id)
 
   case game_state, game.current_player, attempting_player {
     Bidding, current, Ok(Player(position: attempting, ..)) if current == attempting ->
       Game(
         ..game,
-        players: map.update(
+        players: dict.update(
           game.players,
           player_id,
           fn(existing) {
@@ -254,7 +257,7 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
 
 pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   let game_state = game.state
-  let assert Ok(attempting_player) = map.get(game.players, player_id)
+  let assert Ok(attempting_player) = dict.get(game.players, player_id)
   let has_card = player.has_card(attempting_player, card)
   let only_has_spades =
     list.all(attempting_player.hand.cards, fn(card) { card.suit == Spades })
@@ -291,7 +294,7 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
       Game(
         ..game,
         trick: list.append(game.trick, [Play(updated_player.id, card)]),
-        players: map.insert(game.players, player_id, updated_player),
+        players: dict.insert(game.players, player_id, updated_player),
       )
       |> Success([PlayedCard(player_id, card)])
       |> advance_state
@@ -305,7 +308,7 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
 }
 
 pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
-  let assert Ok(player) = map.get(game.players, player_id)
+  let assert Ok(player) = dict.get(game.players, player_id)
   case game.state, game.current_player, player {
     Bidding, current, Player(
       hand: Hand(revealed: False, call: None, ..),
@@ -314,7 +317,7 @@ pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
     ) if current == position -> {
       let new_players =
         game.players
-        |> map.update(
+        |> dict.update(
           player_id,
           fn(p) {
             let assert Some(p) = p
@@ -331,14 +334,14 @@ pub fn advance_state(return: GameReturn) -> GameReturn {
   case return {
     Failure(_game, _reason) -> return
     Success(game, events) -> {
-      let player_count = map.size(game.players)
+      let player_count = dict.size(game.players)
       let all_called =
         game.players
-        |> map.values
+        |> dict.values
         |> list.all(fn(p) { option.is_some(p.hand.call) })
       let all_played =
         game.players
-        |> map.values
+        |> dict.values
         |> list.all(fn(p) { p.hand.cards == [] })
       let trick_finished = list.length(game.trick) == 4
       case game.state, player_count, all_called, all_played, trick_finished {
@@ -397,7 +400,7 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
   // award trick
   let has_spade = list.any(game.trick, fn(trick) { trick.card.suit == Spades })
   let updated_players =
-    map.update(
+    dict.update(
       game.players,
       winner,
       fn(existing) {
@@ -408,7 +411,7 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
         }
       },
     )
-  let assert Ok(current_player) = map.get(game.players, winner)
+  let assert Ok(current_player) = dict.get(game.players, winner)
   Game(
     ..game,
     current_player: current_player.position,
@@ -455,10 +458,10 @@ fn deal_cards(game: Game) -> Game {
   let [north, east, south, west] =
     shuffled
     |> list.index_fold(
-      map.new(),
+      dict.new(),
       fn(groups, card, index) {
         let position = 4 - index % 4
-        map.update(
+        dict.update(
           groups,
           position,
           fn(existing) {
@@ -468,22 +471,22 @@ fn deal_cards(game: Game) -> Game {
         )
       },
     )
-    |> map.values
+    |> dict.values
     |> list.map(list.reverse)
 
-  let assert Ok(north_id) = map.get(game.player_position, North)
-  let assert Ok(east_id) = map.get(game.player_position, East)
-  let assert Ok(south_id) = map.get(game.player_position, South)
-  let assert Ok(west_id) = map.get(game.player_position, West)
+  let assert Ok(north_id) = dict.get(game.player_position, North)
+  let assert Ok(east_id) = dict.get(game.player_position, East)
+  let assert Ok(south_id) = dict.get(game.player_position, South)
+  let assert Ok(west_id) = dict.get(game.player_position, West)
 
-  let assert Ok(north_player) = map.get(game.players, north_id)
-  let assert Ok(east_player) = map.get(game.players, east_id)
-  let assert Ok(south_player) = map.get(game.players, south_id)
-  let assert Ok(west_player) = map.get(game.players, west_id)
+  let assert Ok(north_player) = dict.get(game.players, north_id)
+  let assert Ok(east_player) = dict.get(game.players, east_id)
+  let assert Ok(south_player) = dict.get(game.players, south_id)
+  let assert Ok(west_player) = dict.get(game.players, west_id)
 
   Game(
     ..game,
-    players: map.from_list([
+    players: dict.from_list([
       #(north_id, player.receive_cards(north_player, north)),
       #(east_id, player.receive_cards(east_player, east)),
       #(south_id, player.receive_cards(south_player, south)),
@@ -493,15 +496,15 @@ fn deal_cards(game: Game) -> Game {
 }
 
 fn update_scores(game: Game) -> Game {
-  let assert Ok(north_id) = map.get(game.player_position, North)
-  let assert Ok(east_id) = map.get(game.player_position, East)
-  let assert Ok(south_id) = map.get(game.player_position, South)
-  let assert Ok(west_id) = map.get(game.player_position, West)
+  let assert Ok(north_id) = dict.get(game.player_position, North)
+  let assert Ok(east_id) = dict.get(game.player_position, East)
+  let assert Ok(south_id) = dict.get(game.player_position, South)
+  let assert Ok(west_id) = dict.get(game.player_position, West)
 
-  let assert Ok(north_player) = map.get(game.players, north_id)
-  let assert Ok(east_player) = map.get(game.players, east_id)
-  let assert Ok(south_player) = map.get(game.players, south_id)
-  let assert Ok(west_player) = map.get(game.players, west_id)
+  let assert Ok(north_player) = dict.get(game.players, north_id)
+  let assert Ok(east_player) = dict.get(game.players, east_id)
+  let assert Ok(south_player) = dict.get(game.players, south_id)
+  let assert Ok(west_player) = dict.get(game.players, west_id)
 
   let north_south_score = hand.team_score(north_player.hand, south_player.hand)
   let east_west_score = hand.team_score(east_player.hand, west_player.hand)
@@ -509,8 +512,8 @@ fn update_scores(game: Game) -> Game {
   Game(
     ..game,
     scores: game.scores
-    |> map.update(NorthSouth, update_score(_, north_south_score))
-    |> map.update(EastWest, update_score(_, east_west_score)),
+    |> dict.update(NorthSouth, update_score(_, north_south_score))
+    |> dict.update(EastWest, update_score(_, east_west_score)),
   )
 }
 
@@ -526,7 +529,7 @@ fn advance_dealer(game: Game) -> Game {
 fn reset_players(game: Game) -> Game {
   let new_players =
     game.players
-    |> map.map_values(fn(_key, value) { Player(..value, hand: hand.new()) })
+    |> dict.map_values(fn(_key, value) { Player(..value, hand: hand.new()) })
 
   Game(..game, players: new_players)
 }
@@ -563,18 +566,18 @@ const names = [
 pub fn bot_name() -> String {
   let names_length = list.length(names)
   let assert Ok(name) =
-    int.random(0, names_length)
+    int.random(names_length)
     |> list.at(names, _)
   name
 }
 
 fn perform_bot_action(game: Game) -> GameReturn {
   game.current_player
-  |> map.get(game.player_position, _)
+  |> dict.get(game.player_position, _)
   |> result.map(fn(id) {
     case id < 0 {
       True -> {
-        let assert Ok(current_bot) = map.get(game.players, id)
+        let assert Ok(current_bot) = dict.get(game.players, id)
         case game.state {
           Waiting -> Success(game, [])
           Bidding -> {

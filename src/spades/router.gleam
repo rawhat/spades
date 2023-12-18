@@ -1,5 +1,6 @@
 import gleam/bit_array
 import gleam/bytes_builder
+import gleam/dict
 import gleam/dynamic
 import gleam/erlang/charlist.{type Charlist}
 import gleam/erlang/process.{type Subject}
@@ -11,7 +12,6 @@ import gleam/http/response.{type Response, Response}
 import gleam/int
 import gleam/json
 import gleam/list
-import gleam/map
 import gleam/option.{None, Some}
 import gleam/otp/actor
 import gleam/pair
@@ -112,15 +112,15 @@ pub fn router(app_req: AppRequest) -> AppResult {
       let assert Ok(request_map) =
         json.decode(
           body_string,
-          dynamic.map(
+          dynamic.dict(
             dynamic.string,
-            dynamic.map(dynamic.string, dynamic.string),
+            dynamic.dict(dynamic.string, dynamic.string),
           ),
         )
       // TODO:  probably make this a custom type?
-      let assert Ok(user_req) = map.get(request_map, "session")
-      let assert Ok(username) = map.get(user_req, "username")
-      let assert Ok(password) = map.get(user_req, "password")
+      let assert Ok(user_req) = dict.get(request_map, "session")
+      let assert Ok(username) = dict.get(user_req, "username")
+      let assert Ok(password) = dict.get(user_req, "password")
       user.login(app_req.db, app_req.salt, username, password)
       |> result.map(fn(user) {
         let value = session.new(user.id, user.username)
@@ -133,12 +133,15 @@ pub fn router(app_req: AppRequest) -> AppResult {
     }
     Post, ["api", "user"] -> {
       let decoder =
-        dynamic.map(dynamic.string, dynamic.map(dynamic.string, dynamic.string))
+        dynamic.dict(
+          dynamic.string,
+          dynamic.dict(dynamic.string, dynamic.string),
+        )
       let assert Ok(request_map) = get_json_body(app_req, decoder)
       // TODO:  probably make this a custom type?
-      let assert Ok(user_req) = map.get(request_map, "user")
-      let assert Ok(username) = map.get(user_req, "username")
-      let assert Ok(password) = map.get(user_req, "password")
+      let assert Ok(user_req) = dict.get(request_map, "user")
+      let assert Ok(username) = dict.get(user_req, "username")
+      let assert Ok(password) = dict.get(user_req, "password")
       user.create(app_req.db, app_req.salt, username, password)
       |> result.map(fn(public_user) {
         let value = session.new(public_user.id, public_user.username)
@@ -186,10 +189,10 @@ pub fn router(app_req: AppRequest) -> AppResult {
       with_authentication(
         app_req,
         fn() {
-          let decoder = dynamic.map(dynamic.string, dynamic.string)
+          let decoder = dynamic.dict(dynamic.string, dynamic.string)
           {
             use body <- result.then(get_json_body(app_req, decoder))
-            use game_name <- result.then(map.get(body, "name"))
+            use game_name <- result.then(dict.get(body, "name"))
             use session <- result.then(app_req.session)
             use new_game <- result.then(
               process.try_call(

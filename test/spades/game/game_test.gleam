@@ -1,7 +1,7 @@
-import gleeunit/should
+import gleam/dict
 import gleam/function
 import gleam/list
-import gleam/map
+import gleeunit/should
 import spades/game/card.{Card}
 import spades/game/game.{Bidding, Failure, InvalidSuit, Playing, Success}
 import spades/game/hand.{Count, Play}
@@ -14,9 +14,9 @@ pub fn add_player_updates_game_test() {
 
   let assert Success(g, _events) = game.add_player(g, player)
 
-  should.equal(g.players, map.from_list([#(player.id, player)]))
-  should.equal(g.teams, map.from_list([#(NorthSouth, [player.id])]))
-  should.equal(g.player_position, map.from_list([#(North, player.id)]))
+  should.equal(g.players, dict.from_list([#(player.id, player)]))
+  should.equal(g.teams, dict.from_list([#(NorthSouth, [player.id])]))
+  should.equal(g.player_position, dict.from_list([#(North, player.id)]))
 }
 
 pub fn add_duplicate_position_errors_test() {
@@ -55,7 +55,7 @@ pub fn add_player_to_start_bidding_test() {
 
   should.equal(g.state, game.Bidding)
 
-  let assert Ok(p1) = map.get(g.players, 1)
+  let assert Ok(p1) = dict.get(g.players, 1)
 
   list.length(p1.hand.cards)
   |> should.equal(13)
@@ -175,7 +175,7 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
     |> game.then(game.play_card(_, p4.id, fourth_card))
 
   should.equal(g.state, game.Bidding)
-  let assert Ok(north_south_score) = map.get(g.scores, NorthSouth)
+  let assert Ok(north_south_score) = dict.get(g.scores, NorthSouth)
   should.equal(north_south_score, hand.Score(10, 0))
   should.equal(g.current_player, player.South)
 }

@@ -3,7 +3,7 @@ import gleam/dynamic.{decode2, field}
 import gleam/erlang/process.{type Subject}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
@@ -24,7 +24,7 @@ pub type GameUser {
 }
 
 pub fn return_to_entry(return: GameReturn) -> GameEntry {
-  GameEntry(return.game.id, return.game.name, map.size(return.game.players))
+  GameEntry(return.game.id, return.game.name, dict.size(return.game.players))
 }
 
 fn entry_to_json(entry: GameEntry) -> json.Json {
@@ -73,8 +73,8 @@ pub type PublicGame {
     last_trick: option.Option(hand.Trick),
     name: String,
     players: List(player.PublicPlayer),
-    player_position: Map(Position, Int),
-    scores: Map(player.Team, hand.Score),
+    player_position: Dict(Position, Int),
+    scores: Dict(player.Team, hand.Score),
     spades_broken: Bool,
     state: game.State,
     trick: hand.Trick,
@@ -89,7 +89,7 @@ pub fn to_public(game: Game) -> PublicGame {
     last_trick: game.last_trick,
     name: game.name,
     players: game.players
-    |> map.values
+    |> dict.values
     |> list.map(player.to_public),
     player_position: game.player_position,
     scores: game.scores,
@@ -124,7 +124,7 @@ pub fn public_to_json(game: PublicGame) -> Json {
         #(
           "north_south",
           game.scores
-          |> map.get(NorthSouth)
+          |> dict.get(NorthSouth)
           |> result.map(hand.score_to_int)
           |> result.unwrap(0)
           |> json.int,
@@ -132,7 +132,7 @@ pub fn public_to_json(game: PublicGame) -> Json {
         #(
           "east_west",
           game.scores
-          |> map.get(EastWest)
+          |> dict.get(EastWest)
           |> result.map(hand.score_to_int)
           |> result.unwrap(0)
           |> json.int,
@@ -151,7 +151,7 @@ pub fn public_to_json(game: PublicGame) -> Json {
 //   ...
 fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
   game.players
-  |> map.get(player_id)
+  |> dict.get(player_id)
   |> result.map(fn(player) {
     [
       #("type", json.string("player_state")),
@@ -176,7 +176,7 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
           #(
             "players",
             game.players
-            |> map.values
+            |> dict.values
             |> list.map(player.to_public)
             |> json.array(player.public_to_json),
           ),
@@ -192,7 +192,7 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
               #(
                 "north_south",
                 game.scores
-                |> map.get(NorthSouth)
+                |> dict.get(NorthSouth)
                 |> result.map(hand.score_to_int)
                 |> result.unwrap(0)
                 |> json.int,
@@ -200,7 +200,7 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
               #(
                 "east_west",
                 game.scores
-                |> map.get(EastWest)
+                |> dict.get(EastWest)
                 |> result.map(hand.score_to_int)
                 |> result.unwrap(0)
                 |> json.int,
@@ -240,12 +240,12 @@ pub type GameState {
 }
 
 pub type ManagerState {
-  ManagerState(games: Map(Int, GameState), next_id: Int)
+  ManagerState(games: Dict(Int, GameState), next_id: Int)
 }
 
 pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
   actor.start(
-    ManagerState(map.new(), 1),
+    ManagerState(dict.new(), 1),
     fn(message, state) {
       case message {
         Act(caller, session, action) -> {
@@ -283,7 +283,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             )
           }
           state.games
-          |> map.get(game_id)
+          |> dict.get(game_id)
           |> result.map(action)
           |> result.map(fn(game_return) {
             process.send(caller, game_return)
@@ -297,7 +297,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
         Broadcast(return) -> {
           let _ =
             state.games
-            |> map.get(return.game.id)
+            |> dict.get(return.game.id)
             |> result.map(fn(game_state) {
               list.each(
                 game_state.users,
@@ -314,10 +314,10 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
 
         ListGames(caller) -> {
           state.games
-          |> map.values
+          |> dict.values
           |> list.map(fn(game_state) {
             let game = game_state.game
-            GameEntry(game.id, game.name, map.size(game.players))
+            GameEntry(game.id, game.name, dict.size(game.players))
           })
           |> process.send(caller, _)
           actor.continue(state)
@@ -325,7 +325,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
         Read(caller, game_id, player_id) -> {
           let _ =
             state.games
-            |> map.get(game_id)
+            |> dict.get(game_id)
             |> result.map(fn(game_state) { game_state.game })
             |> result.map(fn(game) { game.Success(game, []) })
             |> result.map(game_return_to_json(player_id, _))
@@ -341,7 +341,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             |> game.add_player(new_player)
           process.send(caller, game_state)
           let new_games =
-            map.insert(
+            dict.insert(
               state.games,
               state.next_id,
               GameState([], game_state.game),
@@ -350,10 +350,10 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
         }
         Join(caller, game_id, session) -> {
           let user = GameUser(caller, session)
-          case map.has_key(state.games, game_id) {
+          case dict.has_key(state.games, game_id) {
             True ->
               state.games
-              |> map.update(
+              |> dict.update(
                 game_id,
                 fn(existing) {
                   let assert Some(GameState(users, game)) = existing
@@ -366,7 +366,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
           |> actor.continue
         }
         Leave(id, session) ->
-          case map.get(state.games, id) {
+          case dict.get(state.games, id) {
             Ok(game_state) -> {
               let new_users =
                 list.filter(
@@ -374,7 +374,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
                   fn(user) { user.session != session },
                 )
               state.games
-              |> map.insert(id, GameState(..game_state, users: new_users))
+              |> dict.insert(id, GameState(..game_state, users: new_users))
               |> fn(games) { ManagerState(..state, games: games) }
             }
             _ -> state
@@ -449,7 +449,7 @@ fn update_if_success(state: ManagerState, return: GameReturn) -> ManagerState {
   case return {
     Success(updated_game, _events) ->
       state.games
-      |> map.update(
+      |> dict.update(
         updated_game.id,
         fn(existing) {
           let assert Some(GameState(users, _game)) = existing
@@ -477,7 +477,7 @@ fn game_to_json(g: Game) -> Json {
     #(
       "players",
       g.players
-      |> map.values
+      |> dict.values
       |> list.map(player.to_public)
       |> json.array(player.public_to_json),
     ),
@@ -488,7 +488,7 @@ fn game_to_json(g: Game) -> Json {
         #(
           "north_south",
           g.scores
-          |> map.get(NorthSouth)
+          |> dict.get(NorthSouth)
           |> result.map(hand.score_to_int)
           |> result.unwrap(0)
           |> json.int,
@@ -496,7 +496,7 @@ fn game_to_json(g: Game) -> Json {
         #(
           "east_west",
           g.scores
-          |> map.get(EastWest)
+          |> dict.get(EastWest)
           |> result.map(hand.score_to_int)
           |> result.unwrap(0)
           |> json.int,

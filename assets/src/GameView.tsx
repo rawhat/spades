@@ -155,7 +155,7 @@ const Self = ({ call, cards, current, name, revealed, tricks }: SelfProps) => (
     <VerticalLayout>
       <HorizontalLayout alignItems="center" justifyContent="space-between">
         <HorizontalLayout alignItems="center">
-          <>{name}</>
+          <span>{name}</span>
           {current && <Marker />}
         </HorizontalLayout>
         {call && tricks !== undefined && (
@@ -228,7 +228,7 @@ const Player = ({
         height="90%"
       >
         <HorizontalLayout alignItems="center">
-          <>{name}</>
+          <span>{name}</span>
           {current && <Marker />}
         </HorizontalLayout>
         <HiddenHand cards={cards} position={position} />
@@ -246,7 +246,7 @@ const Player = ({
       <HiddenHand cards={cards} position={position} />
       <HorizontalLayout justifyContent="space-between">
         <HorizontalLayout alignItems="center">
-          <>{name}</>
+          <span>{name}</span>
           {current && <Marker />}
         </HorizontalLayout>
         {call !== null && call !== undefined && tricks !== undefined && (

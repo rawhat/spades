@@ -3,7 +3,7 @@ import gleam/dynamic
 import gleam/erlang/process.{type Subject}
 import gleam/http/response.{type Response}
 import gleam/json
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/order.{Gt}
 import gleam/otp/actor
 import gleam/result
@@ -22,23 +22,23 @@ pub type Session {
 }
 
 pub type SessionState {
-  SessionState(users: Map(Int, Session))
+  SessionState(users: Dict(Int, Session))
 }
 
 pub fn start() -> Result(Subject(SessionAction), actor.StartError) {
   actor.start(
-    SessionState(map.new()),
+    SessionState(dict.new()),
     fn(message, state) {
       case message {
         Add(id, session) ->
           session
-          |> map.insert(state.users, id, _)
+          |> dict.insert(state.users, id, _)
           |> SessionState
-        Remove(id) -> SessionState(users: map.delete(state.users, id))
+        Remove(id) -> SessionState(users: dict.delete(state.users, id))
         Validate(caller, id) -> {
           let resp =
             state.users
-            |> map.get(id)
+            |> dict.get(id)
             |> result.replace(Nil)
           process.send(caller, resp)
           state

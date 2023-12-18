@@ -1,7 +1,7 @@
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/map.{type Map}
+import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleam/order
 import gleam/result
@@ -13,7 +13,7 @@ import spades/game/hand.{
 }
 import spades/game/player.{type Player, East, North, South, West}
 
-pub fn call(players: Map(Int, Player), bot: Player) -> Call {
+pub fn call(players: Dict(Int, Player), bot: Player) -> Call {
   let total_calls = existing_calls(players)
 
   let hand_score = score_hand(bot)
@@ -45,7 +45,7 @@ pub fn call(players: Map(Int, Player), bot: Player) -> Call {
 }
 
 pub fn play_card(
-  players: Map(Int, Player),
+  players: Dict(Int, Player),
   spades_broken: Bool,
   trick: List(Play),
   bot: Player,
@@ -57,9 +57,9 @@ pub fn play_card(
   }
 }
 
-fn existing_calls(players: Map(Int, Player)) -> Int {
+fn existing_calls(players: Dict(Int, Player)) -> Int {
   players
-  |> map.values
+  |> dict.values
   |> list.filter_map(fn(player) { option.to_result(player.hand.call, Nil) })
   |> list.fold(
     0,
@@ -81,7 +81,7 @@ fn score_hand(bot: Player) -> Int {
   |> float.round
 }
 
-fn get_teammate(players: Map(Int, Player), bot: Player) -> Player {
+fn get_teammate(players: Dict(Int, Player), bot: Player) -> Player {
   let position = case bot.position {
     North -> South
     West -> East
@@ -91,7 +91,7 @@ fn get_teammate(players: Map(Int, Player), bot: Player) -> Player {
 
   let assert Ok(teammate) =
     players
-    |> map.values
+    |> dict.values
     |> list.find(fn(player) { player.position == position })
 
   teammate
@@ -149,7 +149,7 @@ fn play_for_nil(trick: Trick, bot: Player) -> Card {
 }
 
 fn play_to_win(
-  players: Map(Int, Player),
+  players: Dict(Int, Player),
   spades_broken: Bool,
   trick: Trick,
   bot: Player,
@@ -164,7 +164,7 @@ fn play_to_win(
       let assert Ok(trick_leader) =
         trick
         |> hand.find_winner
-        |> map.get(players, _)
+        |> dict.get(players, _)
       let teammate = get_teammate(players, bot)
       let assert Some(teammate_call) = teammate.hand.call
       let let_teammate_win =

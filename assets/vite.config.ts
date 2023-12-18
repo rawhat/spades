@@ -9,17 +9,16 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       "/api": {
-        target: "http://localhost:4000",
-        changeOrigin: true,
+        target: "http://api:4000",
         secure: false,
       },
       "/socket": {
-        target: "http://localhost:4000",
+        target: "http://api:4000",
         changeOrigin: true,
         ws: true,
       },
       "/static": {
-        target: "http://localhost:4000",
+        target: "http://api:4000",
         changeOrigin: true,
         secure: false,
       },
