@@ -177,7 +177,7 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
   should.equal(g.state, game.Bidding)
   let assert Ok(north_south_score) = dict.get(g.scores, NorthSouth)
   should.equal(north_south_score, hand.Score(10, 0))
-  should.equal(g.current_player, player.South)
+  should.equal(g.current_player, p2.position)
 }
 
 pub fn find_winner_with_same_suit_test() {
