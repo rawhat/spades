@@ -113,20 +113,17 @@ pub fn decoder() -> Decoder(Card) {
 fn order_of(cards: List(Card), suit: Suit, order: Order) -> Result(Card, Nil) {
   cards
   |> list.filter(fn(card) { card.suit == suit })
-  |> list.fold(
-    Error(Nil),
-    fn(res, card) {
-      res
-      |> result.map(fn(existing) {
-        case compare(existing, card) {
-          ordering if ordering == order -> card
-          _ -> existing
-        }
-      })
-      |> result.unwrap(card)
-      |> Ok
-    },
-  )
+  |> list.fold(Error(Nil), fn(res, card) {
+    res
+    |> result.map(fn(existing) {
+      case compare(existing, card) {
+        ordering if ordering == order -> card
+        _ -> existing
+      }
+    })
+    |> result.unwrap(card)
+    |> Ok
+  })
 }
 
 pub fn max_of_suit(cards: List(Card), suit: Suit) -> Result(Card, Nil) {

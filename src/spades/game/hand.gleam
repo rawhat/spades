@@ -65,13 +65,10 @@ pub fn call_decoder() -> Decoder(Call) {
         }
       })
     },
-    field(
-      "count",
-      fn(value) {
-        dynamic.int(value)
-        |> result.map(Count)
-      },
-    ),
+    field("count", fn(value) {
+      dynamic.int(value)
+      |> result.map(Count)
+    }),
   ])
 }
 
@@ -110,10 +107,9 @@ fn score_hand(call: Option(Call), tricks: Int) -> Score {
 
 pub fn team_score(left: Hand, right: Hand) -> Score {
   let #(nil_hand, not_nil_hands) =
-    list.partition(
-      [left, right],
-      fn(hand) { hand.call == Some(Nil) || hand.call == Some(BlindNil) },
-    )
+    list.partition([left, right], fn(hand) {
+      hand.call == Some(Nil) || hand.call == Some(BlindNil)
+    })
 
   case nil_hand, not_nil_hands {
     [left], [right] | [left, right], [] -> {

@@ -13,16 +13,13 @@ pub type Date {
 pub fn decoder() -> dynamic.Decoder(Date) {
   dynamic.list(dynamic.int)
   |> function.compose(fn(res) {
-    result.then(
-      res,
-      fn(elements) {
-        case elements {
-          [year, month, day, hour, minute, second] ->
-            Ok(Date(year, month, day, hour, minute, second))
-          _ -> Error([dynamic.DecodeError("Date", "List(Int)", [])])
-        }
-      },
-    )
+    result.then(res, fn(elements) {
+      case elements {
+        [year, month, day, hour, minute, second] ->
+          Ok(Date(year, month, day, hour, minute, second))
+        _ -> Error([dynamic.DecodeError("Date", "List(Int)", [])])
+      }
+    })
   })
 }
 
@@ -62,14 +59,11 @@ pub fn compare(left: Date, right: Date) -> Order {
     #(left.minute, right.minute),
     #(left.second, right.second),
   ]
-  |> list.fold_until(
-    Eq,
-    fn(_prev, next) {
-      let #(left, right) = next
-      case int.compare(left, right) {
-        Eq -> Continue(Eq)
-        ord -> Stop(ord)
-      }
-    },
-  )
+  |> list.fold_until(Eq, fn(_prev, next) {
+    let #(left, right) = next
+    case int.compare(left, right) {
+      Eq -> Continue(Eq)
+      ord -> Stop(ord)
+    }
+  })
 }

@@ -19,14 +19,10 @@ fn update_call(
   id: Int,
   call: Call,
 ) -> Dict(Int, Player) {
-  dict.update(
-    players,
-    id,
-    fn(existing) {
-      let assert Some(other1) = existing
-      player.make_call(other1, call)
-    },
-  )
+  dict.update(players, id, fn(existing) {
+    let assert Some(other1) = existing
+    player.make_call(other1, call)
+  })
 }
 
 pub fn leading_call_with_strong_hand_test() {

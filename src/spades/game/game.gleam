@@ -27,22 +27,22 @@ pub type Event {
 pub fn serialize_event(event: Event) -> Json {
   let #(event_type, data) = case event {
     AwardedTrick(winner) -> #("awarded_trick", [#("winner", json.int(winner))])
-    Called(id, call) -> #(
-      "called",
-      [#("id", json.int(id)), #("call", hand.call_to_json(call))],
-    )
+    Called(id, call) -> #("called", [
+      #("id", json.int(id)),
+      #("call", hand.call_to_json(call)),
+    ])
     DealtCards -> #("dealt_cards", [])
     HandEnded -> #("hand_ended", [])
-    PlayedCard(id, card) -> #(
-      "played_card",
-      [#("id", json.int(id)), #("card", card.to_json(card))],
-    )
+    PlayedCard(id, card) -> #("played_card", [
+      #("id", json.int(id)),
+      #("card", card.to_json(card)),
+    ])
     RevealedCards(id) -> #("revealed_cards", [#("id", json.int(id))])
     RoundEnded -> #("round_ended", [])
-    StateChanged(old, new) -> #(
-      "state_changed",
-      [#("old", state_to_json(old)), #("new", state_to_json(new))],
-    )
+    StateChanged(old, new) -> #("state_changed", [
+      #("old", state_to_json(old)),
+      #("new", state_to_json(new)),
+    ])
   }
 
   json.object([#("type", json.string(event_type)), ..data])
@@ -209,15 +209,11 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
             new_player.position,
             new_player.id,
           ),
-          teams: dict.update(
-            game.teams,
-            team,
-            fn(existing) {
-              existing
-              |> option.map(fn(existing) { [new_player.id, ..existing] })
-              |> option.unwrap([new_player.id])
-            },
-          ),
+          teams: dict.update(game.teams, team, fn(existing) {
+            existing
+            |> option.map(fn(existing) { [new_player.id, ..existing] })
+            |> option.unwrap([new_player.id])
+          }),
         ),
         [],
       )
@@ -238,14 +234,10 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
     Bidding, current, Ok(Player(position: attempting, ..)) if current == attempting ->
       Game(
         ..game,
-        players: dict.update(
-          game.players,
-          player_id,
-          fn(existing) {
-            let assert Some(existing) = existing
-            player.make_call(existing, call)
-          },
-        ),
+        players: dict.update(game.players, player_id, fn(existing) {
+          let assert Some(existing) = existing
+          player.make_call(existing, call)
+        }),
       )
       |> fn(g) { Success(g, [Called(player_id, call)]) }
       |> advance_state
@@ -317,13 +309,10 @@ pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
     ) if current == position -> {
       let new_players =
         game.players
-        |> dict.update(
-          player_id,
-          fn(p) {
-            let assert Some(p) = p
-            Player(..p, hand: Hand(..p.hand, revealed: True))
-          },
-        )
+        |> dict.update(player_id, fn(p) {
+          let assert Some(p) = p
+          Player(..p, hand: Hand(..p.hand, revealed: True))
+        })
       Success(Game(..game, players: new_players), [RevealedCards(player_id)])
     }
     _, _, _ -> Failure(game, InvalidAction)
@@ -400,17 +389,13 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
   // award trick
   let has_spade = list.any(game.trick, fn(trick) { trick.card.suit == Spades })
   let updated_players =
-    dict.update(
-      game.players,
-      winner,
-      fn(existing) {
-        let assert Some(existing) = existing
-        case existing.id == winner {
-          True -> player.add_trick(existing)
-          _ -> existing
-        }
-      },
-    )
+    dict.update(game.players, winner, fn(existing) {
+      let assert Some(existing) = existing
+      case existing.id == winner {
+        True -> player.add_trick(existing)
+        _ -> existing
+      }
+    })
   let assert Ok(current_player) = dict.get(game.players, winner)
   Game(
     ..game,
@@ -418,7 +403,8 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
     last_trick: Some(game.trick),
     players: updated_players,
     trick: [],
-    spades_broken: game.spades_broken || has_spade,
+    spades_broken: game.spades_broken
+    || has_spade,
   )
   |> Success(list.append(events, [AwardedTrick(winner)]))
 }
@@ -457,20 +443,13 @@ fn deal_cards(game: Game) -> Game {
 
   let [north, east, south, west] =
     shuffled
-    |> list.index_fold(
-      dict.new(),
-      fn(groups, card, index) {
-        let position = 4 - index % 4
-        dict.update(
-          groups,
-          position,
-          fn(existing) {
-            let cards = option.unwrap(existing, [])
-            [card, ..cards]
-          },
-        )
-      },
-    )
+    |> list.index_fold(dict.new(), fn(groups, card, index) {
+      let position = 4 - index % 4
+      dict.update(groups, position, fn(existing) {
+        let cards = option.unwrap(existing, [])
+        [card, ..cards]
+      })
+    })
     |> dict.values
     |> list.map(list.reverse)
 

@@ -19,10 +19,9 @@ pub fn call(players: Dict(Int, Player), bot: Player) -> Call {
   let hand_score = score_hand(bot)
 
   let has_ace_of_spades =
-    list.any(
-      bot.hand.cards,
-      fn(card) { card.suit == Spades && card.value == Ace },
-    )
+    list.any(bot.hand.cards, fn(card) {
+      card.suit == Spades && card.value == Ace
+    })
 
   let teammate = get_teammate(players, bot)
 
@@ -61,15 +60,12 @@ fn existing_calls(players: Dict(Int, Player)) -> Int {
   players
   |> dict.values
   |> list.filter_map(fn(player) { option.to_result(player.hand.call, Nil) })
-  |> list.fold(
-    0,
-    fn(acc, call) {
-      case call {
-        Count(n) -> acc + n
-        _ -> acc
-      }
-    },
-  )
+  |> list.fold(0, fn(acc, call) {
+    case call {
+      Count(n) -> acc + n
+      _ -> acc
+    }
+  })
 }
 
 fn score_hand(bot: Player) -> Int {
@@ -168,9 +164,8 @@ fn play_to_win(
       let teammate = get_teammate(players, bot)
       let assert Some(teammate_call) = teammate.hand.call
       let let_teammate_win =
-        trick_leader.id == teammate.id && {
-          teammate_call != BlindNil || teammate_call != NilCall
-        }
+        trick_leader.id == teammate.id
+        && { teammate_call != BlindNil || teammate_call != NilCall }
       case let_teammate_win {
         True -> low_card(lead_suit, bot.hand.cards)
         False -> winning_card(trick, spades_broken, bot.hand.cards)

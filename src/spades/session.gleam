@@ -26,27 +26,24 @@ pub type SessionState {
 }
 
 pub fn start() -> Result(Subject(SessionAction), actor.StartError) {
-  actor.start(
-    SessionState(dict.new()),
-    fn(message, state) {
-      case message {
-        Add(id, session) ->
-          session
-          |> dict.insert(state.users, id, _)
-          |> SessionState
-        Remove(id) -> SessionState(users: dict.delete(state.users, id))
-        Validate(caller, id) -> {
-          let resp =
-            state.users
-            |> dict.get(id)
-            |> result.replace(Nil)
-          process.send(caller, resp)
-          state
-        }
+  actor.start(SessionState(dict.new()), fn(message, state) {
+    case message {
+      Add(id, session) ->
+        session
+        |> dict.insert(state.users, id, _)
+        |> SessionState
+      Remove(id) -> SessionState(users: dict.delete(state.users, id))
+      Validate(caller, id) -> {
+        let resp =
+          state.users
+          |> dict.get(id)
+          |> result.replace(Nil)
+        process.send(caller, resp)
+        state
       }
-      |> actor.continue
-    },
-  )
+    }
+    |> actor.continue
+  })
 }
 
 pub fn new(id: Int, username: String) -> Session {

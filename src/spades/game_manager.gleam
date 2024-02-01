@@ -106,10 +106,9 @@ pub fn public_to_json(game: PublicGame) -> Json {
     #("id", json.int(game.id)),
     #(
       "last_trick",
-      json.nullable(
-        game.last_trick,
-        fn(trick) { json.array(trick, hand.play_to_json) },
-      ),
+      json.nullable(game.last_trick, fn(trick) {
+        json.array(trick, hand.play_to_json)
+      }),
     ),
     #("name", json.string(game.name)),
     #(
@@ -244,145 +243,117 @@ pub type ManagerState {
 }
 
 pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
-  actor.start(
-    ManagerState(dict.new(), 1),
-    fn(message, state) {
-      case message {
-        Act(caller, session, action) -> {
-          let #(game_id, action) = case action {
-            AddBot(game_id, position) -> #(
-              game_id,
-              fn(game_state: GameState) {
-                game.add_bot(game_state.game, position)
-              },
-            )
-            AddPlayer(game_id, position) -> #(
-              game_id,
-              fn(game_state: GameState) {
-                Player(session.id, session.username, position, hand.new())
-                |> game.add_player(game_state.game, _)
-              },
-            )
-            PlayCard(game_id, card) -> #(
-              game_id,
-              fn(game_state: GameState) {
-                game.play_card(game_state.game, session.id, card)
-              },
-            )
-            MakeCall(game_id, call) -> #(
-              game_id,
-              fn(game_state: GameState) {
-                game.make_call(game_state.game, session.id, call)
-              },
-            )
-            Reveal(game_id) -> #(
-              game_id,
-              fn(game_state: GameState) {
-                game.reveal_hand(game_state.game, session.id)
-              },
-            )
-          }
+  actor.start(ManagerState(dict.new(), 1), fn(message, state) {
+    case message {
+      Act(caller, session, action) -> {
+        let #(game_id, action) = case action {
+          AddBot(game_id, position) -> #(game_id, fn(game_state: GameState) {
+            game.add_bot(game_state.game, position)
+          })
+          AddPlayer(game_id, position) -> #(game_id, fn(game_state: GameState) {
+            Player(session.id, session.username, position, hand.new())
+            |> game.add_player(game_state.game, _)
+          })
+          PlayCard(game_id, card) -> #(game_id, fn(game_state: GameState) {
+            game.play_card(game_state.game, session.id, card)
+          })
+          MakeCall(game_id, call) -> #(game_id, fn(game_state: GameState) {
+            game.make_call(game_state.game, session.id, call)
+          })
+          Reveal(game_id) -> #(game_id, fn(game_state: GameState) {
+            game.reveal_hand(game_state.game, session.id)
+          })
+        }
+        state.games
+        |> dict.get(game_id)
+        |> result.map(action)
+        |> result.map(fn(game_return) {
+          process.send(caller, game_return)
+          state
+          |> update_if_success(game_return)
+          |> actor.continue
+        })
+        |> result.unwrap(actor.continue(state))
+      }
+
+      Broadcast(return) -> {
+        let _ =
+          state.games
+          |> dict.get(return.game.id)
+          |> result.map(fn(game_state) {
+            list.each(game_state.users, fn(user) {
+              game_return_to_json(user.session.id, return)
+              |> json.to_string
+              |> mist.send_text_frame(user.conn, _)
+            })
+          })
+        actor.continue(state)
+      }
+
+      ListGames(caller) -> {
+        state.games
+        |> dict.values
+        |> list.map(fn(game_state) {
+          let game = game_state.game
+          GameEntry(game.id, game.name, dict.size(game.players))
+        })
+        |> process.send(caller, _)
+        actor.continue(state)
+      }
+      Read(caller, game_id, player_id) -> {
+        let _ =
           state.games
           |> dict.get(game_id)
-          |> result.map(action)
-          |> result.map(fn(game_return) {
-            process.send(caller, game_return)
-            state
-            |> update_if_success(game_return)
-            |> actor.continue
-          })
-          |> result.unwrap(actor.continue(state))
-        }
-
-        Broadcast(return) -> {
-          let _ =
-            state.games
-            |> dict.get(return.game.id)
-            |> result.map(fn(game_state) {
-              list.each(
-                game_state.users,
-                fn(user) {
-                  game_return_to_json(user.session.id, return)
-                  |> json.to_string
-                  |> bit_array.from_string
-                  |> mist.send_text_frame(user.conn, _)
-                },
-              )
-            })
-          actor.continue(state)
-        }
-
-        ListGames(caller) -> {
-          state.games
-          |> dict.values
-          |> list.map(fn(game_state) {
-            let game = game_state.game
-            GameEntry(game.id, game.name, dict.size(game.players))
-          })
-          |> process.send(caller, _)
-          actor.continue(state)
-        }
-        Read(caller, game_id, player_id) -> {
-          let _ =
-            state.games
-            |> dict.get(game_id)
-            |> result.map(fn(game_state) { game_state.game })
-            |> result.map(fn(game) { game.Success(game, []) })
-            |> result.map(game_return_to_json(player_id, _))
-            |> result.map(process.send(caller, _))
-          actor.continue(state)
-        }
-
-        NewGame(caller, session, game_name) -> {
-          let new_player = player.new(session.id, session.username, North)
-          let game_state =
-            state.next_id
-            |> game.new(game_name, session.username)
-            |> game.add_player(new_player)
-          process.send(caller, game_state)
-          let new_games =
-            dict.insert(
-              state.games,
-              state.next_id,
-              GameState([], game_state.game),
-            )
-          actor.continue(ManagerState(new_games, state.next_id + 1))
-        }
-        Join(caller, game_id, session) -> {
-          let user = GameUser(caller, session)
-          case dict.has_key(state.games, game_id) {
-            True ->
-              state.games
-              |> dict.update(
-                game_id,
-                fn(existing) {
-                  let assert Some(GameState(users, game)) = existing
-                  GameState([user, ..users], game)
-                },
-              )
-              |> fn(games) { ManagerState(..state, games: games) }
-            _ -> state
-          }
-          |> actor.continue
-        }
-        Leave(id, session) ->
-          case dict.get(state.games, id) {
-            Ok(game_state) -> {
-              let new_users =
-                list.filter(
-                  game_state.users,
-                  fn(user) { user.session != session },
-                )
-              state.games
-              |> dict.insert(id, GameState(..game_state, users: new_users))
-              |> fn(games) { ManagerState(..state, games: games) }
-            }
-            _ -> state
-          }
-          |> actor.continue
+          |> result.map(fn(game_state) { game_state.game })
+          |> result.map(fn(game) { game.Success(game, []) })
+          |> result.map(game_return_to_json(player_id, _))
+          |> result.map(process.send(caller, _))
+        actor.continue(state)
       }
-    },
-  )
+
+      NewGame(caller, session, game_name) -> {
+        let new_player = player.new(session.id, session.username, North)
+        let game_state =
+          state.next_id
+          |> game.new(game_name, session.username)
+          |> game.add_player(new_player)
+        process.send(caller, game_state)
+        let new_games =
+          dict.insert(
+            state.games,
+            state.next_id,
+            GameState([], game_state.game),
+          )
+        actor.continue(ManagerState(new_games, state.next_id + 1))
+      }
+      Join(caller, game_id, session) -> {
+        let user = GameUser(caller, session)
+        case dict.has_key(state.games, game_id) {
+          True ->
+            state.games
+            |> dict.update(game_id, fn(existing) {
+              let assert Some(GameState(users, game)) = existing
+              GameState([user, ..users], game)
+            })
+            |> fn(games) { ManagerState(..state, games: games) }
+          _ -> state
+        }
+        |> actor.continue
+      }
+      Leave(id, session) ->
+        case dict.get(state.games, id) {
+          Ok(game_state) -> {
+            let new_users =
+              list.filter(game_state.users, fn(user) { user.session != session })
+            state.games
+            |> dict.insert(id, GameState(..game_state, users: new_users))
+            |> fn(games) { ManagerState(..state, games: games) }
+          }
+          _ -> state
+        }
+        |> actor.continue
+    }
+  })
 }
 
 pub fn handler(
@@ -391,10 +362,9 @@ pub fn handler(
   session: Session,
 ) -> Result(Nil, Nil) {
   let assert Text(data) = msg
-  let assert Ok(msg) = bit_array.to_string(data)
 
   field("type", dynamic.string)
-  |> json.decode(msg, _)
+  |> json.decode(data, _)
   |> result.replace_error(Nil)
   |> result.then(fn(msg_type) {
     case msg_type {
@@ -429,7 +399,7 @@ pub fn handler(
       }
     }
     |> field("data", _)
-    |> json.decode(msg, _)
+    |> json.decode(data, _)
     |> result.replace_error(Nil)
   })
   |> result.then(fn(action) {
@@ -449,13 +419,10 @@ fn update_if_success(state: ManagerState, return: GameReturn) -> ManagerState {
   case return {
     Success(updated_game, _events) ->
       state.games
-      |> dict.update(
-        updated_game.id,
-        fn(existing) {
-          let assert Some(GameState(users, _game)) = existing
-          GameState(users, updated_game)
-        },
-      )
+      |> dict.update(updated_game.id, fn(existing) {
+        let assert Some(GameState(users, _game)) = existing
+        GameState(users, updated_game)
+      })
       |> fn(games) { ManagerState(..state, games: games) }
     _ -> state
   }
@@ -468,10 +435,9 @@ fn game_to_json(g: Game) -> Json {
     #("id", json.int(g.id)),
     #(
       "last_trick",
-      json.nullable(
-        g.last_trick,
-        fn(trick) { json.array(trick, hand.play_to_json) },
-      ),
+      json.nullable(g.last_trick, fn(trick) {
+        json.array(trick, hand.play_to_json)
+      }),
     ),
     #("name", json.string(g.name)),
     #(

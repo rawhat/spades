@@ -23,29 +23,25 @@ pub type LobbyState {
 }
 
 pub fn start() -> Result(Subject(LobbyAction), actor.StartError) {
-  actor.start(
-    LobbyState(dict.new()),
-    fn(msg, state) {
-      case msg {
-        Join(user, sender) ->
-          LobbyState(dict.insert(state.users, user.id, LobbyUser(user, sender)))
-        Leave(id) -> LobbyState(dict.delete(state.users, id))
-        GameUpdate(game) -> {
-          state.users
-          |> dict.values
-          |> list.map(fn(lobby_user) { lobby_user.conn })
-          |> list.each(fn(existing) {
-            game
-            |> game_to_string
-            |> bit_array.from_string
-            |> mist.send_text_frame(existing, _)
-          })
-          state
-        }
+  actor.start(LobbyState(dict.new()), fn(msg, state) {
+    case msg {
+      Join(user, sender) ->
+        LobbyState(dict.insert(state.users, user.id, LobbyUser(user, sender)))
+      Leave(id) -> LobbyState(dict.delete(state.users, id))
+      GameUpdate(game) -> {
+        state.users
+        |> dict.values
+        |> list.map(fn(lobby_user) { lobby_user.conn })
+        |> list.each(fn(existing) {
+          game
+          |> game_to_string
+          |> mist.send_text_frame(existing, _)
+        })
+        state
       }
-      |> actor.continue
-    },
-  )
+    }
+    |> actor.continue
+  })
 }
 
 fn game_to_string(game: Game) -> String {
