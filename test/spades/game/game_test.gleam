@@ -62,7 +62,7 @@ pub fn add_player_to_start_bidding_test() {
 }
 
 pub fn bidding_finished_play_card_test() {
-  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game()
+  let assert #(g, [p1, p2, p3, p4]) = scaffold.populate_game()
   let assert Success(g, _events) =
     g
     |> game.make_call(p1.id, Count(3))
@@ -83,7 +83,7 @@ pub fn playing_valid_card_adds_to_trick_test() {
     first_card,
   ]
 
-  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
+  let assert #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
   let assert Success(g, _events) =
     g
@@ -110,7 +110,7 @@ pub fn playing_not_leading_suit_fails_test() {
     first_card,
   ]
 
-  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
+  let assert #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
   let assert Success(g, _events) =
     g
@@ -139,7 +139,7 @@ pub fn playing_spade_when_not_broken_fails_test() {
     first_card,
   ]
 
-  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
+  let assert #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
   let assert Success(g, _events) =
     g
@@ -161,7 +161,7 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
   let fourth_card = Card(card.Diamonds, card.Number(7))
   let deck = [fourth_card, third_card, second_card, first_card]
 
-  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
+  let assert #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
   let assert Success(g, _events) =
     g
@@ -235,7 +235,7 @@ pub fn play_spades_when_having_other_suits_and_not_broken_test() {
     Card(card.Diamonds, card.Number(9)),
   ]
 
-  let #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
+  let assert #(g, [p1, p2, p3, p4]) = scaffold.populate_game_with_deck(deck)
 
   let assert Success(g, _events) =
     g

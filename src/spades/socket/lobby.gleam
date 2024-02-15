@@ -1,4 +1,3 @@
-import gleam/bit_array
 import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/list

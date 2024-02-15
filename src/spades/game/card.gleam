@@ -34,6 +34,7 @@ pub fn compare_suit(left: Card, right: Card) -> Order {
     Hearts, Spades -> Gt
     Hearts, Diamonds -> Gt
     Hearts, Clubs -> Gt
+    _, _ -> Lt
   }
 }
 

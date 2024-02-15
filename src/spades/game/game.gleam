@@ -89,30 +89,30 @@ pub fn player_position_to_json(positions: Dict(Position, Int)) -> Json {
     #(
       "north",
       positions
-      |> dict.get(North)
-      |> option.from_result
-      |> json.nullable(json.int),
+        |> dict.get(North)
+        |> option.from_result
+        |> json.nullable(json.int),
     ),
     #(
       "east",
       positions
-      |> dict.get(East)
-      |> option.from_result
-      |> json.nullable(json.int),
+        |> dict.get(East)
+        |> option.from_result
+        |> json.nullable(json.int),
     ),
     #(
       "south",
       positions
-      |> dict.get(South)
-      |> option.from_result
-      |> json.nullable(json.int),
+        |> dict.get(South)
+        |> option.from_result
+        |> json.nullable(json.int),
     ),
     #(
       "west",
       positions
-      |> dict.get(West)
-      |> option.from_result
-      |> json.nullable(json.int),
+        |> dict.get(West)
+        |> option.from_result
+        |> json.nullable(json.int),
     ),
   ])
 }
@@ -231,7 +231,9 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
   let attempting_player = dict.get(game.players, player_id)
 
   case game_state, game.current_player, attempting_player {
-    Bidding, current, Ok(Player(position: attempting, ..)) if current == attempting ->
+    Bidding, current, Ok(Player(position: attempting, ..))
+      if current == attempting
+    ->
       Game(
         ..game,
         players: dict.update(game.players, player_id, fn(existing) {
@@ -241,8 +243,8 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
       )
       |> fn(g) { Success(g, [Called(player_id, call)]) }
       |> advance_state
-    Bidding, current, Ok(Player(position: attempting, ..)) if current != attempting ->
-      Failure(game, NotYourTurn)
+    Bidding, current, Ok(Player(position: attempting, ..)) if current
+      != attempting -> Failure(game, NotYourTurn)
     _, _, _ -> Failure(game, InvalidAction)
   }
 }
@@ -268,8 +270,8 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   {
     True, Spades, _, _, _, True -> True
     True, Spades, _, True, False, _ -> True
-    True, suit_to_play, [Play(card: Card(suit: leading_suit, ..), ..), ..], _, True, _ if suit_to_play == leading_suit ->
-      True
+    True, suit_to_play, [Play(card: Card(suit: leading_suit, ..), ..), ..], _, True, _ if suit_to_play
+      == leading_suit -> True
     True, _, _, _, False, _ -> True
     True, Spades, [], False, _, False -> False
     True, _, [], _, _, _ -> True
@@ -277,7 +279,9 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   }
 
   case game_state, game.current_player, attempting_player, can_play {
-    Playing, current, Player(position: attempting, ..), True if current == attempting -> {
+    Playing, current, Player(position: attempting, ..), True
+      if current == attempting
+    -> {
       let updated_player =
         Player(
           ..attempting_player,
@@ -293,8 +297,8 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
     }
 
     _, _, _, False -> Failure(game, InvalidSuit)
-    Playing, current, Player(position: attempting, ..), True if current != attempting ->
-      Failure(game, NotYourTurn)
+    Playing, current, Player(position: attempting, ..), True if current
+      != attempting -> Failure(game, NotYourTurn)
     _, _, _, _ -> Failure(game, InvalidAction)
   }
 }
@@ -303,10 +307,12 @@ pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
   let assert Ok(player) = dict.get(game.players, player_id)
   case game.state, game.current_player, player {
     Bidding, current, Player(
-      hand: Hand(revealed: False, call: None, ..),
-      position: position,
-      ..,
-    ) if current == position -> {
+        hand: Hand(revealed: False, call: None, ..),
+        position: position,
+        ..,
+      )
+      if current == position
+    -> {
       let new_players =
         game.players
         |> dict.update(player_id, fn(p) {
@@ -441,7 +447,7 @@ fn deal_cards(game: Game) -> Game {
     |> iterator.take(12)
     |> iterator.last
 
-  let [north, east, south, west] =
+  let assert [north, east, south, west] =
     shuffled
     |> list.index_fold(dict.new(), fn(groups, card, index) {
       let position = 4 - index % 4
@@ -497,7 +503,7 @@ fn update_scores(game: Game) -> Game {
 }
 
 fn advance_dealer(game: Game) -> Game {
-  let [current, next, ..rest] = game.play_order
+  let assert [current, next, ..rest] = game.play_order
   Game(
     ..game,
     play_order: list.append([next, ..rest], [current]),

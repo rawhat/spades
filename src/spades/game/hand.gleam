@@ -20,7 +20,7 @@ pub type Play {
 }
 
 pub fn find_winning_card(trick: Trick) -> Card {
-  let [leading, ..] = trick
+  let assert [leading, ..] = trick
   let leading_suit = leading.card.suit
   let assert Ok(max_leading) =
     trick
@@ -125,6 +125,7 @@ pub fn team_score(left: Hand, right: Hand) -> Score {
         left.tricks + right.tricks,
       )
     }
+    _, _ -> Score(0, 0)
   }
 }
 

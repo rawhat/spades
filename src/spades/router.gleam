@@ -89,12 +89,7 @@ pub fn session_middleware(
       Ok(session) ->
         AppRequest(..req, session: Ok(session))
         |> next
-        |> result.map(fn(resp) {
-          case resp {
-            Response(..) -> session.add_cookie_header(resp, session)
-            resp -> resp
-          }
-        })
+        |> result.map(session.add_cookie_header(_, session))
       Error(Nil) -> next(req)
     }
   }

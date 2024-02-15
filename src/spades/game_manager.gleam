@@ -1,4 +1,3 @@
-import gleam/bit_array
 import gleam/dynamic.{decode2, field}
 import gleam/erlang/process.{type Subject}
 import gleam/json.{type Json}
@@ -7,6 +6,7 @@ import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
+import gleam/string
 import spades/game/card.{type Card}
 import spades/game/hand.{type Call}
 import spades/game/game.{type Game, type GameReturn, Success}
@@ -89,8 +89,8 @@ pub fn to_public(game: Game) -> PublicGame {
     last_trick: game.last_trick,
     name: game.name,
     players: game.players
-    |> dict.values
-    |> list.map(player.to_public),
+      |> dict.values
+      |> list.map(player.to_public),
     player_position: game.player_position,
     scores: game.scores,
     spades_broken: game.spades_broken,
@@ -114,7 +114,7 @@ pub fn public_to_json(game: PublicGame) -> Json {
     #(
       "players",
       game.players
-      |> json.array(player.public_to_json),
+        |> json.array(player.public_to_json),
     ),
     #("player_position", game.player_position_to_json(game.player_position)),
     #(
@@ -123,18 +123,18 @@ pub fn public_to_json(game: PublicGame) -> Json {
         #(
           "north_south",
           game.scores
-          |> dict.get(NorthSouth)
-          |> result.map(hand.score_to_int)
-          |> result.unwrap(0)
-          |> json.int,
+            |> dict.get(NorthSouth)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
         ),
         #(
           "east_west",
           game.scores
-          |> dict.get(EastWest)
-          |> result.map(hand.score_to_int)
-          |> result.unwrap(0)
-          |> json.int,
+            |> dict.get(EastWest)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
         ),
       ]),
     ),
@@ -161,8 +161,8 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
           #(
             "cards",
             player.hand.cards
-            |> card.hand_sort
-            |> json.array(card.to_json),
+              |> card.hand_sort
+              |> json.array(card.to_json),
           ),
           #("created_by", json.string(game.created_by)),
           #("current_player", player.position_to_json(game.current_player)),
@@ -175,9 +175,9 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
           #(
             "players",
             game.players
-            |> dict.values
-            |> list.map(player.to_public)
-            |> json.array(player.public_to_json),
+              |> dict.values
+              |> list.map(player.to_public)
+              |> json.array(player.public_to_json),
           ),
           #(
             "player_position",
@@ -191,18 +191,18 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
               #(
                 "north_south",
                 game.scores
-                |> dict.get(NorthSouth)
-                |> result.map(hand.score_to_int)
-                |> result.unwrap(0)
-                |> json.int,
+                  |> dict.get(NorthSouth)
+                  |> result.map(hand.score_to_int)
+                  |> result.unwrap(0)
+                  |> json.int,
               ),
               #(
                 "east_west",
                 game.scores
-                |> dict.get(EastWest)
-                |> result.map(hand.score_to_int)
-                |> result.unwrap(0)
-                |> json.int,
+                  |> dict.get(EastWest)
+                  |> result.map(hand.score_to_int)
+                  |> result.unwrap(0)
+                  |> json.int,
               ),
             ]),
           ),
@@ -210,17 +210,17 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
           #(
             "state",
             case game.state {
-              game.Waiting -> "waiting"
-              game.Bidding -> "bidding"
-              game.Playing -> "playing"
-            }
-            |> json.string,
+                game.Waiting -> "waiting"
+                game.Bidding -> "bidding"
+                game.Playing -> "playing"
+              }
+              |> json.string,
           ),
           #(
             "team",
             player
-            |> player.position_to_team
-            |> player.team_to_json,
+              |> player.position_to_team
+              |> player.team_to_json,
           ),
           #("trick", json.array(game.trick, hand.play_to_json)),
           #("tricks", json.int(player.hand.tricks)),
@@ -397,6 +397,9 @@ pub fn handler(
         |> field("id", dynamic.int)
         |> result.map(Reveal)
       }
+      _ -> fn(dyn) {
+        Error([dynamic.DecodeError("name", string.inspect(dyn), ["msg"])])
+      }
     }
     |> field("data", _)
     |> json.decode(data, _)
@@ -443,9 +446,9 @@ fn game_to_json(g: Game) -> Json {
     #(
       "players",
       g.players
-      |> dict.values
-      |> list.map(player.to_public)
-      |> json.array(player.public_to_json),
+        |> dict.values
+        |> list.map(player.to_public)
+        |> json.array(player.public_to_json),
     ),
     #("player_position", game.player_position_to_json(g.player_position)),
     #(
@@ -454,18 +457,18 @@ fn game_to_json(g: Game) -> Json {
         #(
           "north_south",
           g.scores
-          |> dict.get(NorthSouth)
-          |> result.map(hand.score_to_int)
-          |> result.unwrap(0)
-          |> json.int,
+            |> dict.get(NorthSouth)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
         ),
         #(
           "east_west",
           g.scores
-          |> dict.get(EastWest)
-          |> result.map(hand.score_to_int)
-          |> result.unwrap(0)
-          |> json.int,
+            |> dict.get(EastWest)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
         ),
       ]),
     ),
@@ -473,11 +476,11 @@ fn game_to_json(g: Game) -> Json {
     #(
       "state",
       case g.state {
-        game.Waiting -> "waiting"
-        game.Bidding -> "bidding"
-        game.Playing -> "playing"
-      }
-      |> json.string,
+          game.Waiting -> "waiting"
+          game.Bidding -> "bidding"
+          game.Playing -> "playing"
+        }
+        |> json.string,
     ),
     #("trick", json.array(g.trick, hand.play_to_json)),
   ])
