@@ -2,6 +2,8 @@
 
 A team-based trick taking card game for 4 players.  [Wiki](https://en.wikipedia.org/wiki/Spades_(card_game)).
 
+![image](https://github.com/rawhat/spades/assets/2095509/dd25da68-f5cc-445f-ad7c-92bf463703f4)
+
 The rules can vary wildly, so they are implemented as I learned them.
 
 The game does support bots, but they are incredibly dumb at the moment.
