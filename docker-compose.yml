@@ -2,21 +2,19 @@ version: '3'
 services:
   ui:
     build:
-      context: ./assets
-    user: 1000:1001
+      context: ./client
     volumes:
-      - ./assets:/opt/app
-      - node_modules:/opt/app/node_modules
+      - ./client:/opt/app
+      - /opt/app/build
     ports:
-      - "5000:5000"
+      - "8000:8000"
     depends_on:
       - api
 
   api:
     tty: true
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: ./server
     environment:
       DB_NAME: spades_dev
       DB_USER: spades
@@ -25,12 +23,9 @@ services:
       PASSWORD_SALT: 1234
       TERM: "xterm-256color"
     volumes:
-      - ./src:/opt/app/src
-      - ./test:/opt/app/test
-      - ./priv/static:/opt/app/static
-      - /opt/app/build/
+      - ./server:/opt/app
+      - /opt/app/build
     ports:
-      - "3000:3000"
       - "4000:4000"
     depends_on:
       - db
@@ -45,5 +40,3 @@ services:
       - "5432:5432"
     volumes:
       - /var/lib/postgresql/data
-volumes:
-  node_modules:
