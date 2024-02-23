@@ -14,4 +14,4 @@ RUN gleam build
 
 RUN gleam run -m esgleam/install
 
-CMD ["watchexec", "-r", "--watch", "src", "gleam", "run", "-m", "build"]
+CMD ["watchexec", "-r", "--watch", "src", "--", "gleam", "run", "-m", "build"]
