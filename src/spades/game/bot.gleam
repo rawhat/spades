@@ -33,8 +33,9 @@ pub fn call(players: Dict(Int, Player), bot: Player) -> Call {
       |> int.min(13 - total_calls)
       |> int.max(hand_score)
       |> Count
-    Ok(_call) if total_calls >= 9 && hand_score < 3 && has_ace_of_spades == False ->
-      NilCall
+    Ok(_call) if total_calls >= 9
+      && hand_score < 3
+      && has_ace_of_spades == False -> NilCall
     _ ->
       case total_calls + hand_score > 13 {
         True -> Count(13 - total_calls)
