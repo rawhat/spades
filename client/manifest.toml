@@ -16,15 +16,19 @@ packages = [
   { name = "lustre", version = "3.1.4", build_tools = ["gleam"], requirements = ["argv", "gleam_community_ansi", "gleam_stdlib", "glint"], otp_app = "lustre", source = "hex", outer_checksum = "E651E39189F55473837FB7386C06BAED7276B37B5058302CAC880F89C25CB4E9" },
   { name = "lustre_http", version = "0.5.1", build_tools = ["gleam"], requirements = ["gleam_fetch", "gleam_http", "gleam_javascript", "gleam_json", "gleam_stdlib", "lustre"], otp_app = "lustre_http", source = "hex", outer_checksum = "46CD8863C39DBE738D8BCA1095C1A4496687919E53B913D4AC088FF768AE2AFD" },
   { name = "lustre_ui", version = "0.3.0", build_tools = ["gleam"], requirements = ["gleam_community_colour", "gleam_stdlib", "lustre"], otp_app = "lustre_ui", source = "hex", outer_checksum = "F81BE5D20153CFFC717C2C4687A19375A8613528908AF7069DDA1B929C8398B1" },
+  { name = "lustre_websocket", version = "0.7.5", build_tools = ["gleam"], requirements = ["gleam_stdlib", "lustre"], otp_app = "lustre_websocket", source = "hex", outer_checksum = "08584E36D8B3D16747C3FC945F063708E5719963A268461A7193A0238A574AED" },
   { name = "simplifile", version = "1.4.2", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "simplifile", source = "hex", outer_checksum = "C93A62CE23B2E44F969DC3134F9EE899C362B0A2F4181233CDD5D759F82EE486" },
   { name = "snag", version = "0.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "snag", source = "hex", outer_checksum = "54D32E16E33655346AA3E66CBA7E191DE0A8793D2C05284E3EFB90AD2CE92BCC" },
   { name = "thoas", version = "0.4.1", build_tools = ["rebar3"], requirements = [], otp_app = "thoas", source = "hex", outer_checksum = "4918D50026C073C4AB1388437132C77A6F6F7C8AC43C60C13758CC0ADCE2134E" },
 ]
 
 [requirements]
-esgleam = { version = "~> 0.6"}
-gleam_stdlib = { version = "~> 0.34 or ~> 1.0" }
+esgleam = { version = "~> 0.6" }
+gleam_http = { version = "~> 3.5" }
+gleam_json = { version = "~> 1.0" }
+gleam_stdlib = { version = "~> 0.34" }
 gleeunit = { version = "~> 1.0" }
 lustre = { version = "~> 3.1" }
 lustre_http = { version = "~> 0.5" }
 lustre_ui = { version = "~> 0.3" }
+lustre_websocket = { version = "~> 0.7"}
