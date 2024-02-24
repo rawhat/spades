@@ -17,7 +17,6 @@ import { Toast } from "./Toast";
 
 function Lobby() {
   const [games, error] = useLobbySocket();
-  console.log("rendering lobby")
 
   return (
     <Container width="100%">

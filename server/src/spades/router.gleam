@@ -98,6 +98,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Post, ["api", "session"] -> {
+      // TODO:  let's not assert all this stuff...
       let assert Ok(req) = mist.read_body(app_req.req, 1024 * 1024 * 10)
       let assert Ok(body_string) = bit_array.to_string(req.body)
       let decoder = decode.at(["session"], session.login_decoder())

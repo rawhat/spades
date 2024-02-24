@@ -4,10 +4,10 @@ services:
     build:
       context: ./client
     volumes:
+      - client_build:/opt/app/build
       - ./client:/opt/app
-      - /opt/app/build
     ports:
-      - "8000:8000"
+      - "5000:5000"
     depends_on:
       - api
 
@@ -23,8 +23,8 @@ services:
       PASSWORD_SALT: 1234
       TERM: "xterm-256color"
     volumes:
+      - server_build:/opt/app/build
       - ./server:/opt/app
-      - /opt/app/build
     ports:
       - "4000:4000"
     depends_on:
@@ -40,3 +40,6 @@ services:
       - "5432:5432"
     volumes:
       - /var/lib/postgresql/data
+volumes:
+  client_build:
+  server_build:

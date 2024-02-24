@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spades</title>
+  <link rel="stylesheet" href="lustre_ui.css">
+</head>
+
+<body>
+  <div id="app"></div>
+  <script type="module">
+    import {main} from "./build/dev/javascript/spades_ui/spades_ui.mjs"
+    document.addEventListener("DOMContentLoaded", () => {
+      main();
+    })
+  </script>
+</body>
+
+</html>
