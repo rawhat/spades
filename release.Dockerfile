@@ -20,7 +20,7 @@ RUN apk add --no-cache openssl ncurses-libs
 
 WORKDIR /opt/app
 
-ADD https://github.com/gleam-lang/gleam/releases/download/v0.26.2/gleam-v0.26.2-x86_64-unknown-linux-musl.tar.gz ./gleam.tar.gz
+ADD https://github.com/gleam-lang/gleam/releases/download/v1.0.0-rc2/gleam-v1.0.0-rc2-x86_64-unknown-linux-musl.tar.gz ./gleam.tar.gz
 RUN tar xfz gleam.tar.gz && chmod +x gleam && mv gleam /usr/bin/
 
 COPY gleam.toml ./
