@@ -5,6 +5,7 @@ services:
       context: ./client
     volumes:
       - client_build:/opt/app/build
+      - node_modules:/opt/app/node_modules
       - ./client:/opt/app
     ports:
       - "5000:5000"
@@ -43,3 +44,4 @@ services:
 volumes:
   client_build:
   server_build:
+  node_modules:

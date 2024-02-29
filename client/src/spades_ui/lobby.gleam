@@ -6,11 +6,13 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
+import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{div}
+import lustre/element/html.{div, h1, h2}
 import lustre_websocket as ws
 import lustre/ui/box
+import lustre/ui/button
 import lustre/ui/centre
 import lustre/ui/sequence
 import lustre/ui/stack
@@ -78,6 +80,54 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   }
 }
 
+fn header(username: String) -> Element(Msg) {
+  div(
+    [
+      attribute.style([
+        #("width", "100%"),
+        #("display", "flex"),
+        #("justify-content", "space-between"),
+        #("align-items", "center"),
+        #("padding", "5px 10px"),
+      ]),
+    ],
+    [
+      h1([attribute.style([#("color", "#faf")])], [element.text("Spades")]),
+      ui.sequence(
+        [
+          sequence.breakpoint("100%"),
+          attribute.style([#("align-items", "center")]),
+        ],
+        [
+          div([attribute.style([#("flex-basis", "auto")])], [
+            element.text("Welcome, " <> username),
+          ]),
+          ui.button([attribute.style([#("flex-basis", "auto")])], [
+            element.text("Logout"),
+          ]),
+        ],
+      ),
+    ],
+  )
+}
+
+fn divider() -> Element(Msg) {
+  html.hr([
+    attribute.style([#("color", "lightgrey"), #("margin-inline", ".5rem")]),
+  ])
+}
+
+fn game_list(games: Dict(Int, GameEntry)) -> Element(Msg) {
+  div([], [])
+}
+
 pub fn view(model: Model) -> Element(Msg) {
-  div([], [element.text(string.inspect(model.games))])
+  ui.stack([], [
+    header("alex"),
+    divider(),
+    ui.centre([], h2([], [element.text("Lobby")])),
+    divider(),
+    ui.centre([], ui.button([button.success()], [element.text("New Game")])),
+    game_list(model.games),
+  ])
 }
