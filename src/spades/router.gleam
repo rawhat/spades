@@ -18,7 +18,7 @@ import gleam/pair
 import gleam/pgo
 import gleam/result
 import gleam/string
-import mist.{type Connection, type ResponseData}
+import mist.{type Connection, type ResponseData, Custom, Text}
 import spades/encoder
 import spades/game_manager.{type ManagerAction, Join, Leave, NewGame, Read}
 import spades/games
@@ -46,52 +46,47 @@ pub type AppRequest {
 pub type AppResult =
   Result(Response(ResponseData), AppError)
 
-pub fn result_to_response(resp: AppResult) -> Response(ResponseData) {
-  case resp {
+pub fn result_to_response(handler: fn() -> AppResult) -> Response(ResponseData) {
+  case handler() {
     Ok(resp) -> resp
     Error(NotFound) -> empty_response(404)
   }
 }
 
-pub type Middleware(in1, out1, in2, out2) =
-  fn(fn(in1) -> out1) -> fn(in2) -> out2
-
 pub fn app_middleware(
-  next: fn(AppRequest) -> AppResult,
+  req: Request(Connection),
   manager: Subject(ManagerAction),
   db: pgo.Connection,
   static_root: String,
   salt: String,
   session_manager: Subject(SessionAction),
   lobby_manager: Subject(LobbyAction),
-) {
-  fn(req) {
-    let app_request =
-      AppRequest(
-        db,
-        manager,
-        req,
-        static_root,
-        salt,
-        lobby_manager,
-        session_manager,
-        session: Error(Nil),
-      )
-    next(app_request)
-  }
+  next: fn(AppRequest) -> AppResult,
+) -> AppResult {
+  let app_request =
+    AppRequest(
+      db,
+      manager,
+      req,
+      static_root,
+      salt,
+      lobby_manager,
+      session_manager,
+      session: Error(Nil),
+    )
+  next(app_request)
 }
 
 pub fn session_middleware(
+  req: AppRequest,
   next: fn(AppRequest) -> AppResult,
-) -> fn(AppRequest) -> AppResult {
-  fn(req) {
-    case get_cookie_from_request(req) {
-      Ok(session) ->
-        AppRequest(..req, session: Ok(session))
-        |> next
-        |> result.map(session.add_cookie_header(_, session))
-      Error(Nil) -> next(req)
-    }
+) -> AppResult {
+  case get_cookie_from_request(req) {
+    Ok(session) ->
+      AppRequest(..req, session: Ok(session))
+      |> next
+      |> result.map(session.add_cookie_header(_, session))
+    Error(Nil) -> next(req)
   }
 }
 
@@ -221,11 +216,12 @@ pub fn router(app_req: AppRequest) -> AppResult {
               let selector =
                 process.new_selector()
                 |> process.selecting(subj, function.identity)
-              process.send(app_req.lobby_manager, lobby.Join(session, conn))
+              process.send(app_req.lobby_manager, lobby.Join(session, subj))
               let assert Ok(games) = games.list(app_req.game_manager)
-              games
-              |> game_manager.game_entries_to_json
-              |> mist.send_text_frame(conn, _)
+              let _ =
+                games
+                |> game_manager.game_entries_to_json
+                |> mist.send_text_frame(conn, _)
               #(Nil, Some(selector))
             },
             handler: fn(state, _conn, _msg) { actor.continue(state) },
@@ -246,21 +242,43 @@ pub fn router(app_req: AppRequest) -> AppResult {
           mist.websocket(
             request: app_req.req,
             on_init: fn(conn) {
-              process.send(app_req.game_manager, Join(conn, id, session))
+              let subj = process.new_subject()
+              process.send(app_req.game_manager, Join(subj, id, session))
               let assert Ok(game) =
                 process.try_call(
                   app_req.game_manager,
                   Read(_, id, session.id),
                   60,
                 )
-              game
-              |> json.to_string
-              |> mist.send_text_frame(conn, _)
-              #(Nil, None)
+              let _ =
+                game
+                |> json.to_string
+                |> mist.send_text_frame(conn, _)
+
+              let selector =
+                process.new_selector()
+                |> process.selecting(subj, function.identity)
+
+              #(Nil, Some(selector))
             },
-            handler: fn(state, _conn, msg) {
-              let _ = game_manager.handler(msg, app_req.game_manager, session)
-              actor.continue(state)
+            handler: fn(state, conn, msg) {
+              case msg {
+                Custom(game_manager.Send(data)) -> {
+                  let _ = mist.send_text_frame(conn, data)
+                  actor.continue(state)
+                }
+                Text(data) -> {
+                  let _ =
+                    game_manager.handle_message(
+                      data,
+                      app_req.game_manager,
+                      session,
+                    )
+                  actor.continue(state)
+                }
+                mist.Binary(_) -> actor.continue(state)
+                mist.Closed | mist.Shutdown -> actor.Stop(process.Normal)
+              }
             },
             on_close: fn(_state) {
               process.send(app_req.game_manager, Leave(id, session))

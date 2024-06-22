@@ -1,6 +1,5 @@
-import gleeunit/should
-import gleam/list
 import gleam/order.{Eq, Gt, Lt}
+import gleeunit/should
 import spades/game/card.{
   Ace, Card, Clubs, Diamonds, Hearts, Jack, King, Number, Queen, Spades,
 }
@@ -125,30 +124,38 @@ pub fn hand_sorting_test() {
   ])
 }
 
+fn list_at(list: List(a), index: Int) -> Result(a, Nil) {
+  case list, index {
+    [], _ -> Error(Nil)
+    [value, ..], 0 -> Ok(value)
+    [_, ..rest], i -> list_at(rest, i - 1)
+  }
+}
+
 pub fn make_deck_test() {
   let actual = card.make_deck()
 
   actual
-  |> list.at(0)
+  |> list_at(0)
   |> should.equal(Ok(Card(Clubs, Number(2))))
 
   actual
-  |> list.at(1)
+  |> list_at(1)
   |> should.equal(Ok(Card(Diamonds, Number(3))))
 
   actual
-  |> list.at(2)
+  |> list_at(2)
   |> should.equal(Ok(Card(Hearts, Number(4))))
 
   actual
-  |> list.at(3)
+  |> list_at(3)
   |> should.equal(Ok(Card(Spades, Number(5))))
 
   actual
-  |> list.at(13)
+  |> list_at(13)
   |> should.equal(Ok(Card(Diamonds, Number(2))))
 
   actual
-  |> list.at(51)
+  |> list_at(51)
   |> should.equal(Ok(Card(Spades, Ace)))
 }

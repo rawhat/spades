@@ -1,7 +1,7 @@
+import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
 import gleam/list
-import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleam/order
 import gleam/result
@@ -33,9 +33,9 @@ pub fn call(players: Dict(Int, Player), bot: Player) -> Call {
       |> int.min(13 - total_calls)
       |> int.max(hand_score)
       |> Count
-    Ok(_call) if total_calls >= 9
-      && hand_score < 3
-      && has_ace_of_spades == False -> NilCall
+    Ok(_call)
+      if total_calls >= 9 && hand_score < 3 && has_ace_of_spades == False
+    -> NilCall
     _ ->
       case total_calls + hand_score > 13 {
         True -> Count(13 - total_calls)
@@ -156,7 +156,7 @@ fn play_to_win(
     trick -> {
       let assert Ok(lead_suit) =
         trick
-        |> list.at(0)
+        |> list.first
         |> result.map(fn(play) { play.card.suit })
       let assert Ok(trick_leader) =
         trick
@@ -211,7 +211,7 @@ fn winning_card(
             True -> ordered
           }
         }
-        |> list.at(0)
+        |> list.first
       card
     }
     [lead, ..] -> {

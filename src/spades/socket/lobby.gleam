@@ -1,20 +1,23 @@
+import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/list
-import gleam/dict.{type Dict}
 import gleam/otp/actor
 import spades/game/game.{type Game}
 import spades/session.{type Session}
-import mist.{type WebsocketConnection}
+
+pub type Message {
+  Send(String)
+}
 
 pub type LobbyAction {
-  Join(session: Session, conn: WebsocketConnection)
+  Join(session: Session, subj: Subject(Message))
   Leave(id: Int)
   GameUpdate(game: Game)
 }
 
 pub type LobbyUser {
-  LobbyUser(session: Session, conn: WebsocketConnection)
+  LobbyUser(session: Session, subj: Subject(Message))
 }
 
 pub type LobbyState {
@@ -30,11 +33,11 @@ pub fn start() -> Result(Subject(LobbyAction), actor.StartError) {
       GameUpdate(game) -> {
         state.users
         |> dict.values
-        |> list.map(fn(lobby_user) { lobby_user.conn })
-        |> list.each(fn(existing) {
+        |> list.each(fn(lobby_user) {
           game
           |> game_to_string
-          |> mist.send_text_frame(existing, _)
+          |> Send
+          |> process.send(lobby_user.subj, _)
         })
         state
       }

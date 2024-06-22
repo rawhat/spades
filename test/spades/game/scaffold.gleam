@@ -1,8 +1,8 @@
 import gleam/function
-import spades/game/game.{type Game, Success}
-import spades/game/player.{type Player, East, North, Player, South, West}
 import spades/game/card.{type Deck}
+import spades/game/game.{type Game, Success}
 import spades/game/hand
+import spades/game/player.{type Player, East, North, Player, South, West}
 
 pub fn populate_game() -> #(Game, List(Player)) {
   let p1 = Player(id: 1, name: "alex", position: North, hand: hand.new())

@@ -65,7 +65,7 @@ pub fn login(
   |> pgo.execute(db, [pgo.text(username), pgo.text(hashed)], decoder())
   |> result.replace_error(Nil)
   |> result.map(fn(resp) { resp.rows })
-  |> result.then(list.at(_, 0))
+  |> result.then(list.first(_))
 }
 
 pub fn decoder() -> Decoder(User) {

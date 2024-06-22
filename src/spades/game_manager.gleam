@@ -1,26 +1,29 @@
+import gleam/dict.{type Dict}
 import gleam/dynamic.{decode2, field}
 import gleam/erlang/process.{type Subject}
 import gleam/json.{type Json}
 import gleam/list
-import gleam/dict.{type Dict}
 import gleam/option.{Some}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
+import logging
 import spades/game/card.{type Card}
-import spades/game/hand.{type Call}
 import spades/game/game.{type Game, type GameReturn, Success}
+import spades/game/hand.{type Call}
 import spades/game/player.{type Position, EastWest, North, NorthSouth, Player}
 import spades/session.{type Session}
-import mist/internal/logger
-import mist.{type WebsocketConnection, type WebsocketMessage, Text}
 
 pub type GameEntry {
   GameEntry(id: Int, name: String, players: Int)
 }
 
+pub type Message {
+  Send(String)
+}
+
 pub type GameUser {
-  GameUser(conn: WebsocketConnection, session: Session)
+  GameUser(subj: Subject(Message), session: Session)
 }
 
 pub fn return_to_entry(return: GameReturn) -> GameEntry {
@@ -61,7 +64,7 @@ pub type ManagerAction {
   ListGames(caller: Subject(List(GameEntry)))
   NewGame(caller: Subject(GameReturn), session: Session, name: String)
   Read(caller: Subject(Json), game_id: Int, player_id: Int)
-  Join(caller: WebsocketConnection, game_id: Int, session: Session)
+  Join(subj: Subject(Message), game_id: Int, session: Session)
   Leave(game_id: Int, session: Session)
 }
 
@@ -210,10 +213,10 @@ fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
           #(
             "state",
             case game.state {
-                game.Waiting -> "waiting"
-                game.Bidding -> "bidding"
-                game.Playing -> "playing"
-              }
+              game.Waiting -> "waiting"
+              game.Bidding -> "bidding"
+              game.Playing -> "playing"
+            }
               |> json.string,
           ),
           #(
@@ -284,7 +287,8 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
             list.each(game_state.users, fn(user) {
               game_return_to_json(user.session.id, return)
               |> json.to_string
-              |> mist.send_text_frame(user.conn, _)
+              |> Send
+              |> process.send(user.subj, _)
             })
           })
         actor.continue(state)
@@ -356,13 +360,11 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
   })
 }
 
-pub fn handler(
-  msg: WebsocketMessage(Nil),
+pub fn handle_message(
+  data: String,
   game_manager: Subject(ManagerAction),
   session: Session,
 ) -> Result(Nil, Nil) {
-  let assert Text(data) = msg
-
   field("type", dynamic.string)
   |> json.decode(data, _)
   |> result.replace_error(Nil)
@@ -413,7 +415,10 @@ pub fn handler(
     process.send(game_manager, Broadcast(game_return))
   })
   |> result.map_error(fn(err) {
-    logger.error(#("Failed to parse game manager message", err))
+    logging.log(
+      logging.Error,
+      "Failed to parse game manager message" <> string.inspect(err),
+    )
     Nil
   })
 }
@@ -476,10 +481,10 @@ fn game_to_json(g: Game) -> Json {
     #(
       "state",
       case g.state {
-          game.Waiting -> "waiting"
-          game.Bidding -> "bidding"
-          game.Playing -> "playing"
-        }
+        game.Waiting -> "waiting"
+        game.Bidding -> "bidding"
+        game.Playing -> "playing"
+      }
         |> json.string,
     ),
     #("trick", json.array(g.trick, hand.play_to_json)),

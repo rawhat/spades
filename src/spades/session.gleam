@@ -1,9 +1,9 @@
 import gleam/bit_array
+import gleam/dict.{type Dict}
 import gleam/dynamic
 import gleam/erlang/process.{type Subject}
 import gleam/http/response.{type Response}
 import gleam/json
-import gleam/dict.{type Dict}
 import gleam/order.{Gt}
 import gleam/otp/actor
 import gleam/result

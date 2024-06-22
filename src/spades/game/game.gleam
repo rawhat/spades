@@ -1,8 +1,8 @@
+import gleam/dict.{type Dict}
 import gleam/int
 import gleam/iterator
 import gleam/json.{type Json}
 import gleam/list
-import gleam/dict.{type Dict}
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import spades/game/bot
@@ -243,8 +243,9 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
       )
       |> fn(g) { Success(g, [Called(player_id, call)]) }
       |> advance_state
-    Bidding, current, Ok(Player(position: attempting, ..)) if current
-      != attempting -> Failure(game, NotYourTurn)
+    Bidding, current, Ok(Player(position: attempting, ..))
+      if current != attempting
+    -> Failure(game, NotYourTurn)
     _, _, _ -> Failure(game, InvalidAction)
   }
 }
@@ -270,8 +271,14 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
   {
     True, Spades, _, _, _, True -> True
     True, Spades, _, True, False, _ -> True
-    True, suit_to_play, [Play(card: Card(suit: leading_suit, ..), ..), ..], _, True, _ if suit_to_play
-      == leading_suit -> True
+    True,
+      suit_to_play,
+      [Play(card: Card(suit: leading_suit, ..), ..), ..],
+      _,
+      True,
+      _
+      if suit_to_play == leading_suit
+    -> True
     True, _, _, _, False, _ -> True
     True, Spades, [], False, _, False -> False
     True, _, [], _, _, _ -> True
@@ -297,8 +304,9 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
     }
 
     _, _, _, False -> Failure(game, InvalidSuit)
-    Playing, current, Player(position: attempting, ..), True if current
-      != attempting -> Failure(game, NotYourTurn)
+    Playing, current, Player(position: attempting, ..), True
+      if current != attempting
+    -> Failure(game, NotYourTurn)
     _, _, _, _ -> Failure(game, InvalidAction)
   }
 }
@@ -306,8 +314,14 @@ pub fn play_card(game: Game, player_id: Int, card: Card) -> GameReturn {
 pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
   let assert Ok(player) = dict.get(game.players, player_id)
   case game.state, game.current_player, player {
-    Bidding, current, Player(
-        hand: Hand(revealed: False, call: None, ..),
+    Bidding,
+      current,
+      Player(
+        hand: Hand(
+          revealed: False,
+          call: None,
+          ..,
+        ),
         position: position,
         ..,
       )
@@ -409,8 +423,7 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
     last_trick: Some(game.trick),
     players: updated_players,
     trick: [],
-    spades_broken: game.spades_broken
-    || has_spade,
+    spades_broken: game.spades_broken || has_spade,
   )
   |> Success(list.append(events, [AwardedTrick(winner)]))
 }
@@ -497,8 +510,8 @@ fn update_scores(game: Game) -> Game {
   Game(
     ..game,
     scores: game.scores
-    |> dict.update(NorthSouth, update_score(_, north_south_score))
-    |> dict.update(EastWest, update_score(_, east_west_score)),
+      |> dict.update(NorthSouth, update_score(_, north_south_score))
+      |> dict.update(EastWest, update_score(_, east_west_score)),
   )
 }
 
@@ -549,10 +562,10 @@ const names = [
 ]
 
 pub fn bot_name() -> String {
-  let names_length = list.length(names)
   let assert Ok(name) =
-    int.random(names_length)
-    |> list.at(names, _)
+    names
+    |> list.shuffle
+    |> list.first
   name
 }
 

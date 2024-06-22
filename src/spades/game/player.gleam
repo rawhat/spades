@@ -3,8 +3,8 @@ import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, Some}
 import gleam/result
-import spades/game/hand.{type Call, type Hand, Hand}
 import spades/game/card.{type Card}
+import spades/game/hand.{type Call, type Hand, Hand}
 
 pub type Position {
   North
