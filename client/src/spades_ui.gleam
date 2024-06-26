@@ -1,12 +1,12 @@
-import lustre/element.{type Element}
+import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}
+import lustre/element.{type Element}
 import lustre/element/html
-import lustre
 import lustre_http
+import spades_ui/create_user
 import spades_ui/lobby
 import spades_ui/login
-import spades_ui/create_user
 
 pub type Msg {
   RouteChanged(Route)
@@ -58,6 +58,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     CreateMsg(create_msg) -> {
       let update = create_user.update(model.create, create_msg)
       #(Model(..model, create: update.0), effect.map(update.1, CreateMsg))
+    }
+    LobbyMsg(lobby.CreateSuccess(game_id)) -> {
+      #(Model(..model, route: Route("/game/" <> game_id, "")), effect.none())
     }
     LobbyMsg(lobby_msg) -> {
       let update = lobby.update(model.lobby, lobby_msg)
