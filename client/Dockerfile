@@ -1,4 +1,4 @@
-FROM ghcr.io/gleam-lang/gleam:v0.34.1-node
+FROM ghcr.io/gleam-lang/gleam:v1.2.1-node
 
 WORKDIR /opt/app
 
