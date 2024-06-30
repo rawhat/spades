@@ -1,4 +1,4 @@
-import gleam/dynamic
+import decode
 import gleam/erlang/os
 import gleam/int
 import gleam/option.{Some}
@@ -66,7 +66,7 @@ pub fn migrate(db: pgo.Connection) -> Result(Nil, Nil) {
 
 fn run(db: pgo.Connection, name: String, sql: String) -> Result(Nil, Nil) {
   io.println(string.concat(["Running migration `", name, "`"]))
-  pgo.execute(sql, db, [], dynamic.dynamic)
+  pgo.execute(sql, db, [], decode.from(decode.dynamic, _))
   |> io.debug
   |> result.replace_error(Nil)
   |> result.replace(Nil)

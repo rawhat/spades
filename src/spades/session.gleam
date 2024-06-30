@@ -1,6 +1,6 @@
+import decode.{type Decoder}
 import gleam/bit_array
 import gleam/dict.{type Dict}
-import gleam/dynamic
 import gleam/erlang/process.{type Subject}
 import gleam/http/response.{type Response}
 import gleam/json
@@ -76,18 +76,39 @@ pub fn to_json(session: Session) -> String {
   |> json.to_string
 }
 
+fn session_decoder() -> Decoder(Session) {
+  decode.into({
+    use id <- decode.parameter
+    use username <- decode.parameter
+    use expires_at <- decode.parameter
+    Session(id, username, expires_at)
+  })
+  |> decode.field("id", decode.int)
+  |> decode.field("username", decode.string)
+  |> decode.field("expires_at", date.decoder())
+}
+
+pub type LoginRequest {
+  LoginRequest(username: String, password: String)
+}
+
+pub fn login_decoder() -> Decoder(LoginRequest) {
+  decode.into({
+    use username <- decode.parameter
+    use password <- decode.parameter
+    LoginRequest(username, password)
+  })
+  |> decode.field("username", decode.string)
+  |> decode.field("password", decode.string)
+}
+
 pub fn parse_cookie_header(str: String) -> Result(Session, Nil) {
   str
   |> bit_array.base64_decode
   |> result.then(bit_array.to_string)
   |> result.then(fn(str) {
     str
-    |> json.decode(dynamic.decode3(
-      Session,
-      dynamic.field("id", dynamic.int),
-      dynamic.field("username", dynamic.string),
-      dynamic.field("expires_at", date.decoder()),
-    ))
+    |> json.decode(decode.from(session_decoder(), _))
     |> result.replace_error(Nil)
   })
 }

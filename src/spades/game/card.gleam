@@ -1,4 +1,4 @@
-import gleam/dynamic.{type Decoder, DecodeError, field}
+import decode.{type Decoder}
 import gleam/int
 import gleam/iterator
 import gleam/json.{type Json}
@@ -68,47 +68,43 @@ pub type Card {
 }
 
 fn suit_decoder() -> Decoder(Suit) {
-  fn(value) {
-    value
-    |> dynamic.string
-    |> result.then(fn(suit) {
-      case suit {
-        "C" -> Ok(Clubs)
-        "D" -> Ok(Diamonds)
-        "H" -> Ok(Hearts)
-        "S" -> Ok(Spades)
-        _ -> Error([DecodeError("suit", suit, [])])
-      }
-    })
-  }
+  decode.string
+  |> decode.then(fn(suit) {
+    case suit {
+      "C" -> decode.into(Clubs)
+      "D" -> decode.into(Diamonds)
+      "H" -> decode.into(Hearts)
+      "S" -> decode.into(Spades)
+      _ -> decode.fail("Suit")
+    }
+  })
 }
 
 fn value_decoder() -> Decoder(Value) {
-  fn(value) {
-    value
-    |> dynamic.string
-    |> result.then(fn(value) {
+  decode.string
+  |> decode.then(fn(value) {
+    decode.one_of([
       case value {
-        "J" -> Ok(Jack)
-        "Q" -> Ok(Queen)
-        "K" -> Ok(King)
-        "A" -> Ok(Ace)
-        number ->
-          number
-          |> int.parse
-          |> result.map(Number)
-          |> result.replace_error([DecodeError("value", number, [])])
-      }
-    })
-  }
+        "J" -> decode.into(Jack)
+        "Q" -> decode.into(Queen)
+        "K" -> decode.into(King)
+        "A" -> decode.into(Ace)
+        _ -> decode.fail("Value")
+      },
+      decode.int
+        |> decode.map(Number),
+    ])
+  })
 }
 
 pub fn decoder() -> Decoder(Card) {
-  dynamic.decode2(
-    Card,
-    field("suit", suit_decoder()),
-    field("value", value_decoder()),
-  )
+  decode.into({
+    use suit <- decode.parameter
+    use value <- decode.parameter
+    Card(suit, value)
+  })
+  |> decode.field("suit", suit_decoder())
+  |> decode.field("value", value_decoder())
 }
 
 fn order_of(cards: List(Card), suit: Suit, order: Order) -> Result(Card, Nil) {

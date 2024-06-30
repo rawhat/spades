@@ -1,8 +1,7 @@
-import gleam/dynamic.{type Decoder, DecodeError, field}
+import decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import spades/game/card.{type Card, Spades}
 
 pub type Score {
@@ -54,21 +53,17 @@ pub type Trick =
   List(Play)
 
 pub fn call_decoder() -> Decoder(Call) {
-  dynamic.any([
-    fn(value) {
-      dynamic.string(value)
-      |> result.then(fn(call) {
+  decode.one_of([
+    decode.string
+      |> decode.then(fn(call) {
         case call {
-          "blind_nil" -> Ok(BlindNil)
-          "nil" -> Ok(Nil)
-          _ -> Error([DecodeError("call", call, [])])
+          "blind_nil" -> decode.into(BlindNil)
+          "nil" -> decode.into(Nil)
+          _ -> decode.fail("Call")
         }
-      })
-    },
-    field("count", fn(value) {
-      dynamic.int(value)
-      |> result.map(Count)
-    }),
+      }),
+    decode.into(Count)
+      |> decode.field("count", decode.int),
   ])
 }
 

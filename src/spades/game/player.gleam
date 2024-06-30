@@ -1,8 +1,7 @@
-import gleam/dynamic.{type Decoder, DecodeError}
+import decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, Some}
-import gleam/result
 import spades/game/card.{type Card}
 import spades/game/hand.{type Call, type Hand, Hand}
 
@@ -14,19 +13,16 @@ pub type Position {
 }
 
 pub fn position_decoder() -> Decoder(Position) {
-  fn(value) {
-    value
-    |> dynamic.string
-    |> result.then(fn(position) {
-      case position {
-        "north" -> Ok(North)
-        "east" -> Ok(East)
-        "south" -> Ok(South)
-        "west" -> Ok(West)
-        _ -> Error([DecodeError("position", position, [])])
-      }
-    })
-  }
+  decode.string
+  |> decode.then(fn(position) {
+    case position {
+      "north" -> decode.into(North)
+      "east" -> decode.into(East)
+      "south" -> decode.into(South)
+      "west" -> decode.into(West)
+      _ -> decode.fail("Position")
+    }
+  })
 }
 
 pub fn position_to_json(position: Position) -> Json {

@@ -1,5 +1,5 @@
+import decode
 import gleam/dict.{type Dict}
-import gleam/dynamic.{decode2, field}
 import gleam/erlang/process.{type Subject}
 import gleam/json.{type Json}
 import gleam/list
@@ -365,51 +365,68 @@ pub fn handle_message(
   game_manager: Subject(ManagerAction),
   session: Session,
 ) -> Result(Nil, Nil) {
-  field("type", dynamic.string)
-  |> json.decode(data, _)
-  |> result.replace_error(Nil)
-  |> result.then(fn(msg_type) {
-    case msg_type {
-      "add_bot" ->
-        decode2(
-          AddBot,
-          field("id", dynamic.int),
-          field("position", player.position_decoder()),
-        )
-      "add_player" ->
-        decode2(
-          AddPlayer,
-          field("id", dynamic.int),
-          field("position", player.position_decoder()),
-        )
-      "make_call" ->
-        decode2(
-          MakeCall,
-          field("id", dynamic.int),
-          field("call", hand.call_decoder()),
-        )
-      "play_card" ->
-        decode2(
-          PlayCard,
-          field("id", dynamic.int),
-          field("card", card.decoder()),
-        )
-      "reveal_hand" -> fn(dyn) {
-        dyn
-        |> field("id", dynamic.int)
-        |> result.map(Reveal)
+  let add_bot_decoder =
+    decode.into({
+      use id <- decode.parameter
+      use position <- decode.parameter
+      AddBot(id, position)
+    })
+    |> decode.field("id", decode.int)
+    |> decode.field("position", player.position_decoder())
+
+  let add_player_decoder =
+    decode.into({
+      use id <- decode.parameter
+      use position <- decode.parameter
+      AddPlayer(id, position)
+    })
+    |> decode.field("id", decode.int)
+    |> decode.field("position", player.position_decoder())
+
+  let make_call_decoder =
+    decode.into({
+      use id <- decode.parameter
+      use call <- decode.parameter
+      MakeCall(id, call)
+    })
+    |> decode.field("id", decode.int)
+    |> decode.field("call", hand.call_decoder())
+
+  let play_card_decoder =
+    decode.into({
+      use id <- decode.parameter
+      use card <- decode.parameter
+      PlayCard(id, card)
+    })
+    |> decode.field("id", decode.int)
+    |> decode.field("call", card.decoder())
+
+  let reveal_decoder =
+    decode.into({
+      use id <- decode.parameter
+      Reveal(id)
+    })
+    |> decode.field("id", decode.int)
+
+  let decoder =
+    decode.at(["type"], decode.string)
+    |> decode.then(fn(msg_type) {
+      case msg_type {
+        "add_bot" -> add_bot_decoder
+        "add_player" -> add_player_decoder
+        "make_call" -> make_call_decoder
+        "play_card" -> play_card_decoder
+        "reveal_hand" -> reveal_decoder
+        _ -> decode.fail("Msg")
       }
-      _ -> fn(dyn) {
-        Error([dynamic.DecodeError("name", string.inspect(dyn), ["msg"])])
-      }
-    }
-    |> field("data", _)
-    |> json.decode(data, _)
-    |> result.replace_error(Nil)
-  })
+      |> decode.at(["data"], _)
+    })
+
+  json.decode(data, decode.from(decoder, _))
+  |> result.nil_error
   |> result.then(fn(action) {
     process.try_call(game_manager, Act(_, session, action), 10)
-    |> result.replace_error(Nil)
+    |> result.nil_error
   })
   |> result.map(fn(game_return) {
     process.send(game_manager, Broadcast(game_return))

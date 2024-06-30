@@ -1,4 +1,4 @@
-import gleam/dynamic
+import decode
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list.{Continue, Stop}
@@ -9,22 +9,26 @@ pub type Date {
   Date(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int)
 }
 
-pub fn decoder() -> dynamic.Decoder(Date) {
-  fn(dyn) {
-    dyn
-    |> dynamic.list(dynamic.int)
-    |> result.then(fn(elements) {
-      case elements {
-        [year, month, day, hour, minute, second] ->
-          Ok(Date(year, month, day, hour, minute, second))
-        _ -> Error([dynamic.DecodeError("Date", "List(Int)", [])])
-      }
-    })
-  }
+pub fn decoder() -> decode.Decoder(Date) {
+  decode.into({
+    use year <- decode.parameter
+    use month <- decode.parameter
+    use day <- decode.parameter
+    use hour <- decode.parameter
+    use minute <- decode.parameter
+    use second <- decode.parameter
+    Date(year, month, day, hour, minute, second)
+  })
+  |> decode.field(0, decode.int)
+  |> decode.field(1, decode.int)
+  |> decode.field(2, decode.int)
+  |> decode.field(3, decode.int)
+  |> decode.field(4, decode.int)
+  |> decode.field(5, decode.int)
 }
 
 pub fn from_string(date_string: String) -> Result(Date, Nil) {
-  decoder()
+  decode.from(decoder(), _)
   |> json.decode(date_string, _)
   |> result.replace_error(Nil)
 }

@@ -1,7 +1,6 @@
+import decode.{type Decoder}
 import gleam/bit_array
 import gleam/bytes_builder
-import gleam/dict
-import gleam/dynamic
 import gleam/erlang/charlist.{type Charlist}
 import gleam/erlang/process.{type Subject}
 import gleam/function
@@ -99,19 +98,15 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Post, ["api", "session"] -> {
       let assert Ok(req) = mist.read_body(app_req.req, 1024 * 1024 * 10)
       let assert Ok(body_string) = bit_array.to_string(req.body)
-      let assert Ok(request_map) =
-        json.decode(
-          body_string,
-          dynamic.dict(
-            dynamic.string,
-            dynamic.dict(dynamic.string, dynamic.string),
-          ),
-        )
-      // TODO:  probably make this a custom type?
-      let assert Ok(user_req) = dict.get(request_map, "session")
-      let assert Ok(username) = dict.get(user_req, "username")
-      let assert Ok(password) = dict.get(user_req, "password")
-      user.login(app_req.db, app_req.salt, username, password)
+      let decoder = decode.at(["session"], session.login_decoder())
+      let assert Ok(login_request) =
+        json.decode(body_string, decode.from(decoder, _))
+      user.login(
+        app_req.db,
+        app_req.salt,
+        login_request.username,
+        login_request.password,
+      )
       |> result.map(fn(user) {
         let value = session.new(user.id, user.username)
         process.send(app_req.session_manager, session.Add(user.id, value))
@@ -122,17 +117,14 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap_both
     }
     Post, ["api", "user"] -> {
-      let decoder =
-        dynamic.dict(
-          dynamic.string,
-          dynamic.dict(dynamic.string, dynamic.string),
-        )
-      let assert Ok(request_map) = get_json_body(app_req, decoder)
-      // TODO:  probably make this a custom type?
-      let assert Ok(user_req) = dict.get(request_map, "user")
-      let assert Ok(username) = dict.get(user_req, "username")
-      let assert Ok(password) = dict.get(user_req, "password")
-      user.create(app_req.db, app_req.salt, username, password)
+      let decoder = decode.at(["user"], session.login_decoder())
+      let assert Ok(login_request) = get_json_body(app_req, decoder)
+      user.create(
+        app_req.db,
+        app_req.salt,
+        login_request.username,
+        login_request.password,
+      )
       |> result.map(fn(public_user) {
         let value = session.new(public_user.id, public_user.username)
         process.send(
@@ -171,10 +163,11 @@ pub fn router(app_req: AppRequest) -> AppResult {
       })
     Post, ["api", "game"] ->
       with_authentication(app_req, fn() {
-        let decoder = dynamic.dict(dynamic.string, dynamic.string)
+        let game_name_decoder =
+          decode.into(fn(name) { name })
+          |> decode.field("name", decode.string)
         {
-          use body <- result.then(get_json_body(app_req, decoder))
-          use game_name <- result.then(dict.get(body, "name"))
+          use game_name <- result.then(get_json_body(app_req, game_name_decoder))
           use session <- result.then(app_req.session)
           use new_game <- result.then(
             process.try_call(
@@ -254,11 +247,9 @@ pub fn router(app_req: AppRequest) -> AppResult {
                 game
                 |> json.to_string
                 |> mist.send_text_frame(conn, _)
-
               let selector =
                 process.new_selector()
                 |> process.selecting(subj, function.identity)
-
               #(Nil, Some(selector))
             },
             handler: fn(state, conn, msg) {
@@ -388,10 +379,7 @@ fn get_cookie_from_request(app_req: AppRequest) -> Result(session.Session, Nil) 
   })
 }
 
-fn get_json_body(
-  app_req: AppRequest,
-  decoder: dynamic.Decoder(a),
-) -> Result(a, Nil) {
+fn get_json_body(app_req: AppRequest, decoder: Decoder(a)) -> Result(a, Nil) {
   app_req.req
   |> mist.read_body(1024 * 1024 * 10)
   |> result.replace_error(Nil)
@@ -399,7 +387,7 @@ fn get_json_body(
   |> result.then(bit_array.to_string)
   |> result.then(fn(body) {
     body
-    |> json.decode(decoder)
+    |> json.decode(decode.from(decoder, _))
     |> result.replace_error(Nil)
   })
 }
