@@ -1,10 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/option.{Some}
-import gleeunit/should
 import spades/game/bot
 import spades/game/card.{Ace, Card, Diamonds, Hearts, King, Number, Spades}
 import spades/game/hand.{type Call, Count, Nil, Play}
 import spades/game/player.{type Player, East, North, South, West}
+import startest/expect
 
 fn make_players() {
   dict.from_list([
@@ -29,14 +29,14 @@ pub fn leading_call_with_strong_hand_test() {
   player.new(1, "bot", North)
   |> player.receive_cards([Card(Spades, Ace), Card(Diamonds, King)])
   |> bot.call(make_players(), _)
-  |> should.equal(Count(2))
+  |> expect.to_equal(Count(2))
 }
 
 pub fn leading_call_with_weak_hand_test() {
   player.new(1, "bot", North)
   |> player.receive_cards([Card(Spades, Number(4)), Card(Diamonds, Number(3))])
   |> bot.call(make_players(), _)
-  |> should.equal(Count(0))
+  |> expect.to_equal(Count(0))
 }
 
 pub fn middle_call_with_strong_hand_test() {
@@ -48,7 +48,7 @@ pub fn middle_call_with_strong_hand_test() {
   player.new(1, "bot", North)
   |> player.receive_cards([Card(Spades, Ace), Card(Diamonds, King)])
   |> bot.call(players, _)
-  |> should.equal(Count(1))
+  |> expect.to_equal(Count(1))
 }
 
 pub fn covering_teammate_nil_test() {
@@ -61,7 +61,7 @@ pub fn covering_teammate_nil_test() {
   player.new(1, "bot", North)
   |> player.receive_cards([Card(Spades, Ace), Card(Diamonds, King)])
   |> bot.call(players, _)
-  |> should.equal(Count(7))
+  |> expect.to_equal(Count(7))
 }
 
 pub fn playing_to_win_force_to_play_suited_test() {
@@ -84,7 +84,7 @@ pub fn playing_to_win_force_to_play_suited_test() {
     ],
     _,
   )
-  |> should.equal(Card(Diamonds, King))
+  |> expect.to_equal(Card(Diamonds, King))
 }
 
 pub fn playing_to_win_try_to_win_with_higher_test() {
@@ -107,7 +107,7 @@ pub fn playing_to_win_try_to_win_with_higher_test() {
     ],
     _,
   )
-  |> should.equal(Card(Diamonds, King))
+  |> expect.to_equal(Card(Diamonds, King))
 }
 
 pub fn playing_to_win_uses_spade_to_win_test() {
@@ -130,7 +130,7 @@ pub fn playing_to_win_uses_spade_to_win_test() {
     ],
     _,
   )
-  |> should.equal(Card(Spades, Ace))
+  |> expect.to_equal(Card(Spades, Ace))
 }
 
 pub fn playing_to_win_lets_teammate_win_test() {
@@ -153,7 +153,7 @@ pub fn playing_to_win_lets_teammate_win_test() {
     ],
     _,
   )
-  |> should.equal(Card(Diamonds, King))
+  |> expect.to_equal(Card(Diamonds, King))
 }
 
 pub fn playing_to_win_spades_when_possible_test() {
@@ -176,7 +176,7 @@ pub fn playing_to_win_spades_when_possible_test() {
     ],
     _,
   )
-  |> should.equal(Card(Spades, Ace))
+  |> expect.to_equal(Card(Spades, Ace))
 }
 
 pub fn playing_for_nil_leads_with_low_card_test() {
@@ -190,7 +190,7 @@ pub fn playing_for_nil_leads_with_low_card_test() {
   |> player.receive_cards([Card(Hearts, Number(10)), Card(Hearts, Number(2))])
   |> player.make_call(Nil)
   |> bot.play_card(players, False, [], _)
-  |> should.equal(Card(Hearts, Number(2)))
+  |> expect.to_equal(Card(Hearts, Number(2)))
 }
 
 pub fn playing_for_nil_plays_highest_card_under_test() {
@@ -213,5 +213,5 @@ pub fn playing_for_nil_plays_highest_card_under_test() {
     ],
     _,
   )
-  |> should.equal(Card(Hearts, Number(10)))
+  |> expect.to_equal(Card(Hearts, Number(10)))
 }

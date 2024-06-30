@@ -132,14 +132,16 @@ fn play_for_nil(trick: Trick, bot: Player) -> Card {
             let assert Ok(min_spade) = card.min_of_suit(bot.hand.cards, Spades)
             min_spade
           })
-        suited ->
+        suited -> {
+          let winning_card = hand.find_winning_card(trick)
           suited
-          |> list.filter(fn(c) { card.compare(c, lead.card) == order.Lt })
+          |> list.filter(fn(c) { card.compare(c, winning_card) == order.Lt })
           |> card.max_value
           |> result.lazy_unwrap(fn() {
             let assert Ok(broken) = card.max_value(suited)
             broken
           })
+        }
       }
     }
   }
@@ -227,11 +229,12 @@ fn winning_card(
               min
             }
           }
-        _ ->
+        _ -> {
+          let winning_card = hand.find_winning_card(trick)
           suited_cards
           |> card.max_of_suit(lead_suit)
           |> result.then(fn(max) {
-            case card.compare(max, lead.card) {
+            case card.compare(max, winning_card) {
               order.Lt -> card.min_of_suit(suited_cards, lead_suit)
               order.Gt | _ -> Ok(max)
             }
@@ -241,6 +244,7 @@ fn winning_card(
             highest_spade
             |> result.unwrap(min)
           })
+        }
       }
     }
   }

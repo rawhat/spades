@@ -1,15 +1,15 @@
 import gleam/order.{Eq, Gt, Lt}
-import gleeunit/should
 import spades/game/card.{
   Ace, Card, Clubs, Diamonds, Hearts, Jack, King, Number, Queen, Spades,
 }
+import startest/expect
 
 pub fn same_suit_number_test() {
   let one = Card(Diamonds, Number(2))
   let two = Card(Diamonds, Number(10))
 
   card.compare(one, two)
-  |> should.equal(Lt)
+  |> expect.to_equal(Lt)
 }
 
 pub fn suit_ranking_number_test() {
@@ -17,7 +17,7 @@ pub fn suit_ranking_number_test() {
   let two = Card(Diamonds, Number(10))
 
   card.compare(one, two)
-  |> should.equal(Lt)
+  |> expect.to_equal(Lt)
 }
 
 pub fn face_card_greater_test() {
@@ -25,7 +25,7 @@ pub fn face_card_greater_test() {
   let two = Card(Spades, Jack)
 
   card.compare(one, two)
-  |> should.equal(Gt)
+  |> expect.to_equal(Gt)
 }
 
 pub fn face_card_equal_test() {
@@ -33,7 +33,7 @@ pub fn face_card_equal_test() {
   let two = Card(Spades, Jack)
 
   card.compare(one, two)
-  |> should.equal(Eq)
+  |> expect.to_equal(Eq)
 }
 
 pub fn face_card_less_test() {
@@ -41,7 +41,7 @@ pub fn face_card_less_test() {
   let two = Card(Spades, King)
 
   card.compare(one, two)
-  |> should.equal(Lt)
+  |> expect.to_equal(Lt)
 }
 
 pub fn max_with_match_test() {
@@ -53,7 +53,7 @@ pub fn max_with_match_test() {
   ]
 
   card.max_of_suit(cards, Diamonds)
-  |> should.equal(Ok(Card(Diamonds, Ace)))
+  |> expect.to_equal(Ok(Card(Diamonds, Ace)))
 }
 
 pub fn max_with_no_match_test() {
@@ -65,7 +65,7 @@ pub fn max_with_no_match_test() {
   ]
 
   card.max_of_suit(cards, Spades)
-  |> should.equal(Error(Nil))
+  |> expect.to_equal(Error(Nil))
 }
 
 pub fn min_with_match_test() {
@@ -77,7 +77,7 @@ pub fn min_with_match_test() {
   ]
 
   card.min_of_suit(cards, Diamonds)
-  |> should.equal(Ok(Card(Diamonds, Number(2))))
+  |> expect.to_equal(Ok(Card(Diamonds, Number(2))))
 }
 
 pub fn min_with_no_match_test() {
@@ -89,14 +89,14 @@ pub fn min_with_no_match_test() {
   ]
 
   card.min_of_suit(cards, Clubs)
-  |> should.equal(Error(Nil))
+  |> expect.to_equal(Error(Nil))
 }
 
 pub fn to_string_test() {
   let one = Card(Hearts, Queen)
 
   card.to_string(one)
-  |> should.equal("QH")
+  |> expect.to_equal("QH")
 }
 
 pub fn hand_sorting_test() {
@@ -112,7 +112,7 @@ pub fn hand_sorting_test() {
   ]
 
   card.hand_sort(cards)
-  |> should.equal([
+  |> expect.to_equal([
     Card(Spades, Number(2)),
     Card(Spades, Jack),
     Card(Diamonds, Number(10)),
@@ -137,25 +137,25 @@ pub fn make_deck_test() {
 
   actual
   |> list_at(0)
-  |> should.equal(Ok(Card(Clubs, Number(2))))
+  |> expect.to_equal(Ok(Card(Clubs, Number(2))))
 
   actual
   |> list_at(1)
-  |> should.equal(Ok(Card(Diamonds, Number(3))))
+  |> expect.to_equal(Ok(Card(Diamonds, Number(3))))
 
   actual
   |> list_at(2)
-  |> should.equal(Ok(Card(Hearts, Number(4))))
+  |> expect.to_equal(Ok(Card(Hearts, Number(4))))
 
   actual
   |> list_at(3)
-  |> should.equal(Ok(Card(Spades, Number(5))))
+  |> expect.to_equal(Ok(Card(Spades, Number(5))))
 
   actual
   |> list_at(13)
-  |> should.equal(Ok(Card(Diamonds, Number(2))))
+  |> expect.to_equal(Ok(Card(Diamonds, Number(2))))
 
   actual
   |> list_at(51)
-  |> should.equal(Ok(Card(Spades, Ace)))
+  |> expect.to_equal(Ok(Card(Spades, Ace)))
 }

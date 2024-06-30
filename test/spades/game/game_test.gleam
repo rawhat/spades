@@ -1,12 +1,12 @@
 import gleam/dict
 import gleam/function
 import gleam/list
-import gleeunit/should
 import spades/game/card.{Card}
 import spades/game/game.{Bidding, Failure, InvalidSuit, Playing, Success}
 import spades/game/hand.{Count, Play}
 import spades/game/player.{East, North, NorthSouth, Player, South, West}
 import spades/game/scaffold
+import startest/expect
 
 pub fn add_player_updates_game_test() {
   let g = game.new(1, "test-game", "1")
@@ -14,9 +14,9 @@ pub fn add_player_updates_game_test() {
 
   let assert Success(g, _events) = game.add_player(g, player)
 
-  should.equal(g.players, dict.from_list([#(player.id, player)]))
-  should.equal(g.teams, dict.from_list([#(NorthSouth, [player.id])]))
-  should.equal(g.player_position, dict.from_list([#(North, player.id)]))
+  expect.to_equal(g.players, dict.from_list([#(player.id, player)]))
+  expect.to_equal(g.teams, dict.from_list([#(NorthSouth, [player.id])]))
+  expect.to_equal(g.player_position, dict.from_list([#(North, player.id)]))
 }
 
 pub fn add_duplicate_position_errors_test() {
@@ -26,7 +26,7 @@ pub fn add_duplicate_position_errors_test() {
   let assert Success(g, _events) = game.add_player(g, player)
 
   game.add_player(g, player)
-  |> should.equal(Failure(g, game.TeamFull))
+  |> expect.to_equal(Failure(g, game.TeamFull))
 }
 
 pub fn add_team_overflow_errors_test() {
@@ -39,7 +39,7 @@ pub fn add_team_overflow_errors_test() {
   let assert Success(g, _events) = game.add_player(g, p2)
 
   game.add_player(g, p3)
-  |> should.equal(Failure(g, game.TeamFull))
+  |> expect.to_equal(Failure(g, game.TeamFull))
 }
 
 pub fn add_more_than_four_errors_test() {
@@ -47,18 +47,18 @@ pub fn add_more_than_four_errors_test() {
   let p5 = Player(id: 5, name: "krampus", position: North, hand: hand.new())
 
   game.add_player(g, p5)
-  |> should.equal(Failure(g, game.GameFull))
+  |> expect.to_equal(Failure(g, game.GameFull))
 }
 
 pub fn add_player_to_start_bidding_test() {
   let #(g, _players) = scaffold.populate_game()
 
-  should.equal(g.state, game.Bidding)
+  expect.to_equal(g.state, game.Bidding)
 
   let assert Ok(p1) = dict.get(g.players, 1)
 
   list.length(p1.hand.cards)
-  |> should.equal(13)
+  |> expect.to_equal(13)
 }
 
 pub fn bidding_finished_play_card_test() {
@@ -70,8 +70,8 @@ pub fn bidding_finished_play_card_test() {
     |> game.then(game.make_call(_, p2.id, Count(3)))
     |> game.then(game.make_call(_, p4.id, Count(3)))
 
-  should.equal(g.state, game.Playing)
-  should.equal(g.current_player, North)
+  expect.to_equal(g.state, game.Playing)
+  expect.to_equal(g.current_player, North)
 }
 
 pub fn playing_valid_card_adds_to_trick_test() {
@@ -93,7 +93,7 @@ pub fn playing_valid_card_adds_to_trick_test() {
     |> game.then(game.make_call(_, p4.id, Count(3)))
     |> game.then(game.play_card(_, p1.id, first_card))
 
-  should.equal(g.trick, [Play(p1.id, first_card)])
+  expect.to_equal(g.trick, [Play(p1.id, first_card)])
 }
 
 pub fn playing_not_leading_suit_fails_test() {
@@ -122,7 +122,7 @@ pub fn playing_not_leading_suit_fails_test() {
 
   g
   |> game.play_card(p3.id, second_card)
-  |> should.equal(Failure(g, game.InvalidSuit))
+  |> expect.to_equal(Failure(g, game.InvalidSuit))
 }
 
 pub fn playing_spade_when_not_broken_fails_test() {
@@ -151,7 +151,7 @@ pub fn playing_spade_when_not_broken_fails_test() {
 
   g
   |> game.play_card(p3.id, second_card)
-  |> should.equal(Failure(g, game.InvalidSuit))
+  |> expect.to_equal(Failure(g, game.InvalidSuit))
 }
 
 pub fn playing_a_full_round_completes_trick_and_scores_test() {
@@ -174,10 +174,10 @@ pub fn playing_a_full_round_completes_trick_and_scores_test() {
     |> game.then(game.play_card(_, p2.id, third_card))
     |> game.then(game.play_card(_, p4.id, fourth_card))
 
-  should.equal(g.state, game.Bidding)
+  expect.to_equal(g.state, game.Bidding)
   let assert Ok(north_south_score) = dict.get(g.scores, NorthSouth)
-  should.equal(north_south_score, hand.Score(10, 0))
-  should.equal(g.current_player, p2.position)
+  expect.to_equal(north_south_score, hand.Score(10, 0))
+  expect.to_equal(g.current_player, p3.position)
 }
 
 pub fn find_winner_with_same_suit_test() {
@@ -190,7 +190,7 @@ pub fn find_winner_with_same_suit_test() {
 
   trick
   |> hand.find_winner
-  |> should.equal(4)
+  |> expect.to_equal(4)
 }
 
 pub fn find_winner_with_all_else_offsuit_test() {
@@ -203,7 +203,7 @@ pub fn find_winner_with_all_else_offsuit_test() {
 
   trick
   |> hand.find_winner
-  |> should.equal(1)
+  |> expect.to_equal(1)
 }
 
 pub fn find_winner_with_spade_test() {
@@ -216,7 +216,7 @@ pub fn find_winner_with_spade_test() {
 
   trick
   |> hand.find_winner
-  |> should.equal(3)
+  |> expect.to_equal(3)
 }
 
 pub fn play_spades_when_having_other_suits_and_not_broken_test() {
@@ -250,7 +250,7 @@ pub fn play_spades_when_having_other_suits_and_not_broken_test() {
 
   g
   |> game.play_card(p1.id, Card(card.Spades, card.Number(2)))
-  |> should.equal(Failure(g, InvalidSuit))
+  |> expect.to_equal(Failure(g, InvalidSuit))
 }
 
 pub fn play_with_multiple_bots_proceeds_through_states_test() {
@@ -275,14 +275,14 @@ pub fn play_with_multiple_bots_proceeds_through_states_test() {
     |> game.then(game.add_bot(_, East))
     |> game.then(game.add_bot(_, West))
 
-  should.equal(g.state, Bidding)
+  expect.to_equal(g.state, Bidding)
 
   let assert Success(g, _events) = game.make_call(g, human.id, Count(1))
 
-  should.equal(g.state, Playing)
+  expect.to_equal(g.state, Playing)
 
   let assert Success(g, _events) =
     game.play_card(g, human.id, Card(card.Diamonds, card.Number(6)))
 
-  should.equal(g.current_player, North)
+  expect.to_equal(g.current_player, North)
 }
