@@ -1,21 +1,16 @@
 import gleam/dynamic
-import gleam/http/request
 import gleam/http.{Http, Post}
+import gleam/http/request
 import gleam/json
-import lustre/element.{type Element}
 import lustre/attribute
 import lustre/effect.{type Effect}
-import lustre/event
+import lustre/element.{type Element}
 import lustre/element/html.{a}
-import lustre_http
-import lustre/ui/alert
-import lustre/ui/box
-import lustre/ui/button
-import lustre/ui/centre
-import lustre/ui/field
-import lustre/ui/input
-import lustre/ui/stack
+import lustre/event
 import lustre/ui
+import lustre/ui/alert
+import lustre/ui/stack
+import lustre_http
 import util.{when}
 
 pub type Model {
@@ -58,9 +53,7 @@ fn login(username: String, password: String) -> Effect(Msg) {
     |> json.to_string
 
   let req =
-    request.new()
-    |> request.set_scheme(Http)
-    |> request.set_port(5000)
+    util.new_request()
     |> request.set_path("/api/session")
     |> request.set_method(Post)
     |> request.set_body(body)

@@ -3,7 +3,6 @@ import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
-import lustre_http
 import spades_ui/create_user
 import spades_ui/lobby
 import spades_ui/login

@@ -39,3 +39,7 @@ export function getInitialRoute() {
   const url = new URL(window.location.href);
   return new Route(url.pathname, url.hash);
 }
+
+export function getHostnameAndPort() {
+  return [window.location.hostname, window.location.port]
+}

@@ -3,16 +3,16 @@ import gleam/http.{Http, Post}
 import gleam/http/request
 import gleam/json
 import gleam/result
+import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html.{a}
 import lustre/event
-import lustre/attribute
+import lustre/ui
 import lustre/ui/alert
 import lustre/ui/field
 import lustre/ui/sequence
 import lustre/ui/stack
-import lustre/ui
 import lustre_http
 import util.{when}
 
@@ -66,9 +66,7 @@ fn create(model: Model) -> Effect(Msg) {
     |> json.to_string
 
   let req =
-    request.new()
-    |> request.set_scheme(Http)
-    |> request.set_port(5000)
+    util.new_request()
     |> request.set_path("/api/user")
     |> request.set_method(Post)
     |> request.set_body(body)

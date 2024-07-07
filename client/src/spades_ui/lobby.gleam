@@ -8,18 +8,14 @@ import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
-import gleam/string
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html.{div, h1, h2}
 import lustre/event
 import lustre/ui
-import lustre/ui/box
 import lustre/ui/button
-import lustre/ui/centre
 import lustre/ui/sequence
-import lustre/ui/stack
 import lustre_http
 import lustre_websocket as ws
 
@@ -76,8 +72,6 @@ fn message_decoder() -> Decoder(Dict(Int, GameEntry)) {
     }),
   ])
 }
-
-import gleam/io
 
 fn create_game(name: String) -> Effect(Msg) {
   let assert Ok(req) = request.to("http://localhost:5000/api/game")
@@ -161,7 +155,7 @@ fn divider() -> Element(Msg) {
   ])
 }
 
-fn game_list(games: Dict(Int, GameEntry)) -> Element(Msg) {
+fn game_list(_games: Dict(Int, GameEntry)) -> Element(Msg) {
   div([], [])
 }
 
