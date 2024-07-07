@@ -1,4 +1,5 @@
-import decode
+import decode.{type Decoder}
+import gleam/float
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list.{Continue, Stop}
@@ -9,22 +10,36 @@ pub type Date {
   Date(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int)
 }
 
-pub fn decoder() -> decode.Decoder(Date) {
+pub fn decoder() -> Decoder(Date) {
+  let ymd_decoder =
+    decode.into({
+      use year <- decode.parameter
+      use month <- decode.parameter
+      use day <- decode.parameter
+      #(year, month, day)
+    })
+    |> decode.field(0, decode.int)
+    |> decode.field(1, decode.int)
+    |> decode.field(2, decode.int)
+
+  let hms_decoder =
+    decode.into({
+      use hour <- decode.parameter
+      use minute <- decode.parameter
+      use second <- decode.parameter
+      #(hour, minute, second)
+    })
+    |> decode.field(0, decode.int)
+    |> decode.field(1, decode.int)
+    |> decode.field(2, decode.float)
+
   decode.into({
-    use year <- decode.parameter
-    use month <- decode.parameter
-    use day <- decode.parameter
-    use hour <- decode.parameter
-    use minute <- decode.parameter
-    use second <- decode.parameter
-    Date(year, month, day, hour, minute, second)
+    use #(year, month, day) <- decode.parameter
+    use #(hour, minute, second) <- decode.parameter
+    Date(year, month, day, hour, minute, float.round(second))
   })
-  |> decode.field(0, decode.int)
-  |> decode.field(1, decode.int)
-  |> decode.field(2, decode.int)
-  |> decode.field(3, decode.int)
-  |> decode.field(4, decode.int)
-  |> decode.field(5, decode.int)
+  |> decode.field(0, ymd_decoder)
+  |> decode.field(1, hms_decoder)
 }
 
 pub fn from_string(date_string: String) -> Result(Date, Nil) {

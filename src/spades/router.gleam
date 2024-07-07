@@ -89,6 +89,8 @@ pub fn session_middleware(
   }
 }
 
+import gleam/io
+
 pub fn router(app_req: AppRequest) -> AppResult {
   case app_req.req.method, request.path_segments(app_req.req) {
     Get, ["assets" as start, ..path] | Get, ["images" as start, ..path] ->
@@ -113,6 +115,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
         json_response(200, session.to_json(value))
         |> session.add_cookie_header(value)
       })
+      |> io.debug
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
     }
