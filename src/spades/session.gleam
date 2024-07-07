@@ -85,7 +85,7 @@ fn session_decoder() -> Decoder(Session) {
   })
   |> decode.field("id", decode.int)
   |> decode.field("username", decode.string)
-  |> decode.field("expires_at", date.decoder())
+  |> decode.field("expires_at", date.json_decoder())
 }
 
 pub type LoginRequest {

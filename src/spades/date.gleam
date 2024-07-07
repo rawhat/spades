@@ -10,7 +10,7 @@ pub type Date {
   Date(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int)
 }
 
-pub fn decoder() -> Decoder(Date) {
+pub fn row_decoder() -> Decoder(Date) {
   let ymd_decoder =
     decode.into({
       use year <- decode.parameter
@@ -42,8 +42,26 @@ pub fn decoder() -> Decoder(Date) {
   |> decode.field(1, hms_decoder)
 }
 
+pub fn json_decoder() -> Decoder(Date) {
+  decode.into({
+    use year <- decode.parameter
+    use month <- decode.parameter
+    use day <- decode.parameter
+    use hour <- decode.parameter
+    use minute <- decode.parameter
+    use second <- decode.parameter
+    Date(year, month, day, hour, minute, second)
+  })
+  |> decode.field(0, decode.int)
+  |> decode.field(1, decode.int)
+  |> decode.field(2, decode.int)
+  |> decode.field(3, decode.int)
+  |> decode.field(4, decode.int)
+  |> decode.field(5, decode.int)
+}
+
 pub fn from_string(date_string: String) -> Result(Date, Nil) {
-  decode.from(decoder(), _)
+  decode.from(json_decoder(), _)
   |> json.decode(date_string, _)
   |> result.replace_error(Nil)
 }

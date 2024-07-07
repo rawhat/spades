@@ -19,7 +19,7 @@ fn decoder() -> Decoder(User) {
   })
   |> decode.field(0, decode.int)
   |> decode.field(1, decode.string)
-  |> decode.field(2, date.decoder())
+  |> decode.field(2, date.row_decoder())
 }
 
 pub fn create(
