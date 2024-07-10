@@ -147,144 +147,142 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
     }
-    Get, ["api", "session"] ->
-      with_authentication(app_req, fn() {
-        app_req
-        |> get_cookie_from_request
-        |> result.map(fn(session) {
-          json_response(200, session.to_json(session))
-        })
-        |> result.replace_error(empty_response(403))
-        |> result.unwrap_both
-      })
-    Get, ["api", "game"] ->
-      with_authentication(app_req, fn() {
-        app_req.game_manager
-        |> games.list
-        |> result.map(encoder.games_list)
-        |> result.map(json_response(200, _))
-        |> result.unwrap(empty_response(400))
-      })
-    Post, ["api", "game"] ->
-      with_authentication(app_req, fn() {
-        let game_name_decoder =
-          decode.into(fn(name) { name })
-          |> decode.field("name", decode.string)
-        {
-          use game_name <- result.then(get_json_body(app_req, game_name_decoder))
-          use session <- result.then(app_req.session)
-          use new_game <- result.then(
-            process.try_call(
-              app_req.game_manager,
-              fn(caller) { NewGame(caller, session, game_name) },
-              500,
-            )
-            |> result.replace_error(Nil),
+    Get, ["api", "session"] -> {
+      use <- with_authentication(app_req)
+      app_req
+      |> get_cookie_from_request
+      |> result.map(fn(session) { json_response(200, session.to_json(session)) })
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
+    }
+    Get, ["api", "game"] -> {
+      use <- with_authentication(app_req)
+      app_req.game_manager
+      |> games.list
+      |> result.map(encoder.games_list)
+      |> result.map(json_response(200, _))
+      |> result.unwrap(empty_response(400))
+    }
+    Post, ["api", "game"] -> {
+      use <- with_authentication(app_req)
+      let game_name_decoder =
+        decode.into(fn(name) { name })
+        |> decode.field("name", decode.string)
+      {
+        use game_name <- result.then(get_json_body(app_req, game_name_decoder))
+        use session <- result.then(app_req.session)
+        use new_game <- result.then(
+          process.try_call(
+            app_req.game_manager,
+            fn(caller) { NewGame(caller, session, game_name) },
+            500,
           )
-          process.send(app_req.lobby_manager, GameUpdate(new_game.game))
-          let game =
-            new_game
-            |> game_manager.return_to_entry
-            |> game_manager.game_entry_to_json
-          Ok(json_response(200, game))
-        }
-        |> result.replace_error(empty_response(400))
-        |> result.unwrap_both
+          |> result.replace_error(Nil),
+        )
+        process.send(app_req.lobby_manager, GameUpdate(new_game.game))
+        let game =
+          new_game
+          |> game_manager.return_to_entry
+          |> game_manager.game_entry_to_json
+        Ok(json_response(200, game))
+      }
+      |> result.replace_error(empty_response(400))
+      |> result.unwrap_both
+    }
+    Get, ["api", "game", game_id] -> {
+      use <- with_authentication(app_req)
+      let assert Ok(session) = app_req.session
+      game_id
+      |> int.parse
+      |> result.then(games.read(app_req.game_manager, _, session.id))
+      |> result.map(json.to_string)
+      |> result.map(json_response(200, _))
+      |> result.replace_error(empty_response(404))
+      |> result.unwrap_both
+    }
+    Get, ["socket", "lobby"] -> {
+      use <- with_authentication(app_req)
+      app_req.session
+      |> result.map(fn(session) {
+        mist.websocket(
+          request: app_req.req,
+          on_init: fn(conn) {
+            let subj = process.new_subject()
+            let selector =
+              process.new_selector()
+              |> process.selecting(subj, function.identity)
+            process.send(app_req.lobby_manager, lobby.Join(session, subj))
+            let assert Ok(games) = games.list(app_req.game_manager)
+            let _ =
+              games
+              |> game_manager.game_entries_to_json
+              |> mist.send_text_frame(conn, _)
+            #(Nil, Some(selector))
+          },
+          handler: fn(state, _conn, _msg) { actor.continue(state) },
+          on_close: fn(_state) {
+            process.send(app_req.lobby_manager, lobby.Leave(session.id))
+            Nil
+          },
+        )
       })
-    Get, ["api", "game", game_id] ->
-      with_authentication(app_req, fn() {
-        let assert Ok(session) = app_req.session
-        game_id
-        |> int.parse
-        |> result.then(games.read(app_req.game_manager, _, session.id))
-        |> result.map(json.to_string)
-        |> result.map(json_response(200, _))
-        |> result.replace_error(empty_response(404))
-        |> result.unwrap_both
-      })
-    Get, ["socket", "lobby"] ->
-      with_authentication(app_req, fn() {
-        app_req.session
-        |> result.map(fn(session) {
-          mist.websocket(
-            request: app_req.req,
-            on_init: fn(conn) {
-              let subj = process.new_subject()
-              let selector =
-                process.new_selector()
-                |> process.selecting(subj, function.identity)
-              process.send(app_req.lobby_manager, lobby.Join(session, subj))
-              let assert Ok(games) = games.list(app_req.game_manager)
-              let _ =
-                games
-                |> game_manager.game_entries_to_json
-                |> mist.send_text_frame(conn, _)
-              #(Nil, Some(selector))
-            },
-            handler: fn(state, _conn, _msg) { actor.continue(state) },
-            on_close: fn(_state) {
-              process.send(app_req.lobby_manager, lobby.Leave(session.id))
-              Nil
-            },
-          )
-        })
-        |> result.replace_error(empty_response(403))
-        |> result.unwrap_both
-      })
-    Get, ["socket", "game", id] ->
-      with_authentication(app_req, fn() {
-        {
-          use id <- result.then(int.parse(id))
-          use session <- result.then(app_req.session)
-          mist.websocket(
-            request: app_req.req,
-            on_init: fn(conn) {
-              let subj = process.new_subject()
-              process.send(app_req.game_manager, Join(subj, id, session))
-              let assert Ok(game) =
-                process.try_call(
-                  app_req.game_manager,
-                  Read(_, id, session.id),
-                  60,
-                )
-              let _ =
-                game
-                |> json.to_string
-                |> mist.send_text_frame(conn, _)
-              let selector =
-                process.new_selector()
-                |> process.selecting(subj, function.identity)
-              #(Nil, Some(selector))
-            },
-            handler: fn(state, conn, msg) {
-              case msg {
-                Custom(game_manager.Send(data)) -> {
-                  let _ = mist.send_text_frame(conn, data)
-                  actor.continue(state)
-                }
-                Text(data) -> {
-                  let _ =
-                    game_manager.handle_message(
-                      data,
-                      app_req.game_manager,
-                      session,
-                    )
-                  actor.continue(state)
-                }
-                mist.Binary(_) -> actor.continue(state)
-                mist.Closed | mist.Shutdown -> actor.Stop(process.Normal)
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
+    }
+    Get, ["socket", "game", id] -> {
+      use <- with_authentication(app_req)
+      {
+        use id <- result.then(int.parse(id))
+        use session <- result.then(app_req.session)
+        mist.websocket(
+          request: app_req.req,
+          on_init: fn(conn) {
+            let subj = process.new_subject()
+            process.send(app_req.game_manager, Join(subj, id, session))
+            let assert Ok(game) =
+              process.try_call(
+                app_req.game_manager,
+                Read(_, id, session.id),
+                60,
+              )
+            let _ =
+              game
+              |> json.to_string
+              |> mist.send_text_frame(conn, _)
+            let selector =
+              process.new_selector()
+              |> process.selecting(subj, function.identity)
+            #(Nil, Some(selector))
+          },
+          handler: fn(state, conn, msg) {
+            case msg {
+              Custom(game_manager.Send(data)) -> {
+                let _ = mist.send_text_frame(conn, data)
+                actor.continue(state)
               }
-            },
-            on_close: fn(_state) {
-              process.send(app_req.game_manager, Leave(id, session))
-              Nil
-            },
-          )
-          |> Ok
-        }
-        |> result.replace_error(empty_response(403))
-        |> result.unwrap_both
-      })
+              Text(data) -> {
+                let _ =
+                  game_manager.handle_message(
+                    data,
+                    app_req.game_manager,
+                    session,
+                  )
+                actor.continue(state)
+              }
+              mist.Binary(_) -> actor.continue(state)
+              mist.Closed | mist.Shutdown -> actor.Stop(process.Normal)
+            }
+          },
+          on_close: fn(_state) {
+            process.send(app_req.game_manager, Leave(id, session))
+            Nil
+          },
+        )
+        |> Ok
+      }
+      |> result.replace_error(empty_response(403))
+      |> result.unwrap_both
+    }
     Get, [] | Get, _ -> serve_static_file(["index.html"], app_req.static_root)
     _, _ -> empty_response(404)
   }
