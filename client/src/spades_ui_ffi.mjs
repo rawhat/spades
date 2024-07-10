@@ -1,4 +1,4 @@
-import { Route } from "./spades_ui.mjs";
+import { Create, Home, Lobby, Login, Game, NotFound } from "./spades_ui.mjs";
 
 export function setupRouter(dispatch) {
   document.addEventListener("click", (e) => {
@@ -36,8 +36,20 @@ export function setupRouter(dispatch) {
 }
 
 export function getInitialRoute() {
-  const url = new URL(window.location.href);
-  return new Route(url.pathname, url.hash);
+  const { pathname } = new URL(window.location.href);
+  switch (pathname) {
+    case "/": return new Home();
+    case "/login": return new Login();
+    case "/create": return new Create();
+    case "/lobby": return new Lobby();
+    default: {
+      const gameAndId = pathname.match(/^\/game\/(\d+)$/);
+      if (gameAndId) {
+        return new Game(gameAndId[0]);
+      }
+      return new NotFound(pathname);
+    }
+  }
 }
 
 export function getHostnameAndPort() {

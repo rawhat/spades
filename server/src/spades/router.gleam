@@ -116,7 +116,6 @@ pub fn router(app_req: AppRequest) -> AppResult {
         json_response(200, session.to_json(value))
         |> session.add_cookie_header(value)
       })
-      |> io.debug
       |> result.replace_error(empty_response(403))
       |> result.unwrap_both
     }

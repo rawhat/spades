@@ -1,8 +1,11 @@
+import gleam/option.{None}
+import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
 import lustre/element/html
+import modem
 import spades_ui/create_user
 import spades_ui/lobby
 import spades_ui/login
@@ -15,7 +18,29 @@ pub type Msg {
 }
 
 pub type Route {
-  Route(path: String, hash: String)
+  Create
+  Home
+  Lobby
+  Login
+  Game(id: String)
+  NotFound(path: String)
+}
+
+fn get_route(uri: Uri) -> Route {
+  case uri.path_segments(uri.path) {
+    [] -> Home
+    ["login"] -> Login
+    ["create"] -> Create
+    ["lobby"] -> Lobby
+    ["game", id] -> Game(id)
+    _ -> NotFound(uri.path)
+  }
+}
+
+pub fn on_url_change(uri: Uri) -> Msg {
+  uri
+  |> get_route
+  |> RouteChanged
 }
 
 pub type Model {
@@ -27,15 +52,15 @@ pub type Model {
   )
 }
 
-fn init(initial_route: Route) -> #(Model, Effect(Msg)) {
+fn init(initial_route: Uri) -> #(Model, Effect(Msg)) {
   #(
     Model(
-      route: initial_route,
+      route: get_route(initial_route),
       login: login.init(),
       create: create_user.init(),
       lobby: lobby.init(),
     ),
-    effect.none(),
+    modem.init(on_url_change),
   )
 }
 
@@ -43,11 +68,11 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
     RouteChanged(route) -> #(Model(..model, route: route), effect.none())
     CreateMsg(create_user.OnCreate) -> #(
-      Model(..model, route: Route("/lobby", "")),
+      Model(..model, route: Lobby),
       effect.map(lobby.start_lobby_socket(), LobbyMsg),
     )
     LoginMsg(login.LoginSuccess) -> #(
-      Model(..model, route: Route("/lobby", "")),
+      Model(..model, route: Lobby),
       effect.map(lobby.start_lobby_socket(), LobbyMsg),
     )
     LoginMsg(login_msg) -> {
@@ -59,7 +84,8 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       #(Model(..model, create: update.0), effect.map(update.1, CreateMsg))
     }
     LobbyMsg(lobby.CreateSuccess(game_id)) -> {
-      #(Model(..model, route: Route("/game/" <> game_id, "")), effect.none())
+      #(model, modem.push("/game/" <> game_id, None, None))
+      // #(Model(..model, route: Game(game_id)), effect.none())
     }
     LobbyMsg(lobby_msg) -> {
       let update = lobby.update(model.lobby, lobby_msg)
@@ -70,39 +96,31 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 
 fn view(model: Model) -> Element(Msg) {
   case model.route {
-    Route("/", "") -> {
+    Home -> {
       html.div([], [
         element.text("root page"),
         html.a([attribute.href("/login")], [element.text("login")]),
       ])
     }
-    Route("/login", "") -> {
+    Login -> {
       element.map(login.view(model.login), LoginMsg)
     }
-    Route("/create", "") -> {
+    Create -> {
       element.map(create_user.view(model.create), CreateMsg)
     }
-    Route("/lobby", "") -> {
+    Lobby -> {
       element.map(lobby.view(model.lobby), LobbyMsg)
     }
-    _ -> {
-      html.div([], [element.text("Not found")])
+    Game(id) -> {
+      html.div([], [element.text("we in a game: " <> id)])
     }
+    NotFound(path) -> html.div([], [element.text("Path not found: " <> path)])
   }
 }
 
-@external(javascript, "./spades_ui_ffi", "getInitialRoute")
-fn get_initial_route() -> Route
-
-@external(javascript, "./spades_ui_ffi", "setupRouter")
-fn setup_router(dispatch: fn(Route) -> Nil) -> Nil
-
 pub fn main() {
+  let assert Ok(initial_route) = modem.initial_uri()
   let app = lustre.application(init, update, view)
 
-  let initial_route = get_initial_route()
-
-  let assert Ok(dispatch) = lustre.start(app, "#app", initial_route)
-
-  setup_router(fn(route) { dispatch(RouteChanged(route)) })
+  lustre.start(app, "#app", initial_route)
 }

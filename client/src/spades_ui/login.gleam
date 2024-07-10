@@ -1,5 +1,4 @@
-import gleam/dynamic
-import gleam/http.{Http, Post}
+import gleam/http.{Post}
 import gleam/http/request
 import gleam/json
 import lustre/attribute
@@ -9,7 +8,7 @@ import lustre/element/html.{a}
 import lustre/event
 import lustre/ui
 import lustre/ui/alert
-import lustre/ui/stack
+import lustre/ui/layout/stack
 import lustre_http
 import util.{when}
 
@@ -79,10 +78,7 @@ pub fn view(model: Model) -> Element(Msg) {
         ui.field(
           [],
           [element.text("Username")],
-          ui.input([
-            event.on_input(Username),
-            attribute.value(dynamic.from(model.username)),
-          ]),
+          ui.input([event.on_input(Username), attribute.value(model.username)]),
           [],
         ),
         ui.field(
@@ -90,7 +86,7 @@ pub fn view(model: Model) -> Element(Msg) {
           [element.text("Password")],
           ui.input([
             event.on_input(Password),
-            attribute.value(dynamic.from(model.password)),
+            attribute.value(model.password),
             attribute.type_("password"),
           ]),
           [],

@@ -1,5 +1,4 @@
-import gleam/dynamic
-import gleam/http.{Http, Post}
+import gleam/http.{Post}
 import gleam/http/request
 import gleam/json
 import gleam/result
@@ -11,8 +10,8 @@ import lustre/event
 import lustre/ui
 import lustre/ui/alert
 import lustre/ui/field
-import lustre/ui/sequence
-import lustre/ui/stack
+import lustre/ui/layout/sequence
+import lustre/ui/layout/stack
 import lustre_http
 import util.{when}
 
@@ -90,10 +89,7 @@ pub fn view(model: Model) -> Element(Msg) {
         ui.field(
           [],
           [element.text("Username")],
-          ui.input([
-            event.on_input(Username),
-            attribute.value(dynamic.from(model.username)),
-          ]),
+          ui.input([event.on_input(Username), attribute.value(model.username)]),
           [],
         ),
         ui.field(
@@ -102,7 +98,7 @@ pub fn view(model: Model) -> Element(Msg) {
           ui.input([
             attribute.type_("password"),
             event.on_input(Password),
-            attribute.value(dynamic.from(model.password)),
+            attribute.value(model.password),
           ]),
           [],
         ),
@@ -118,7 +114,7 @@ pub fn view(model: Model) -> Element(Msg) {
           ui.input([
             attribute.type_("password"),
             event.on_input(PasswordRepeat),
-            attribute.value(dynamic.from(model.password_repeat)),
+            attribute.value(model.password_repeat),
           ]),
           when(model.password == model.password_repeat, [], [
             element.text("Passwords do not match"),

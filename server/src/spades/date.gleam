@@ -43,21 +43,14 @@ pub fn row_decoder() -> Decoder(Date) {
 }
 
 pub fn json_decoder() -> Decoder(Date) {
-  decode.into({
-    use year <- decode.parameter
-    use month <- decode.parameter
-    use day <- decode.parameter
-    use hour <- decode.parameter
-    use minute <- decode.parameter
-    use second <- decode.parameter
-    Date(year, month, day, hour, minute, second)
+  decode.list(of: decode.int)
+  |> decode.then(fn(items) {
+    case items {
+      [year, month, day, hour, minute, second] ->
+        decode.into(Date(year, month, day, hour, minute, second))
+      _ -> decode.fail("Date")
+    }
   })
-  |> decode.field(0, decode.int)
-  |> decode.field(1, decode.int)
-  |> decode.field(2, decode.int)
-  |> decode.field(3, decode.int)
-  |> decode.field(4, decode.int)
-  |> decode.field(5, decode.int)
 }
 
 pub fn from_string(date_string: String) -> Result(Date, Nil) {

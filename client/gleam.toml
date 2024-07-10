@@ -5,13 +5,16 @@ target = "javascript"
 
 [dependencies]
 gleam_stdlib = "~> 0.34"
-lustre_ui = "~> 0.3"
-lustre_http = "~> 0.5"
-esgleam = "~> 0.6"
-lustre = "~> 3.1"
-gleam_json = "~> 1.0"
-gleam_http = "~> 3.5"
-lustre_websocket = "~> 0.7"
+lustre_ui = ">= 0.6.0 and < 1.0.0"
+lustre_http = ">= 0.5.2 and < 1.0.0"
+esgleam = ">= 0.6.0 and < 1.0.0"
+lustre = ">= 4.3.0 and < 5.0.0"
+gleam_json = ">= 1.0.1 and < 2.0.0"
+gleam_http = ">= 3.6.0 and < 4.0.0"
+lustre_websocket = ">= 0.7.6 and < 1.0.0"
+# modem = ">= 2.0.0 and < 3.0.0"
+modem = { path = "/home/alex/repos/modem" }
+decode = ">= 0.2.0 and < 1.0.0"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"

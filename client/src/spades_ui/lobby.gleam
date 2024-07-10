@@ -1,6 +1,5 @@
+import decode.{type Decoder}
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Decoder}
-import gleam/function
 import gleam/http.{Post}
 import gleam/http/request
 import gleam/int
@@ -15,9 +14,10 @@ import lustre/element/html.{div, h1, h2}
 import lustre/event
 import lustre/ui
 import lustre/ui/button
-import lustre/ui/sequence
+import lustre/ui/layout/sequence
 import lustre_http
 import lustre_websocket as ws
+import util
 
 pub type Msg {
   NewGame(String)
@@ -50,45 +50,51 @@ pub type GameEntry {
 }
 
 fn game_entry_decoder() -> Decoder(GameEntry) {
-  dynamic.decode3(
-    GameEntry,
-    dynamic.field("id", dynamic.int),
-    dynamic.field("name", dynamic.string),
-    dynamic.field("players", dynamic.int),
-  )
+  decode.into({
+    use id <- decode.parameter
+    use name <- decode.parameter
+    use players <- decode.parameter
+    GameEntry(id, name, players)
+  })
+  |> decode.field("id", decode.int)
+  |> decode.field("name", decode.string)
+  |> decode.field("players", decode.int)
 }
 
 fn message_decoder() -> Decoder(Dict(Int, GameEntry)) {
-  dynamic.any([
-    function.compose(dynamic.list(game_entry_decoder()), fn(res) {
-      result.map(res, fn(games) {
+  decode.one_of([
+    decode.list(game_entry_decoder())
+      |> decode.then(fn(games) {
         list.fold(games, dict.new(), fn(acc, game) {
           dict.insert(acc, game.id, game)
         })
-      })
-    }),
-    function.compose(game_entry_decoder(), fn(res) {
-      result.map(res, fn(game) { dict.from_list([#(game.id, game)]) })
-    }),
+        |> decode.into
+      }),
+    game_entry_decoder()
+      |> decode.then(fn(game) {
+        decode.into(dict.from_list([#(game.id, game)]))
+      }),
   ])
 }
 
 fn create_game(name: String) -> Effect(Msg) {
-  let assert Ok(req) = request.to("http://localhost:5000/api/game")
-
-  req
+  util.new_request()
+  |> request.set_path("/api/game")
   |> request.set_method(Post)
   |> request.set_body(
     json.object([#("name", json.string(name))])
     |> json.to_string,
   )
   |> lustre_http.send(
-    lustre_http.expect_json(dynamic.field("id", dynamic.int), fn(res) {
-      case res {
-        Ok(game_id) -> CreateSuccess(int.to_string(game_id))
-        Error(_reason) -> CreateError("Failed to create game")
-      }
-    }),
+    lustre_http.expect_json(
+      decode.from(decode.at(["id"], decode.int), _),
+      fn(res) {
+        case res {
+          Ok(game_id) -> CreateSuccess(int.to_string(game_id))
+          Error(_reason) -> CreateError("Failed to create game")
+        }
+      },
+    ),
   )
 }
 
@@ -98,8 +104,8 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
       Model(..model, ws: Some(sock)),
       effect.none(),
     )
-    Websocket(ws.OnMessage(msg)) -> {
-      json.decode(msg, message_decoder())
+    Websocket(ws.OnTextMessage(msg)) -> {
+      json.decode(msg, decode.from(message_decoder(), _))
       |> result.map(fn(games) {
         #(Model(..model, games: dict.merge(model.games, games)), effect.none())
       })
@@ -115,6 +121,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     CreateSuccess(_) -> #(model, effect.none())
     CreateError(error) -> #(Model(..model, error: error), effect.none())
+    Websocket(ws.OnBinaryMessage(_msg)) | Websocket(ws.InvalidUrl) -> #(
+      model,
+      effect.none(),
+    )
   }
 }
 
@@ -165,7 +175,7 @@ fn new_game(game_name: Option(String)) -> Element(Msg) {
       ui.sequence([], [
         ui.input([
           attribute.placeholder("Name"),
-          attribute.value(dynamic.from(name)),
+          attribute.value(name),
           event.on_input(NewGame),
         ]),
         ui.button([event.on_click(CreateGame)], [element.text("Create")]),
