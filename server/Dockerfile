@@ -1,4 +1,4 @@
-FROM ghcr.io/gleam-lang/gleam:v1.2.1-erlang
+FROM ghcr.io/gleam-lang/gleam:v1.3.0-erlang
 
 RUN apt update &&  apt install -y inotify-tools
 
@@ -8,7 +8,6 @@ RUN tar xf watchexec.tar.xz && mv watchexec-1.20.4-x86_64-unknown-linux-gnu/watc
 WORKDIR /opt/app
 
 COPY src/ /opt/app/src
-COPY test/ /opt/app/test
 COPY gleam.toml gleam.toml
 COPY manifest.toml manifest.toml
 
