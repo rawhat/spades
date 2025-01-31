@@ -89,8 +89,6 @@ pub fn session_middleware(
   }
 }
 
-import logging
-
 pub fn router(app_req: AppRequest) -> AppResult {
   case app_req.req.method, request.path_segments(app_req.req) {
     Get, ["assets" as start, ..path] | Get, ["images" as start, ..path] ->
