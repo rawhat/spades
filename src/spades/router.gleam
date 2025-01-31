@@ -199,7 +199,6 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap_both
     }
     Get, ["socket", "lobby"] -> {
-      logging.log(logging.Info, string.inspect(app_req))
       use <- with_authentication(app_req)
       app_req.session
       |> result.map(fn(session) {

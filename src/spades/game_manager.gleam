@@ -366,47 +366,51 @@ pub fn handle_message(
   session: Session,
 ) -> Result(Nil, Nil) {
   let add_bot_decoder = {
-    use id <- decode.field("id", decode.int)
-    use position <- decode.field("position", player.position_decoder())
+    use id <- decode.subfield(["data", "id"], decode.int)
+    use position <- decode.subfield(
+      ["data", "position"],
+      player.position_decoder(),
+    )
     decode.success(AddBot(id, position))
   }
 
   let add_player_decoder = {
-    use id <- decode.field("id", decode.int)
-    use position <- decode.field("position", player.position_decoder())
+    use id <- decode.subfield(["data", "id"], decode.int)
+    use position <- decode.subfield(
+      ["data", "position"],
+      player.position_decoder(),
+    )
     decode.success(AddPlayer(id, position))
   }
 
   let make_call_decoder = {
-    use id <- decode.field("id", decode.int)
-    use call <- decode.field("call", hand.call_decoder())
+    use id <- decode.subfield(["data", "id"], decode.int)
+    use call <- decode.subfield(["data", "call"], hand.call_decoder())
     decode.success(MakeCall(id, call))
   }
 
   let play_card_decoder = {
-    use id <- decode.field("id", decode.int)
-    use card <- decode.field("call", card.decoder())
+    use id <- decode.subfield(["data", "id"], decode.int)
+    use card <- decode.subfield(["data", "card"], card.decoder())
     decode.success(PlayCard(id, card))
   }
 
   let reveal_decoder = {
-    use id <- decode.field("id", decode.int)
+    use id <- decode.subfield(["data", "id"], decode.int)
     decode.success(Reveal(id))
   }
 
-  let decoder =
-    decode.at(["type"], decode.string)
-    |> decode.then(fn(msg_type) {
-      case msg_type {
-        "add_bot" -> add_bot_decoder
-        "add_player" -> add_player_decoder
-        "make_call" -> make_call_decoder
-        "play_card" -> play_card_decoder
-        "reveal_hand" -> reveal_decoder
-        _ -> decode.failure(Reveal(0), "Msg")
-      }
-      |> decode.at(["data"], _)
-    })
+  let decoder = {
+    use tag <- decode.field("type", decode.string)
+    case tag {
+      "add_bot" -> add_bot_decoder
+      "add_player" -> add_player_decoder
+      "make_call" -> make_call_decoder
+      "play_card" -> play_card_decoder
+      "reveal_hand" -> reveal_decoder
+      _ -> decode.failure(Reveal(0), "Msg")
+    }
+  }
 
   json.parse(data, decoder)
   |> result.replace_error(Nil)
