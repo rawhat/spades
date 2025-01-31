@@ -1,5 +1,5 @@
-import decode
 import gleam/dict.{type Dict}
+import gleam/dynamic/decode
 import gleam/erlang/process.{type Subject}
 import gleam/json.{type Json}
 import gleam/list
@@ -335,7 +335,7 @@ pub fn start() -> Result(Subject(ManagerAction), actor.StartError) {
         case dict.has_key(state.games, game_id) {
           True ->
             state.games
-            |> dict.update(game_id, fn(existing) {
+            |> dict.upsert(game_id, fn(existing) {
               let assert Some(GameState(users, game)) = existing
               GameState([user, ..users], game)
             })
@@ -365,48 +365,34 @@ pub fn handle_message(
   game_manager: Subject(ManagerAction),
   session: Session,
 ) -> Result(Nil, Nil) {
-  let add_bot_decoder =
-    decode.into({
-      use id <- decode.parameter
-      use position <- decode.parameter
-      AddBot(id, position)
-    })
-    |> decode.field("id", decode.int)
-    |> decode.field("position", player.position_decoder())
+  let add_bot_decoder = {
+    use id <- decode.field("id", decode.int)
+    use position <- decode.field("position", player.position_decoder())
+    decode.success(AddBot(id, position))
+  }
 
-  let add_player_decoder =
-    decode.into({
-      use id <- decode.parameter
-      use position <- decode.parameter
-      AddPlayer(id, position)
-    })
-    |> decode.field("id", decode.int)
-    |> decode.field("position", player.position_decoder())
+  let add_player_decoder = {
+    use id <- decode.field("id", decode.int)
+    use position <- decode.field("position", player.position_decoder())
+    decode.success(AddPlayer(id, position))
+  }
 
-  let make_call_decoder =
-    decode.into({
-      use id <- decode.parameter
-      use call <- decode.parameter
-      MakeCall(id, call)
-    })
-    |> decode.field("id", decode.int)
-    |> decode.field("call", hand.call_decoder())
+  let make_call_decoder = {
+    use id <- decode.field("id", decode.int)
+    use call <- decode.field("call", hand.call_decoder())
+    decode.success(MakeCall(id, call))
+  }
 
-  let play_card_decoder =
-    decode.into({
-      use id <- decode.parameter
-      use card <- decode.parameter
-      PlayCard(id, card)
-    })
-    |> decode.field("id", decode.int)
-    |> decode.field("call", card.decoder())
+  let play_card_decoder = {
+    use id <- decode.field("id", decode.int)
+    use card <- decode.field("call", card.decoder())
+    decode.success(PlayCard(id, card))
+  }
 
-  let reveal_decoder =
-    decode.into({
-      use id <- decode.parameter
-      Reveal(id)
-    })
-    |> decode.field("id", decode.int)
+  let reveal_decoder = {
+    use id <- decode.field("id", decode.int)
+    decode.success(Reveal(id))
+  }
 
   let decoder =
     decode.at(["type"], decode.string)
@@ -417,16 +403,16 @@ pub fn handle_message(
         "make_call" -> make_call_decoder
         "play_card" -> play_card_decoder
         "reveal_hand" -> reveal_decoder
-        _ -> decode.fail("Msg")
+        _ -> decode.failure(Reveal(0), "Msg")
       }
       |> decode.at(["data"], _)
     })
 
-  json.decode(data, decode.from(decoder, _))
-  |> result.nil_error
+  json.parse(data, decoder)
+  |> result.replace_error(Nil)
   |> result.then(fn(action) {
     process.try_call(game_manager, Act(_, session, action), 10)
-    |> result.nil_error
+    |> result.replace_error(Nil)
   })
   |> result.map(fn(game_return) {
     process.send(game_manager, Broadcast(game_return))
@@ -444,7 +430,7 @@ fn update_if_success(state: ManagerState, return: GameReturn) -> ManagerState {
   case return {
     Success(updated_game, _events) ->
       state.games
-      |> dict.update(updated_game.id, fn(existing) {
+      |> dict.upsert(updated_game.id, fn(existing) {
         let assert Some(GameState(users, _game)) = existing
         GameState(users, updated_game)
       })

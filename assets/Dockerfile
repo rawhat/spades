@@ -1,16 +1,16 @@
 FROM node:slim
 
-USER node
+# USER node
 
 WORKDIR /opt/app
 
-COPY --chown=node package.json .
-COPY --chown=node package-lock.json .
-COPY --chown=node tsconfig.json .
-COPY --chown=node tsconfig.node.json .
-COPY --chown=node vite.config.ts .
-COPY --chown=node index.html .
+COPY package.json .
+COPY package-lock.json .
+COPY tsconfig.json .
+COPY tsconfig.node.json .
+COPY vite.config.ts .
+COPY index.html .
 
-RUN npm install
+RUN npm install --include=dev
 
-CMD ["npx", "vite", "dev"]
+CMD ["npm", "run", "dev"]

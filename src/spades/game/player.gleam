@@ -1,4 +1,4 @@
-import decode.{type Decoder}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, Some}
@@ -16,11 +16,11 @@ pub fn position_decoder() -> Decoder(Position) {
   decode.string
   |> decode.then(fn(position) {
     case position {
-      "north" -> decode.into(North)
-      "east" -> decode.into(East)
-      "south" -> decode.into(South)
-      "west" -> decode.into(West)
-      _ -> decode.fail("Position")
+      "north" -> decode.success(North)
+      "east" -> decode.success(East)
+      "south" -> decode.success(South)
+      "west" -> decode.success(West)
+      _ -> decode.failure(North, "Position")
     }
   })
 }

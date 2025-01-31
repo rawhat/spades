@@ -1,11 +1,11 @@
-import decode.{type Decoder}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/int
-import gleam/iterator
 import gleam/json.{type Json}
 import gleam/list
 import gleam/order.{type Order, Eq, Gt, Lt}
 import gleam/result
 import gleam/string
+import gleam/yielder
 
 pub type Suit {
   Clubs
@@ -71,11 +71,11 @@ fn suit_decoder() -> Decoder(Suit) {
   decode.string
   |> decode.then(fn(suit) {
     case suit {
-      "C" -> decode.into(Clubs)
-      "D" -> decode.into(Diamonds)
-      "H" -> decode.into(Hearts)
-      "S" -> decode.into(Spades)
-      _ -> decode.fail("Suit")
+      "C" -> decode.success(Clubs)
+      "D" -> decode.success(Diamonds)
+      "H" -> decode.success(Hearts)
+      "S" -> decode.success(Spades)
+      _ -> decode.failure(Clubs, "Suit")
     }
   })
 }
@@ -83,28 +83,22 @@ fn suit_decoder() -> Decoder(Suit) {
 fn value_decoder() -> Decoder(Value) {
   decode.string
   |> decode.then(fn(value) {
-    decode.one_of([
+    decode.one_of(decode.int |> decode.map(Number), or: [
       case value {
-        "J" -> decode.into(Jack)
-        "Q" -> decode.into(Queen)
-        "K" -> decode.into(King)
-        "A" -> decode.into(Ace)
-        _ -> decode.fail("Value")
+        "J" -> decode.success(Jack)
+        "Q" -> decode.success(Queen)
+        "K" -> decode.success(King)
+        "A" -> decode.success(Ace)
+        _ -> decode.failure(Number(0), "Value")
       },
-      decode.int
-        |> decode.map(Number),
     ])
   })
 }
 
 pub fn decoder() -> Decoder(Card) {
-  decode.into({
-    use suit <- decode.parameter
-    use value <- decode.parameter
-    Card(suit, value)
-  })
-  |> decode.field("suit", suit_decoder())
-  |> decode.field("value", value_decoder())
+  use suit <- decode.field("suit", suit_decoder())
+  use value <- decode.field("value", value_decoder())
+  decode.success(Card(suit, value))
 }
 
 fn order_of(cards: List(Card), suit: Suit, order: Order) -> Result(Card, Nil) {
@@ -185,21 +179,21 @@ pub type Deck =
   List(Card)
 
 pub fn make_deck() -> Deck {
-  let suits = iterator.from_list([Clubs, Diamonds, Hearts, Spades])
+  let suits = yielder.from_list([Clubs, Diamonds, Hearts, Spades])
 
   let values =
     list.range(2, 10)
     |> list.map(Number)
     |> list.append([Jack, Queen, King, Ace])
-    |> iterator.from_list
+    |> yielder.from_list
 
   values
-  |> iterator.cycle
-  |> iterator.take(52)
-  |> iterator.zip(iterator.cycle(suits))
-  |> iterator.map(fn(card) {
+  |> yielder.cycle
+  |> yielder.take(52)
+  |> yielder.zip(yielder.cycle(suits))
+  |> yielder.map(fn(card) {
     let #(value, suit) = card
     Card(suit, value)
   })
-  |> iterator.to_list
+  |> yielder.to_list
 }

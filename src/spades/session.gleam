@@ -1,15 +1,16 @@
-import decode.{type Decoder}
 import gleam/bit_array
 import gleam/dict.{type Dict}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Subject}
 import gleam/http/response.{type Response}
+import gleam/int
 import gleam/json
 import gleam/order.{Gt}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
 import mist.{type ResponseData}
-import spades/date.{type Date}
+import spades/date
 
 pub type SessionAction {
   Add(id: Int, session: Session)
@@ -18,7 +19,7 @@ pub type SessionAction {
 }
 
 pub type Session {
-  Session(id: Int, username: String, expires_at: Date)
+  Session(id: Int, username: String, expires_at: Int)
 }
 
 pub type SessionState {
@@ -28,10 +29,11 @@ pub type SessionState {
 pub fn start() -> Result(Subject(SessionAction), actor.StartError) {
   actor.start(SessionState(dict.new()), fn(message, state) {
     case message {
-      Add(id, session) ->
+      Add(id, session) -> {
         session
         |> dict.insert(state.users, id, _)
         |> SessionState
+      }
       Remove(id) -> SessionState(users: dict.delete(state.users, id))
       Validate(caller, id) -> {
         let resp =
@@ -56,7 +58,7 @@ fn to_string(session: Session) -> String {
   json.object([
     #("id", json.int(session.id)),
     #("username", json.string(session.username)),
-    #("expires_at", date.to_json(session.expires_at)),
+    #("expires_at", json.int(session.expires_at)),
   ])
   |> json.to_string
   |> bit_array.from_string
@@ -77,15 +79,10 @@ pub fn to_json(session: Session) -> String {
 }
 
 fn session_decoder() -> Decoder(Session) {
-  decode.into({
-    use id <- decode.parameter
-    use username <- decode.parameter
-    use expires_at <- decode.parameter
-    Session(id, username, expires_at)
-  })
-  |> decode.field("id", decode.int)
-  |> decode.field("username", decode.string)
-  |> decode.field("expires_at", date.json_decoder())
+  use id <- decode.field("id", decode.int)
+  use username <- decode.field("username", decode.string)
+  use expires_at <- decode.field("expires_at", decode.int)
+  decode.success(Session(id, username, expires_at))
 }
 
 pub type LoginRequest {
@@ -93,13 +90,9 @@ pub type LoginRequest {
 }
 
 pub fn login_decoder() -> Decoder(LoginRequest) {
-  decode.into({
-    use username <- decode.parameter
-    use password <- decode.parameter
-    LoginRequest(username, password)
-  })
-  |> decode.field("username", decode.string)
-  |> decode.field("password", decode.string)
+  use username <- decode.field("username", decode.string)
+  use password <- decode.field("password", decode.string)
+  decode.success(LoginRequest(username, password))
 }
 
 pub fn parse_cookie_header(str: String) -> Result(Session, Nil) {
@@ -108,7 +101,7 @@ pub fn parse_cookie_header(str: String) -> Result(Session, Nil) {
   |> result.then(bit_array.to_string)
   |> result.then(fn(str) {
     str
-    |> json.decode(decode.from(session_decoder(), _))
+    |> json.parse(session_decoder())
     |> result.replace_error(Nil)
   })
 }
@@ -119,7 +112,7 @@ pub fn add_cookie_header(
 ) -> Response(ResponseData) {
   let expiry =
     session.expires_at
-    |> date.to_json()
+    |> json.int
     |> json.to_string
   let cookie =
     string.concat([
@@ -134,7 +127,7 @@ pub fn add_cookie_header(
 }
 
 pub fn validate(session: Session) -> Result(Nil, Nil) {
-  case date.compare(session.expires_at, date.now()) {
+  case int.compare(session.expires_at, date.now()) {
     Gt -> Ok(Nil)
     _ -> Error(Nil)
   }

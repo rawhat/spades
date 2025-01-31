@@ -1,9 +1,8 @@
-version: '3'
 services:
   ui:
     build:
       context: ./assets
-    user: 1000:1001
+    # user: 1000:1001
     volumes:
       - ./assets:/opt/app
       - node_modules:/opt/app/node_modules
@@ -18,10 +17,10 @@ services:
       context: .
       dockerfile: ./Dockerfile
     environment:
-      DB_NAME: spades_dev
-      DB_USER: spades
-      DB_PASS: spades
-      DB_HOST: db
+      PGDATABASE: spades_dev
+      PGUSER: spades
+      PGPASSWORD: spades
+      PGHOST: db
       PASSWORD_SALT: 1234
       TERM: "xterm-256color"
     volumes:
