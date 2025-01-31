@@ -10,9 +10,9 @@ import lustre/event
 import lustre/ui
 import lustre/ui/alert
 import lustre/ui/field
-import lustre/ui/layout/sequence
-import lustre/ui/layout/stack
-import lustre_http
+import lustre/ui/sequence
+import lustre/ui/stack
+import rsvp
 import util.{when}
 
 pub type Model {
@@ -70,9 +70,9 @@ fn create(model: Model) -> Effect(Msg) {
     |> request.set_method(Post)
     |> request.set_body(body)
 
-  lustre_http.send(
+  rsvp.send(
     req,
-    lustre_http.expect_anything(fn(res) {
+    rsvp.expect_any_response(fn(res) {
       case result.is_ok(res) {
         True -> OnCreate
         False -> CreateError("Failed to create user")

@@ -1,5 +1,6 @@
 import gleam/http.{Post}
 import gleam/http/request
+import gleam/http/response.{Response}
 import gleam/json
 import lustre/attribute
 import lustre/effect.{type Effect}
@@ -8,8 +9,8 @@ import lustre/element/html.{a}
 import lustre/event
 import lustre/ui
 import lustre/ui/alert
-import lustre/ui/layout/stack
-import lustre_http
+import lustre/ui/stack
+import rsvp
 import util.{when}
 
 pub type Model {
@@ -57,12 +58,12 @@ fn login(username: String, password: String) -> Effect(Msg) {
     |> request.set_method(Post)
     |> request.set_body(body)
 
-  lustre_http.send(
+  rsvp.send(
     req,
-    lustre_http.expect_anything(fn(resp) {
+    rsvp.expect_any_response(fn(resp) {
       case resp {
         Ok(_) -> LoginSuccess
-        Error(lustre_http.OtherError(403, _msg)) ->
+        Error(rsvp.HttpError(Response(status: 403, ..))) ->
           LoginError("Invalid username or password")
         Error(_) -> LoginError("Failed to login")
       }

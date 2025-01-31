@@ -1,4 +1,4 @@
-import decode.{type Decoder}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
@@ -53,17 +53,15 @@ pub type Trick =
   List(Play)
 
 pub fn call_decoder() -> Decoder(Call) {
-  decode.one_of([
+  decode.one_of(decode.at(["count"], decode.int) |> decode.map(Count), or: [
     decode.string
-      |> decode.then(fn(call) {
-        case call {
-          "blind_nil" -> decode.into(BlindNil)
-          "nil" -> decode.into(Nil)
-          _ -> decode.fail("Call")
-        }
-      }),
-    decode.into(Count)
-      |> decode.field("count", decode.int),
+    |> decode.then(fn(call) {
+      case call {
+        "blind_nil" -> decode.success(BlindNil)
+        "nil" -> decode.success(Nil)
+        _ -> decode.failure(Count(0), "Call")
+      }
+    }),
   ])
 }
 

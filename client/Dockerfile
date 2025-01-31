@@ -1,13 +1,13 @@
-FROM ghcr.io/gleam-lang/gleam:v1.3.0-node
+FROM ghcr.io/gleam-lang/gleam:v1.7.0-erlang
+
+RUN apt update && apt install -y inotify-tools
 
 WORKDIR /opt/app
 
 COPY gleam.toml gleam.toml
 COPY manifest.toml manifest.toml
-COPY package.json package.json
-COPY package-lock.json package-lock.json
 COPY src/ /opt/app/src
 
-RUN npm install
+RUN gleam build
 
-CMD ["npx", "vite", "dev"]
+CMD ["gleam", "run", "-m", "lustre/dev", "start", "--port=5000"]

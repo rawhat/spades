@@ -1,4 +1,3 @@
-version: '3'
 services:
   ui:
     build:
@@ -17,10 +16,10 @@ services:
     build:
       context: ./server
     environment:
-      DB_NAME: spades_dev
-      DB_USER: spades
-      DB_PASS: spades
-      DB_HOST: db
+      PGDATABASE: spades_dev
+      PGUSER: spades
+      PGPASS: spades
+      PGHOST: db
       PASSWORD_SALT: 1234
       TERM: "xterm-256color"
     volumes:

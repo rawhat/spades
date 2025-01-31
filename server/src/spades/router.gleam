@@ -1,6 +1,6 @@
-import decode.{type Decoder}
 import gleam/bit_array
-import gleam/bytes_builder
+import gleam/bytes_tree
+import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/charlist.{type Charlist}
 import gleam/erlang/process.{type Subject}
 import gleam/function
@@ -14,10 +14,10 @@ import gleam/list
 import gleam/option.{None, Some}
 import gleam/otp/actor
 import gleam/pair
-import gleam/pgo
 import gleam/result
 import gleam/string
 import mist.{type Connection, type ResponseData, Custom, Text}
+import pog
 import spades/encoder
 import spades/game_manager.{type ManagerAction, Join, Leave, NewGame, Read}
 import spades/games
@@ -31,7 +31,7 @@ pub type AppError {
 
 pub type AppRequest {
   AppRequest(
-    db: pgo.Connection,
+    db: pog.Connection,
     game_manager: Subject(ManagerAction),
     req: Request(Connection),
     static_root: String,
@@ -55,7 +55,7 @@ pub fn result_to_response(handler: fn() -> AppResult) -> Response(ResponseData) 
 pub fn app_middleware(
   req: Request(Connection),
   manager: Subject(ManagerAction),
-  db: pgo.Connection,
+  db: pog.Connection,
   static_root: String,
   salt: String,
   session_manager: Subject(SessionAction),
@@ -89,8 +89,6 @@ pub fn session_middleware(
   }
 }
 
-import gleam/io
-
 pub fn router(app_req: AppRequest) -> AppResult {
   case app_req.req.method, request.path_segments(app_req.req) {
     Get, ["assets" as start, ..path] | Get, ["images" as start, ..path] ->
@@ -98,12 +96,10 @@ pub fn router(app_req: AppRequest) -> AppResult {
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Post, ["api", "session"] -> {
-      // TODO:  let's not assert all this stuff...
       let assert Ok(req) = mist.read_body(app_req.req, 1024 * 1024 * 10)
       let assert Ok(body_string) = bit_array.to_string(req.body)
       let decoder = decode.at(["session"], session.login_decoder())
-      let assert Ok(login_request) =
-        json.decode(body_string, decode.from(decoder, _))
+      let assert Ok(login_request) = json.parse(body_string, decoder)
       user.login(
         app_req.db,
         app_req.salt,
@@ -164,9 +160,10 @@ pub fn router(app_req: AppRequest) -> AppResult {
     }
     Post, ["api", "game"] -> {
       use <- with_authentication(app_req)
-      let game_name_decoder =
-        decode.into(fn(name) { name })
-        |> decode.field("name", decode.string)
+      let game_name_decoder = {
+        use name <- decode.field("name", decode.string)
+        decode.success(name)
+      }
       {
         use game_name <- result.then(get_json_body(app_req, game_name_decoder))
         use session <- result.then(app_req.session)
@@ -321,7 +318,7 @@ fn content_type_from_extension(path: String) -> String {
 fn serve_static_file(path: List(String), root: String) -> Response(ResponseData) {
   let not_found =
     response.new(404)
-    |> response.set_body(mist.Bytes(bytes_builder.new()))
+    |> response.set_body(mist.Bytes(bytes_tree.new()))
 
   let full_path =
     path
@@ -344,13 +341,13 @@ fn serve_static_file(path: List(String), root: String) -> Response(ResponseData)
 fn empty_response(status: Int) -> Response(ResponseData) {
   status
   |> response.new
-  |> response.set_body(mist.Bytes(bytes_builder.new()))
+  |> response.set_body(mist.Bytes(bytes_tree.new()))
 }
 
 fn json_response(status: Int, data: String) -> Response(ResponseData) {
   status
   |> response.new
-  |> response.set_body(mist.Bytes(bytes_builder.from_string(data)))
+  |> response.set_body(mist.Bytes(bytes_tree.from_string(data)))
   |> response.prepend_header("content-type", "application/json")
 }
 
@@ -388,7 +385,7 @@ fn get_json_body(app_req: AppRequest, decoder: Decoder(a)) -> Result(a, Nil) {
   |> result.then(bit_array.to_string)
   |> result.then(fn(body) {
     body
-    |> json.decode(decode.from(decoder, _))
+    |> json.parse(decoder)
     |> result.replace_error(Nil)
   })
 }

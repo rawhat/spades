@@ -1,39 +1,34 @@
-import decode
-import gleam/erlang/os
+import envoy
 import gleam/int
 import gleam/option.{Some}
-import gleam/pgo
 import gleam/result
+import pog
 
-// TODO:  logger
-import gleam/io
-import gleam/string
-
-fn get_db_config() -> pgo.Config {
+fn get_db_config() -> pog.Config {
   let db_host =
-    "DB_HOST"
-    |> os.get_env
+    "PGHOST"
+    |> envoy.get
     |> result.unwrap("localhost")
   let db_user =
-    "DB_USER"
-    |> os.get_env
+    "PGUSER"
+    |> envoy.get
     |> result.unwrap("spades")
   let db_pass =
-    "DB_PASS"
-    |> os.get_env
+    "PGPASS"
+    |> envoy.get
     |> result.unwrap("spades")
   let db_port =
-    "DB_PORT"
-    |> os.get_env
+    "PGPORT"
+    |> envoy.get
     |> result.then(int.parse)
     |> result.unwrap(5432)
   let db_name =
-    "DB_NAME"
-    |> os.get_env
+    "PGDATABASE"
+    |> envoy.get
     |> result.unwrap("spades_dev")
 
-  pgo.Config(
-    ..pgo.default_config(),
+  pog.Config(
+    ..pog.default_config(),
     database: db_name,
     host: db_host,
     user: db_user,
@@ -43,31 +38,7 @@ fn get_db_config() -> pgo.Config {
   )
 }
 
-pub fn initialize() -> pgo.Connection {
+pub fn initialize() -> pog.Connection {
   get_db_config()
-  |> pgo.connect
-}
-
-// TODO:  errors
-pub fn migrate(db: pgo.Connection) -> Result(Nil, Nil) {
-  use _ <- result.then(run(
-    db,
-    "create_users_table",
-    "create table if not exists users (
-        id serial primary key,
-        username text unique not null,
-        password_hash text not null,
-        created_at timestamp not null
-      )",
-  ))
-
-  Ok(Nil)
-}
-
-fn run(db: pgo.Connection, name: String, sql: String) -> Result(Nil, Nil) {
-  io.println(string.concat(["Running migration `", name, "`"]))
-  pgo.execute(sql, db, [], decode.from(decode.dynamic, _))
-  |> io.debug
-  |> result.replace_error(Nil)
-  |> result.replace(Nil)
+  |> pog.connect
 }

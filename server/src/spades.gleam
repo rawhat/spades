@@ -1,4 +1,4 @@
-import gleam/erlang/os
+import envoy
 import gleam/erlang/process
 import gleam/result
 import gleam/string
@@ -20,11 +20,10 @@ pub fn main() {
   let assert Ok(manager) = game_manager.start()
 
   let db = database.initialize()
-  let assert Ok(_) = database.migrate(db)
   let assert Ok(cwd) = get_cwd()
   let static_root = string.append(cwd, "/priv")
 
-  let assert Ok(salt) = os.get_env("PASSWORD_SALT")
+  let assert Ok(salt) = envoy.get("PASSWORD_SALT")
 
   let assert Ok(session_manager) = session.start()
   let assert Ok(lobby_manager) = lobby.start()
@@ -46,6 +45,7 @@ pub fn main() {
     }
     |> mist.new
     |> mist.port(4000)
+    |> mist.bind("0.0.0.0")
     |> mist.start_http
     |> result.replace_error("Failed to start"),
   )

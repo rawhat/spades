@@ -1,99 +1,64 @@
-import decode.{type Decoder}
-import gleam/float
-import gleam/int
-import gleam/json.{type Json}
-import gleam/list.{Continue, Stop}
-import gleam/order.{type Order, Eq}
-import gleam/result
+import gleam/dynamic/decode.{type Decoder}
+import pog
 
 pub type Date {
   Date(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int)
 }
 
+@external(erlang, "calendar", "universal_time")
+fn do_now_date() -> #(#(Int, Int, Int), #(Int, Int, Int))
+
+pub fn now_date() -> Date {
+  let #(#(year, month, day), #(hour, minute, second)) = do_now_date()
+  Date(year, month, day, hour, minute, second)
+}
+
+const epoch = Date(1970, 1, 1, 0, 0, 0)
+
 pub fn row_decoder() -> Decoder(Date) {
-  let ymd_decoder =
-    decode.into({
-      use year <- decode.parameter
-      use month <- decode.parameter
-      use day <- decode.parameter
-      #(year, month, day)
-    })
-    |> decode.field(0, decode.int)
-    |> decode.field(1, decode.int)
-    |> decode.field(2, decode.int)
+  use date <- decode.field(0, pog.date_decoder())
+  use time <- decode.field(1, pog.time_decoder())
+  decode.success(Date(
+    date.year,
+    date.month,
+    date.day,
+    time.hours,
+    time.minutes,
+    time.seconds,
+  ))
+}
 
-  let hms_decoder =
-    decode.into({
-      use hour <- decode.parameter
-      use minute <- decode.parameter
-      use second <- decode.parameter
-      #(hour, minute, second)
-    })
-    |> decode.field(0, decode.int)
-    |> decode.field(1, decode.int)
-    |> decode.field(2, decode.float)
+pub type Unit {
+  Second
+}
 
-  decode.into({
-    use #(year, month, day) <- decode.parameter
-    use #(hour, minute, second) <- decode.parameter
-    Date(year, month, day, hour, minute, float.round(second))
-  })
-  |> decode.field(0, ymd_decoder)
-  |> decode.field(1, hms_decoder)
+@external(erlang, "erlang", "system_time")
+fn do_now(unit: Unit) -> Int
+
+pub fn now() -> Int {
+  do_now(Second)
 }
 
 pub fn json_decoder() -> Decoder(Date) {
-  decode.list(of: decode.int)
-  |> decode.then(fn(items) {
-    case items {
-      [year, month, day, hour, minute, second] ->
-        decode.into(Date(year, month, day, hour, minute, second))
-      _ -> decode.fail("Date")
+  decode.list(decode.int)
+  |> decode.then(fn(values) {
+    case values {
+      [year, month, day, hour, minute, second] -> {
+        decode.success(Date(year, month, day, hour, minute, second))
+      }
+      _ -> decode.failure(epoch, "Invalid")
     }
   })
 }
 
-pub fn from_string(date_string: String) -> Result(Date, Nil) {
-  decode.from(json_decoder(), _)
-  |> json.decode(date_string, _)
-  |> result.replace_error(Nil)
-}
+const hours_per_day = 24
 
-pub fn add_days(date: Date, days: Int) -> Date {
-  Date(..date, day: date.day + days)
-}
+const minutes_per_hour = 60
 
-type UniversalTime =
-  #(#(Int, Int, Int), #(Int, Int, Int))
+const seconds_per_minute = 60
 
-@external(erlang, "calendar", "universal_time")
-fn universal_time() -> UniversalTime
-
-pub fn now() -> Date {
-  let #(#(year, month, day), #(hour, min, sec)) = universal_time()
-  Date(year, month, day, hour, min, sec)
-}
-
-pub fn to_json(date: Date) -> Json {
-  let Date(year, month, day, hour, min, sec) = date
-  [year, month, day, hour, min, sec]
-  |> json.array(json.int)
-}
-
-pub fn compare(left: Date, right: Date) -> Order {
-  [
-    #(left.year, right.year),
-    #(left.month, right.month),
-    #(left.day, right.day),
-    #(left.hour, right.hour),
-    #(left.minute, right.minute),
-    #(left.second, right.second),
-  ]
-  |> list.fold_until(Eq, fn(_prev, next) {
-    let #(left, right) = next
-    case int.compare(left, right) {
-      Eq -> Continue(Eq)
-      ord -> Stop(ord)
-    }
-  })
+pub fn add_days(date: Int, days: Int) -> Int {
+  let total_seconds =
+    days * hours_per_day * minutes_per_hour * seconds_per_minute
+  date + total_seconds
 }

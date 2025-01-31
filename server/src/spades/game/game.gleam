@@ -1,10 +1,10 @@
 import gleam/dict.{type Dict}
 import gleam/int
-import gleam/iterator
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
+import gleam/yielder
 import spades/game/bot
 import spades/game/card.{type Card, type Deck, Card, Spades}
 import spades/game/hand.{type Call, type Score, type Trick, Hand, Play, Score}
@@ -176,10 +176,10 @@ pub fn add_bot(game: Game, position: Position) -> GameReturn {
         |> dict.values
         |> list.map(fn(player) { player.name })
       let assert Ok(name) =
-        iterator.repeatedly(bot_name)
-        |> iterator.drop_while(fn(name) { list.contains(existing_names, name) })
-        |> iterator.take(1)
-        |> iterator.at(0)
+        yielder.repeatedly(bot_name)
+        |> yielder.drop_while(fn(name) { list.contains(existing_names, name) })
+        |> yielder.take(1)
+        |> yielder.at(0)
       let new_bot = player.new(bot_id, name, position)
       add_player(game, new_bot)
     }
@@ -209,7 +209,7 @@ pub fn add_player(game: Game, new_player: Player) -> GameReturn {
             new_player.position,
             new_player.id,
           ),
-          teams: dict.update(game.teams, team, fn(existing) {
+          teams: dict.upsert(game.teams, team, fn(existing) {
             existing
             |> option.map(fn(existing) { [new_player.id, ..existing] })
             |> option.unwrap([new_player.id])
@@ -236,7 +236,7 @@ pub fn make_call(game: Game, player_id: Int, call: Call) -> GameReturn {
     ->
       Game(
         ..game,
-        players: dict.update(game.players, player_id, fn(existing) {
+        players: dict.upsert(game.players, player_id, fn(existing) {
           let assert Some(existing) = existing
           player.make_call(existing, call)
         }),
@@ -329,7 +329,7 @@ pub fn reveal_hand(game: Game, player_id: Int) -> GameReturn {
     -> {
       let new_players =
         game.players
-        |> dict.update(player_id, fn(p) {
+        |> dict.upsert(player_id, fn(p) {
           let assert Some(p) = p
           Player(..p, hand: Hand(..p.hand, revealed: True))
         })
@@ -409,7 +409,7 @@ fn complete_trick(game: Game, events: List(Event)) -> GameReturn {
   // award trick
   let has_spade = list.any(game.trick, fn(trick) { trick.card.suit == Spades })
   let updated_players =
-    dict.update(game.players, winner, fn(existing) {
+    dict.upsert(game.players, winner, fn(existing) {
       let assert Some(existing) = existing
       case existing.id == winner {
         True -> player.add_trick(existing)
@@ -456,15 +456,15 @@ fn next_player(game: Game) -> Game {
 fn deal_cards(game: Game) -> Game {
   let assert Ok(shuffled) =
     game.deck
-    |> iterator.iterate(game.shuffle)
-    |> iterator.take(12)
-    |> iterator.last
+    |> yielder.iterate(game.shuffle)
+    |> yielder.take(12)
+    |> yielder.last
 
   let assert [north, east, south, west] =
     shuffled
     |> list.index_fold(dict.new(), fn(groups, card, index) {
       let position = 4 - index % 4
-      dict.update(groups, position, fn(existing) {
+      dict.upsert(groups, position, fn(existing) {
         let cards = option.unwrap(existing, [])
         [card, ..cards]
       })
@@ -510,8 +510,8 @@ fn update_scores(game: Game) -> Game {
   Game(
     ..game,
     scores: game.scores
-      |> dict.update(NorthSouth, update_score(_, north_south_score))
-      |> dict.update(EastWest, update_score(_, east_west_score)),
+      |> dict.upsert(NorthSouth, update_score(_, north_south_score))
+      |> dict.upsert(EastWest, update_score(_, east_west_score)),
   )
 }
 
