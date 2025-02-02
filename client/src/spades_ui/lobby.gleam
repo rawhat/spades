@@ -7,6 +7,7 @@ import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
+import gleam/uri
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -31,10 +32,14 @@ pub type Model {
 }
 
 @external(javascript, "../spades_ui_ffi.mjs", "initSSE")
-fn do_init_sse(path: Request(String), callback: fn(Dynamic) -> Nil) -> Nil
+fn do_init_sse(path: String, callback: fn(Dynamic) -> Nil) -> Nil
 
-fn init_sse(path: Request(String)) -> Effect(Msg) {
+fn init_sse(req: Request(String)) -> Effect(Msg) {
   fn(dispatch) {
+    let path =
+      req
+      |> request.to_uri
+      |> uri.to_string
     do_init_sse(path, fn(data) {
       case decode.run(data, message_decoder()) {
         Ok(res) -> dispatch(GamesAdded(res))
@@ -51,7 +56,7 @@ pub fn init() -> Model {
 
 pub fn start_lobby_socket() -> Effect(Msg) {
   util.new_request()
-  |> request.set_path("/lobby/events")
+  |> request.set_path("/api/lobby/events")
   |> init_sse()
 }
 

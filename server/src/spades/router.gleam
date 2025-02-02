@@ -9,6 +9,7 @@ import gleam/http/cookie
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response, Response}
 import gleam/int
+import gleam/io
 import gleam/json
 import gleam/list
 import gleam/option.{None, Some}
@@ -197,7 +198,8 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.replace_error(empty_response(404))
       |> result.unwrap_both
     }
-    Get, ["lobby", "events"] -> {
+    Get, ["api", "lobby", "events"] -> {
+      io.println("hi mom")
       use <- with_authentication(app_req)
       app_req.session
       |> result.map(fn(session) {
