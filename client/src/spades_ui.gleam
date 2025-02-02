@@ -1,4 +1,9 @@
+import gleam/fetch
+import gleam/http/request
+import gleam/http/response.{Response}
+import gleam/javascript/promise
 import gleam/option.{None}
+import gleam/result
 import gleam/uri.{type Uri}
 import lustre
 import lustre/attribute
@@ -9,6 +14,7 @@ import modem
 import spades_ui/create_user
 import spades_ui/lobby
 import spades_ui/login
+import util
 
 pub type Msg {
   RouteChanged(Route)
@@ -73,7 +79,10 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     )
     LoginMsg(login.LoginSuccess) -> #(
       Model(..model, route: Lobby),
-      effect.map(lobby.start_lobby_socket(), LobbyMsg),
+      effect.batch([
+        effect.map(lobby.start_lobby_socket(), LobbyMsg),
+        modem.push("/lobby", None, None),
+      ]),
     )
     LoginMsg(login_msg) -> {
       let update = login.update(model.login, login_msg)
@@ -119,8 +128,22 @@ fn view(model: Model) -> Element(Msg) {
 }
 
 pub fn main() {
-  let assert Ok(initial_route) = modem.initial_uri()
-  let app = lustre.application(init, update, view)
+  let assert Ok(requested_route) =
+    modem.initial_uri()
+    |> result.then(request.from_uri)
+  util.new_request()
+  |> request.set_path("/api/session")
+  |> fetch.send
+  |> promise.map(fn(res) {
+    case res {
+      Ok(Response(status: 200, ..)) -> requested_route
+      _ -> request.set_path(requested_route, "/login")
+    }
+    |> request.to_uri
+  })
+  |> promise.map(fn(initial_route) {
+    let app = lustre.application(init, update, view)
 
-  lustre.start(app, "#app", initial_route)
+    let assert Ok(_) = lustre.start(app, "#app", initial_route)
+  })
 }

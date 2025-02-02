@@ -18,7 +18,7 @@ gleam_json = ">= 2.3.0 and < 3.0.0"
 gleam_crypto = ">= 1.4.0 and < 2.0.0"
 gleam_otp = ">= 0.16.1 and < 1.0.0"
 logging = ">= 1.3.0 and < 2.0.0"
-mist = { path = "/Users/alex/code/gleams/mist" }
+mist = { path = "/home/alex/gleams/mist" }
 envoy = ">= 1.0.2 and < 2.0.0"
 pog = ">= 3.2.0 and < 4.0.0"
 gleam_yielder = ">= 1.1.0 and < 2.0.0"

@@ -12,6 +12,8 @@ lustre_websocket = ">= 0.7.6 and < 1.0.0"
 modem = ">= 2.0.1 and < 3.0.0"
 lustre_ui = ">= 0.4.0 and < 1.0.0"
 rsvp = ">= 1.0.1 and < 2.0.0"
+gleam_fetch = ">= 1.1.0 and < 2.0.0"
+gleam_javascript = ">= 0.13.0 and < 1.0.0"
 
 [dev-dependencies]
 gleeunit = "~> 1.0"

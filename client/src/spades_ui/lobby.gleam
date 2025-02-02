@@ -1,5 +1,4 @@
 import gleam/dict.{type Dict}
-import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/http.{Post}
 import gleam/http/request.{type Request}
@@ -11,7 +10,7 @@ import gleam/uri
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{div, h1, h2}
+import lustre/element/html.{a, div, h1, h2}
 import lustre/event
 import lustre/ui
 import lustre/ui/button
@@ -32,7 +31,7 @@ pub type Model {
 }
 
 @external(javascript, "../spades_ui_ffi.mjs", "initSSE")
-fn do_init_sse(path: String, callback: fn(Dynamic) -> Nil) -> Nil
+fn do_init_sse(path: String, callback: fn(String) -> Nil) -> Nil
 
 fn init_sse(req: Request(String)) -> Effect(Msg) {
   fn(dispatch) {
@@ -41,9 +40,9 @@ fn init_sse(req: Request(String)) -> Effect(Msg) {
       |> request.to_uri
       |> uri.to_string
     do_init_sse(path, fn(data) {
-      case decode.run(data, message_decoder()) {
+      case json.parse(data, message_decoder()) {
         Ok(res) -> dispatch(GamesAdded(res))
-        _ -> Nil
+        Error(_) -> Nil
       }
     })
   }
@@ -163,8 +162,22 @@ fn divider() -> Element(Msg) {
   ])
 }
 
-fn game_list(_games: Dict(Int, GameEntry)) -> Element(Msg) {
-  div([], [])
+fn game_list(games: Dict(Int, GameEntry)) -> Element(Msg) {
+  ui.stack(
+    [],
+    games
+      |> dict.values
+      |> list.map(fn(game) {
+        div([], [
+          ui.sequence([], [
+            a([attribute.href("/game/" <> int.to_string(game.id))], [
+              ui.button([], [element.text("Join")]),
+            ]),
+            element.text(game.name),
+          ]),
+        ])
+      }),
+  )
 }
 
 fn new_game(game_name: Option(String)) -> Element(Msg) {

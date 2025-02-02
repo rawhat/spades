@@ -60,7 +60,7 @@ fn login(username: String, password: String) -> Effect(Msg) {
 
   rsvp.send(
     req,
-    rsvp.expect_any_response(fn(resp) {
+    rsvp.expect_ok_response(fn(resp) {
       case resp {
         Ok(_) -> LoginSuccess
         Error(rsvp.HttpError(Response(status: 403, ..))) ->
