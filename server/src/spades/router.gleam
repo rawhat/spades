@@ -16,6 +16,7 @@ import gleam/otp/actor
 import gleam/pair
 import gleam/result
 import gleam/string
+import gleam/string_tree
 import mist.{type Connection, type ResponseData, Custom, Text}
 import pog
 import spades/encoder
@@ -196,13 +197,14 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.replace_error(empty_response(404))
       |> result.unwrap_both
     }
-    Get, ["socket", "lobby"] -> {
+    Get, ["lobby", "events"] -> {
       use <- with_authentication(app_req)
       app_req.session
       |> result.map(fn(session) {
-        mist.websocket(
-          request: app_req.req,
-          on_init: fn(conn) {
+        mist.server_sent_events(
+          app_req.req,
+          response.new(200),
+          fn(conn) {
             let subj = process.new_subject()
             let selector =
               process.new_selector()
@@ -212,13 +214,23 @@ pub fn router(app_req: AppRequest) -> AppResult {
             let _ =
               games
               |> game_manager.game_entries_to_json
-              |> mist.send_text_frame(conn, _)
-            #(Nil, Some(selector))
+              |> string_tree.from_string
+              |> mist.event
+              |> mist.send_event(conn, _)
+            actor.Ready(Nil, selector)
           },
-          handler: fn(state, _conn, _msg) { actor.continue(state) },
-          on_close: fn(_state) {
-            process.send(app_req.lobby_manager, lobby.Leave(session.id))
-            Nil
+          fn(msg, conn, state) {
+            case msg {
+              lobby.Send(data) -> {
+                let _ =
+                  data
+                  |> string_tree.from_string
+                  |> mist.event
+                  |> mist.send_event(conn, _)
+
+                actor.continue(state)
+              }
+            }
           },
         )
       })

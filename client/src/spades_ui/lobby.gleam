@@ -1,12 +1,12 @@
 import gleam/dict.{type Dict}
+import gleam/dynamic.{type Dynamic}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/http.{Post}
-import gleam/http/request
+import gleam/http/request.{type Request}
 import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/result
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
@@ -15,33 +15,44 @@ import lustre/event
 import lustre/ui
 import lustre/ui/button
 import lustre/ui/sequence
-import lustre_websocket as ws
 import rsvp
 import util
 
 pub type Msg {
   NewGame(String)
-  Websocket(ws.WebSocketEvent)
+  GamesAdded(Dict(Int, GameEntry))
   CreateGame
   CreateSuccess(game_id: String)
   CreateError(String)
 }
 
 pub type Model {
-  Model(
-    ws: Option(ws.WebSocket),
-    games: Dict(Int, GameEntry),
-    new_game: Option(String),
-    error: String,
-  )
+  Model(games: Dict(Int, GameEntry), new_game: Option(String), error: String)
+}
+
+@external(javascript, "../spades_ui_ffi.mjs", "initSSE")
+fn do_init_sse(path: Request(String), callback: fn(Dynamic) -> Nil) -> Nil
+
+fn init_sse(path: Request(String)) -> Effect(Msg) {
+  fn(dispatch) {
+    do_init_sse(path, fn(data) {
+      case decode.run(data, message_decoder()) {
+        Ok(res) -> dispatch(GamesAdded(res))
+        _ -> Nil
+      }
+    })
+  }
+  |> effect.from
 }
 
 pub fn init() -> Model {
-  Model(ws: None, games: dict.new(), new_game: None, error: "")
+  Model(games: dict.new(), new_game: None, error: "")
 }
 
 pub fn start_lobby_socket() -> Effect(Msg) {
-  ws.init("/socket/lobby", Websocket)
+  util.new_request()
+  |> request.set_path("/lobby/events")
+  |> init_sse()
 }
 
 // TODO:  share these with the back-end encoders?
@@ -94,18 +105,10 @@ fn create_game(name: String) -> Effect(Msg) {
 
 pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
   case msg {
-    Websocket(ws.OnOpen(sock)) -> #(
-      Model(..model, ws: Some(sock)),
+    GamesAdded(games) -> #(
+      Model(..model, games: dict.merge(model.games, games)),
       effect.none(),
     )
-    Websocket(ws.OnTextMessage(msg)) -> {
-      json.parse(msg, message_decoder())
-      |> result.map(fn(games) {
-        #(Model(..model, games: dict.merge(model.games, games)), effect.none())
-      })
-      |> result.lazy_unwrap(fn() { #(model, effect.none()) })
-    }
-    Websocket(ws.OnClose(_reason)) -> #(Model(..model, ws: None), effect.none())
     NewGame(name) -> #(Model(..model, new_game: Some(name)), effect.none())
     CreateGame -> {
       case model.new_game {
@@ -115,10 +118,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     CreateSuccess(_) -> #(model, effect.none())
     CreateError(error) -> #(Model(..model, error: error), effect.none())
-    Websocket(ws.OnBinaryMessage(_msg)) | Websocket(ws.InvalidUrl) -> #(
-      model,
-      effect.none(),
-    )
   }
 }
 

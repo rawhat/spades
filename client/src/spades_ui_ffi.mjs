@@ -1,57 +1,18 @@
-import { Create, Home, Lobby, Login, Game, NotFound } from "./spades_ui.mjs";
-
-export function setupRouter(dispatch) {
-  document.addEventListener("click", (e) => {
-    let target = e.target;
-
-    while (target) {
-      if (target === document.body) return;
-      if (target.tagName === "A") {
-        const url = new URL(target.href);
-        if (url.origin !== window.location.origin) return;
-        const route = new Route(url.pathname, url.hash);
-
-        e.preventDefault();
-        window.requestAnimationFrame(() => {
-          window.history.pushState({}, "", url.href);
-          if (url.pathname === window.location.pathname && url.hash) {
-            document.querySelector(url.hash)?.scrollIntoView();
-          } else {
-            window.scrollTo(0, 0);
-          }
-        });
-        return void dispatch(route);
-      }
-
-      target = target.parentNode;
-    }
-  });
-
-  window.addEventListener("popstate", () => {
-    const url = new URL(window.location.href);
-    const route = new Route(url.pathname, url.hash);
-
-    dispatch(route);
-  });
-}
-
-export function getInitialRoute() {
-  const { pathname } = new URL(window.location.href);
-  switch (pathname) {
-    case "/": return new Home();
-    case "/login": return new Login();
-    case "/create": return new Create();
-    case "/lobby": return new Lobby();
-    default: {
-      const gameAndId = pathname.match(/^\/game\/(\d+)$/);
-      if (gameAndId) {
-        return new Game(gameAndId[0]);
-      }
-      return new NotFound(pathname);
-    }
-  }
-}
+import { scheme_to_string } from "../gleam_http/gleam/http.mjs"
 
 export function getHostnameAndPort() {
   return [window.location.hostname, window.location.port]
+}
+
+export function urlFromRequest(req) {
+  const url = new URL(`${scheme_to_string(req.scheme)}://${req.host}:${req.port}${req.path}`);
+  return url;
+}
+
+export function initSSE(req, callback) {
+  const url = urlFromRequest(req);
+  const eventSource = new EventSource(url, { withCredentials: true });
+  eventSource.onmessage = (event) => {
+    callback(event.data)
+  };
 }

@@ -29,7 +29,7 @@ packages = [
   { name = "hpack_erl", version = "0.3.0", build_tools = ["rebar3"], requirements = [], otp_app = "hpack", source = "hex", outer_checksum = "D6137D7079169D8C485C6962DFE261AF5B9EF60FBC557344511C1E65E3D95FB0" },
   { name = "justin", version = "1.0.1", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "justin", source = "hex", outer_checksum = "7FA0C6DB78640C6DC5FBFD59BF3456009F3F8B485BF6825E97E1EB44E9A1E2CD" },
   { name = "logging", version = "1.3.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "logging", source = "hex", outer_checksum = "1098FBF10B54B44C2C7FDF0B01C1253CAFACDACABEFB4B0D027803246753E06D" },
-  { name = "mist", version = "4.0.4", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_http", "gleam_otp", "gleam_stdlib", "gleam_yielder", "glisten", "gramps", "hpack_erl", "logging"], otp_app = "mist", source = "hex", outer_checksum = "9F87DA535A75AA1B8B37D27E59B1E60A1BE34EB2CA63BE8B211D75E5D10BEEAF" },
+  { name = "mist", version = "4.0.4", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_http", "gleam_otp", "gleam_stdlib", "gleam_yielder", "glisten", "gramps", "hpack_erl", "logging"], source = "local", path = "../../../gleams/mist" },
   { name = "mug", version = "1.2.0", build_tools = ["gleam"], requirements = ["gleam_erlang", "gleam_stdlib"], otp_app = "mug", source = "hex", outer_checksum = "C5F62A3FD753B823CE296ED1B223D4B2FF06E91170A7DE35A283D70BB74B700E" },
   { name = "non_empty_list", version = "2.1.0", build_tools = ["gleam"], requirements = ["gleam_stdlib"], otp_app = "non_empty_list", source = "hex", outer_checksum = "3BF1496B475F3F2CE2EA18157587329812493369B2A7C5B9DCFEA5C007670A3B" },
   { name = "opentelemetry_api", version = "1.4.0", build_tools = ["rebar3", "mix"], requirements = [], otp_app = "opentelemetry_api", source = "hex", outer_checksum = "3DFBBFAA2C2ED3121C5C483162836C4F9027DEF469C41578AF5EF32589FCFC58" },
@@ -58,7 +58,7 @@ gleam_otp = { version = ">= 0.16.1 and < 1.0.0" }
 gleam_stdlib = { version = ">= 0.53.0 and < 1.0.0" }
 gleam_yielder = { version = ">= 1.1.0 and < 2.0.0" }
 logging = { version = ">= 1.3.0 and < 2.0.0" }
-mist = { version = ">= 4.0.4 and < 5.0.0" }
+mist = { path = "../../../gleams/mist" }
 pog = { version = ">= 3.2.0 and < 4.0.0" }
 squirrel = { version = ">= 3.0.0 and < 4.0.0" }
 startest = { version = ">= 0.4.0 and < 1.0.0" }
