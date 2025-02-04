@@ -1,7 +1,7 @@
-import gleam/order.{Eq, Gt, Lt}
-import spades/game/card.{
+import game/card.{
   Ace, Card, Clubs, Diamonds, Hearts, Jack, King, Number, Queen, Spades,
 }
+import gleam/order.{Eq, Gt, Lt}
 import startest/expect
 
 pub fn same_suit_number_test() {

@@ -1,9 +1,9 @@
+import game/bot
+import game/card.{Ace, Card, Diamonds, Hearts, King, Number, Spades}
+import game/hand.{type Call, Count, Nil, Play}
+import game/player.{type Player, East, North, South, West}
 import gleam/dict.{type Dict}
 import gleam/option.{Some}
-import spades/game/bot
-import spades/game/card.{Ace, Card, Diamonds, Hearts, King, Number, Spades}
-import spades/game/hand.{type Call, Count, Nil, Play}
-import spades/game/player.{type Player, East, North, South, West}
 import startest/expect
 
 fn make_players() {

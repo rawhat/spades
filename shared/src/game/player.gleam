@@ -1,9 +1,9 @@
+import game/card.{type Card}
+import game/hand.{type Call, type Hand, Hand}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, Some}
-import spades/game/card.{type Card}
-import spades/game/hand.{type Call, type Hand, Hand}
 
 pub type Position {
   North

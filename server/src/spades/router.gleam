@@ -1,3 +1,4 @@
+import game/game
 import gleam/bit_array
 import gleam/bytes_tree
 import gleam/dynamic/decode.{type Decoder}
@@ -19,7 +20,6 @@ import gleam/string
 import gleam/string_tree
 import mist.{type Connection, type ResponseData, Custom, Text}
 import pog
-import spades/encoder
 import spades/game_manager.{type ManagerAction, Join, Leave, NewGame, Read}
 import spades/games
 import spades/session.{type Session, type SessionAction, Validate}
@@ -155,7 +155,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
       use <- with_authentication(app_req)
       app_req.game_manager
       |> games.list
-      |> result.map(encoder.games_list)
+      |> result.map(game.games_list_to_json)
       |> result.map(json_response(200, _))
       |> result.unwrap(empty_response(400))
     }
@@ -179,8 +179,8 @@ pub fn router(app_req: AppRequest) -> AppResult {
         process.send(app_req.lobby_manager, GameUpdate(new_game.game))
         let game =
           new_game
-          |> game_manager.return_to_entry
-          |> game_manager.game_entry_to_json
+          |> game.return_to_entry
+          |> game.game_entry_to_json
         Ok(json_response(200, game))
       }
       |> result.replace_error(empty_response(400))
@@ -213,7 +213,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
             let assert Ok(games) = games.list(app_req.game_manager)
             let _ =
               games
-              |> game_manager.game_entries_to_json
+              |> game.game_entries_to_json
               |> string_tree.from_string
               |> mist.event
               |> mist.send_event(conn, _)

@@ -1,3 +1,10 @@
+import game/bot
+import game/card.{type Card, type Deck, Card, Spades}
+import game/hand.{type Call, type Score, type Trick, Hand, Play, Score}
+import game/player.{
+  type Player, type Position, type Team, East, EastWest, North, NorthSouth,
+  Player, South, West,
+}
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/json.{type Json}
@@ -5,13 +12,6 @@ import gleam/list
 import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/yielder
-import spades/game/bot
-import spades/game/card.{type Card, type Deck, Card, Spades}
-import spades/game/hand.{type Call, type Score, type Trick, Hand, Play, Score}
-import spades/game/player.{
-  type Player, type Position, type Team, East, EastWest, North, NorthSouth,
-  Player, South, West,
-}
 
 pub type Event {
   AwardedTrick(winner: Int)
@@ -600,4 +600,274 @@ fn perform_bot_action(game: Game) -> GameReturn {
     }
   })
   |> result.unwrap(Failure(game, NotYourTurn))
+}
+
+pub type GameEntry {
+  GameEntry(id: Int, name: String, players: Int)
+}
+
+pub fn return_to_entry(return: GameReturn) -> GameEntry {
+  GameEntry(return.game.id, return.game.name, dict.size(return.game.players))
+}
+
+fn entry_to_json(entry: GameEntry) -> json.Json {
+  json.object([
+    #("id", json.int(entry.id)),
+    #("name", json.string(entry.name)),
+    #("players", json.int(entry.players)),
+  ])
+}
+
+pub fn game_entry_to_json(entry: GameEntry) -> String {
+  entry
+  |> entry_to_json
+  |> json.to_string
+}
+
+pub fn game_entries_to_json(entries: List(GameEntry)) -> String {
+  entries
+  |> json.array(entry_to_json)
+  |> json.to_string
+}
+
+pub type PublicGame {
+  PublicGame(
+    created_by: String,
+    current_player: Position,
+    id: Int,
+    last_trick: option.Option(hand.Trick),
+    name: String,
+    players: List(player.PublicPlayer),
+    player_position: Dict(Position, Int),
+    scores: Dict(player.Team, hand.Score),
+    spades_broken: Bool,
+    state: State,
+    trick: hand.Trick,
+  )
+}
+
+pub fn to_public(game: Game) -> PublicGame {
+  PublicGame(
+    created_by: game.created_by,
+    current_player: game.current_player,
+    id: game.id,
+    last_trick: game.last_trick,
+    name: game.name,
+    players: game.players
+      |> dict.values
+      |> list.map(player.to_public),
+    player_position: game.player_position,
+    scores: game.scores,
+    spades_broken: game.spades_broken,
+    state: game.state,
+    trick: game.trick,
+  )
+}
+
+pub fn public_to_json(game: PublicGame) -> Json {
+  json.object([
+    #("created_by", json.string(game.created_by)),
+    #("current_player", player.position_to_json(game.current_player)),
+    #("id", json.int(game.id)),
+    #(
+      "last_trick",
+      json.nullable(game.last_trick, fn(trick) {
+        json.array(trick, hand.play_to_json)
+      }),
+    ),
+    #("name", json.string(game.name)),
+    #(
+      "players",
+      game.players
+        |> json.array(player.public_to_json),
+    ),
+    #("player_position", player_position_to_json(game.player_position)),
+    #(
+      "scores",
+      json.object([
+        #(
+          "north_south",
+          game.scores
+            |> dict.get(NorthSouth)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
+        ),
+        #(
+          "east_west",
+          game.scores
+            |> dict.get(EastWest)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
+        ),
+      ]),
+    ),
+    #("spades_broken", json.bool(game.spades_broken)),
+    #("state", state_to_json(game.state)),
+    #("trick", json.array(game.trick, hand.play_to_json)),
+  ])
+}
+
+// TODO:  This can be refactored a lot... i think some kind of like
+//   fn get_public_players_json(Game) -> Json
+//   fn get_sorted_player_cards_json(Game) -> Json
+//   ...
+fn state_for_player(game: Game, player_id: Int) -> List(#(String, Json)) {
+  game.players
+  |> dict.get(player_id)
+  |> result.map(fn(player) {
+    [
+      #("type", json.string("player_state")),
+      #(
+        "data",
+        json.object([
+          #("call", json.nullable(player.hand.call, hand.call_to_json)),
+          #(
+            "cards",
+            player.hand.cards
+              |> card.hand_sort
+              |> json.array(card.to_json),
+          ),
+          #("created_by", json.string(game.created_by)),
+          #("current_player", player.position_to_json(game.current_player)),
+          #("id", json.int(game.id)),
+          #(
+            "last_trick",
+            json.nullable(game.last_trick, json.array(_, hand.play_to_json)),
+          ),
+          #("name", json.string(game.name)),
+          #(
+            "players",
+            game.players
+              |> dict.values
+              |> list.map(player.to_public)
+              |> json.array(player.public_to_json),
+          ),
+          #("player_position", player_position_to_json(game.player_position)),
+          #("position", player.position_to_json(player.position)),
+          #("revealed", json.bool(player.hand.revealed)),
+          #(
+            "scores",
+            json.object([
+              #(
+                "north_south",
+                game.scores
+                  |> dict.get(NorthSouth)
+                  |> result.map(hand.score_to_int)
+                  |> result.unwrap(0)
+                  |> json.int,
+              ),
+              #(
+                "east_west",
+                game.scores
+                  |> dict.get(EastWest)
+                  |> result.map(hand.score_to_int)
+                  |> result.unwrap(0)
+                  |> json.int,
+              ),
+            ]),
+          ),
+          #("spades_broken", json.bool(game.spades_broken)),
+          #(
+            "state",
+            case game.state {
+              Waiting -> "waiting"
+              Bidding -> "bidding"
+              Playing -> "playing"
+            }
+              |> json.string,
+          ),
+          #(
+            "team",
+            player
+              |> player.position_to_team
+              |> player.team_to_json,
+          ),
+          #("trick", json.array(game.trick, hand.play_to_json)),
+          #("tricks", json.int(player.hand.tricks)),
+        ]),
+      ),
+    ]
+  })
+  |> result.unwrap([
+    #("type", json.string("game_state")),
+    #("data", game_to_json(game)),
+  ])
+}
+
+fn game_to_json(g: Game) -> Json {
+  json.object([
+    #("created_by", json.string(g.created_by)),
+    #("current_player", player.position_to_json(g.current_player)),
+    #("id", json.int(g.id)),
+    #(
+      "last_trick",
+      json.nullable(g.last_trick, fn(trick) {
+        json.array(trick, hand.play_to_json)
+      }),
+    ),
+    #("name", json.string(g.name)),
+    #(
+      "players",
+      g.players
+        |> dict.values
+        |> list.map(player.to_public)
+        |> json.array(player.public_to_json),
+    ),
+    #("player_position", player_position_to_json(g.player_position)),
+    #(
+      "scores",
+      json.object([
+        #(
+          "north_south",
+          g.scores
+            |> dict.get(NorthSouth)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
+        ),
+        #(
+          "east_west",
+          g.scores
+            |> dict.get(EastWest)
+            |> result.map(hand.score_to_int)
+            |> result.unwrap(0)
+            |> json.int,
+        ),
+      ]),
+    ),
+    #("spades_broken", json.bool(g.spades_broken)),
+    #(
+      "state",
+      case g.state {
+        Waiting -> "waiting"
+        Bidding -> "bidding"
+        Playing -> "playing"
+      }
+        |> json.string,
+    ),
+    #("trick", json.array(g.trick, hand.play_to_json)),
+  ])
+}
+
+pub fn game_return_to_json(id: Int, return: GameReturn) -> Json {
+  let game_json = state_for_player(return.game, id)
+  let events_json = case return {
+    Success(_game, events) -> json.array(events, serialize_event)
+    Failure(..) -> json.array([], serialize_event)
+  }
+  json.object([#("events", events_json), ..game_json])
+}
+
+pub fn games_list_to_json(entries: List(GameEntry)) -> String {
+  entries
+  |> json.array(fn(entry) {
+    json.object([
+      #("id", json.int(entry.id)),
+      #("name", json.string(entry.name)),
+      #("players", json.int(entry.players)),
+    ])
+  })
+  |> json.to_string
 }

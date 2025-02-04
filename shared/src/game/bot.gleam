@@ -1,3 +1,10 @@
+import game/card.{
+  type Card, type Suit, type Value, Ace, Jack, King, Queen, Spades,
+}
+import game/hand.{
+  type Call, type Play, type Trick, BlindNil, Count, Nil as NilCall,
+}
+import game/player.{type Player, East, North, South, West}
 import gleam/dict.{type Dict}
 import gleam/float
 import gleam/int
@@ -5,13 +12,6 @@ import gleam/list
 import gleam/option.{Some}
 import gleam/order
 import gleam/result
-import spades/game/card.{
-  type Card, type Suit, type Value, Ace, Jack, King, Queen, Spades,
-}
-import spades/game/hand.{
-  type Call, type Play, type Trick, BlindNil, Count, Nil as NilCall,
-}
-import spades/game/player.{type Player, East, North, South, West}
 
 pub fn call(players: Dict(Int, Player), bot: Player) -> Call {
   let total_calls = existing_calls(players)

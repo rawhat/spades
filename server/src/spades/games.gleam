@@ -1,7 +1,8 @@
+import game/game.{type GameEntry}
 import gleam/erlang/process.{type Subject}
 import gleam/json.{type Json}
 import gleam/result
-import spades/game_manager.{type GameEntry, type ManagerAction, ListGames, Read}
+import spades/game_manager.{type ManagerAction, ListGames, Read}
 
 pub fn list(manager: Subject(ManagerAction)) -> Result(List(GameEntry), Nil) {
   manager

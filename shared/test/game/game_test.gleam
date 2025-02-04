@@ -1,11 +1,11 @@
+import game/card.{Card}
+import game/game.{Bidding, Failure, InvalidSuit, Playing, Success}
+import game/hand.{Count, Play}
+import game/player.{East, North, NorthSouth, Player, South, West}
+import game/scaffold
 import gleam/dict
 import gleam/function
 import gleam/list
-import spades/game/card.{Card}
-import spades/game/game.{Bidding, Failure, InvalidSuit, Playing, Success}
-import spades/game/hand.{Count, Play}
-import spades/game/player.{East, North, NorthSouth, Player, South, West}
-import spades/game/scaffold
 import startest/expect
 
 pub fn add_player_updates_game_test() {

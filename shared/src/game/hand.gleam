@@ -1,8 +1,8 @@
+import game/card.{type Card, Spades}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/json.{type Json}
 import gleam/list
 import gleam/option.{type Option, None, Some}
-import spades/game/card.{type Card, Spades}
 
 pub type Score {
   Score(points: Int, bags: Int)

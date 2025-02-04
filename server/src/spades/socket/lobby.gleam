@@ -1,9 +1,9 @@
+import game/game.{type Game}
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/json
 import gleam/list
 import gleam/otp/actor
-import spades/game/game.{type Game}
 import spades/session.{type Session}
 
 pub type Message {

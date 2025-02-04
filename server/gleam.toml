@@ -23,7 +23,9 @@ envoy = ">= 1.0.2 and < 2.0.0"
 pog = ">= 3.2.0 and < 4.0.0"
 gleam_yielder = ">= 1.1.0 and < 2.0.0"
 squirrel = ">= 3.0.0 and < 4.0.0"
-gleam_time = ">= 1.0.0 and < 2.0.0"
+gleam_time = "1.0.0-rc1"
+lustre = ">= 4.6.3 and < 5.0.0"
+shared = { path = "../shared" }
 
 [dev-dependencies]
 startest = ">= 0.4.0 and < 1.0.0"
