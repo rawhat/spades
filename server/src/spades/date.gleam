@@ -1,30 +1,40 @@
 import gleam/dynamic/decode.{type Decoder}
+import gleam/int
+import gleam/time/calendar.{
+  type Date, type Month, type TimeOfDay, Date, TimeOfDay,
+}
+import gleam/time/duration
+import gleam/time/timestamp.{type Timestamp}
 import pog
 
-pub type Date {
-  Date(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int)
+pub type DateTime {
+  DateTime(date: Date, time: TimeOfDay)
 }
 
-@external(erlang, "calendar", "universal_time")
-fn do_now_date() -> #(#(Int, Int, Int), #(Int, Int, Int))
-
-pub fn now_date() -> Date {
-  let #(#(year, month, day), #(hour, minute, second)) = do_now_date()
-  Date(year, month, day, hour, minute, second)
+pub fn convert_month(value: Int) -> Month {
+  case value {
+    1 -> calendar.January
+    2 -> calendar.February
+    3 -> calendar.March
+    4 -> calendar.April
+    5 -> calendar.May
+    6 -> calendar.June
+    7 -> calendar.July
+    8 -> calendar.August
+    9 -> calendar.September
+    10 -> calendar.October
+    11 -> calendar.November
+    12 -> calendar.December
+    _ -> panic as { "month outside of range: " <> int.to_string(value) }
+  }
 }
 
-const epoch = Date(1970, 1, 1, 0, 0, 0)
-
-pub fn row_decoder() -> Decoder(Date) {
+pub fn row_decoder() -> Decoder(DateTime) {
   use date <- decode.field(0, pog.date_decoder())
   use time <- decode.field(1, pog.time_decoder())
-  decode.success(Date(
-    date.year,
-    date.month,
-    date.day,
-    time.hours,
-    time.minutes,
-    time.seconds,
+  decode.success(DateTime(
+    Date(date.year, convert_month(date.month), date.day),
+    TimeOfDay(time.hours, time.minutes, time.seconds, 0),
   ))
 }
 
@@ -39,26 +49,14 @@ pub fn now() -> Int {
   do_now(Second)
 }
 
-pub fn json_decoder() -> Decoder(Date) {
-  decode.list(decode.int)
-  |> decode.then(fn(values) {
-    case values {
-      [year, month, day, hour, minute, second] -> {
-        decode.success(Date(year, month, day, hour, minute, second))
-      }
-      _ -> decode.failure(epoch, "Invalid")
-    }
-  })
-}
-
 const hours_per_day = 24
 
 const minutes_per_hour = 60
 
 const seconds_per_minute = 60
 
-pub fn add_days(date: Int, days: Int) -> Int {
+pub fn add_days(date: Timestamp, days: Int) -> Timestamp {
   let total_seconds =
     days * hours_per_day * minutes_per_hour * seconds_per_minute
-  date + total_seconds
+  timestamp.add(date, duration.seconds(total_seconds))
 }

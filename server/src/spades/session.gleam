@@ -2,13 +2,14 @@ import gleam/bit_array
 import gleam/dict.{type Dict}
 import gleam/dynamic/decode.{type Decoder}
 import gleam/erlang/process.{type Subject}
+import gleam/float
 import gleam/http/response.{type Response}
-import gleam/int
 import gleam/json
 import gleam/order.{Gt}
 import gleam/otp/actor
 import gleam/result
 import gleam/string
+import gleam/time/timestamp.{type Timestamp}
 import mist.{type ResponseData}
 import spades/date
 
@@ -19,7 +20,7 @@ pub type SessionAction {
 }
 
 pub type Session {
-  Session(id: Int, username: String, expires_at: Int)
+  Session(id: Int, username: String, expires_at: Timestamp)
 }
 
 pub type SessionState {
@@ -49,7 +50,7 @@ pub fn start() -> Result(Subject(SessionAction), actor.StartError) {
 }
 
 pub fn new(id: Int, username: String) -> Session {
-  date.now()
+  timestamp.system_time()
   |> date.add_days(7)
   |> Session(id, username, _)
 }
@@ -58,7 +59,10 @@ fn to_string(session: Session) -> String {
   json.object([
     #("id", json.int(session.id)),
     #("username", json.string(session.username)),
-    #("expires_at", json.int(session.expires_at)),
+    #(
+      "expires_at",
+      json.int(float.round(timestamp.to_unix_seconds(session.expires_at))),
+    ),
   ])
   |> json.to_string
   |> bit_array.from_string
@@ -82,7 +86,7 @@ fn session_decoder() -> Decoder(Session) {
   use id <- decode.field("id", decode.int)
   use username <- decode.field("username", decode.string)
   use expires_at <- decode.field("expires_at", decode.int)
-  decode.success(Session(id, username, expires_at))
+  decode.success(Session(id, username, timestamp.from_unix_seconds(expires_at)))
 }
 
 pub type LoginRequest {
@@ -112,6 +116,8 @@ pub fn add_cookie_header(
 ) -> Response(ResponseData) {
   let expiry =
     session.expires_at
+    |> timestamp.to_unix_seconds
+    |> float.round
     |> json.int
     |> json.to_string
   let cookie =
@@ -127,7 +133,7 @@ pub fn add_cookie_header(
 }
 
 pub fn validate(session: Session) -> Result(Nil, Nil) {
-  case int.compare(session.expires_at, date.now()) {
+  case timestamp.compare(session.expires_at, timestamp.system_time()) {
     Gt -> Ok(Nil)
     _ -> Error(Nil)
   }

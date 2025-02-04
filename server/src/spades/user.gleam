@@ -4,10 +4,10 @@ import gleam/dynamic/decode.{type Decoder}
 import gleam/list
 import gleam/result
 import pog.{type Connection}
-import spades/date.{type Date}
+import spades/date.{type DateTime}
 
 pub type User {
-  User(id: Int, username: String, inserted_at: Date)
+  User(id: Int, username: String, inserted_at: DateTime)
 }
 
 fn decoder() -> Decoder(User) {
