@@ -17,13 +17,13 @@ import gleam/otp/actor
 import gleam/pair
 import gleam/result
 import gleam/string
-import gleam/string_tree
 import mist.{type Connection, type ResponseData, Custom, Text}
 import pog
 import spades/game_manager.{type ManagerAction, Join, Leave, NewGame, Read}
 import spades/games
+import spades/lobby_component
+import spades/lobby_manager.{type LobbyAction, GameUpdate}
 import spades/session.{type Session, type SessionAction, Validate}
-import spades/socket/lobby.{type LobbyAction, GameUpdate}
 import spades/user
 
 pub type AppError {
@@ -34,12 +34,13 @@ pub type AppRequest {
   AppRequest(
     db: pog.Connection,
     game_manager: Subject(ManagerAction),
-    req: Request(Connection),
-    static_root: String,
-    salt: String,
     lobby_manager: Subject(LobbyAction),
-    session_manager: Subject(SessionAction),
+    req: Request(Connection),
+    salt: String,
+    server_component_path: String,
     session: Result(Session, Nil),
+    session_manager: Subject(SessionAction),
+    static_root: String,
   )
 }
 
@@ -55,9 +56,10 @@ pub fn result_to_response(handler: fn() -> AppResult) -> Response(ResponseData) 
 
 pub fn app_middleware(
   req: Request(Connection),
-  manager: Subject(ManagerAction),
+  game_manager: Subject(ManagerAction),
   db: pog.Connection,
   static_root: String,
+  server_component_path: String,
   salt: String,
   session_manager: Subject(SessionAction),
   lobby_manager: Subject(LobbyAction),
@@ -65,14 +67,15 @@ pub fn app_middleware(
 ) -> AppResult {
   let app_request =
     AppRequest(
-      db,
-      manager,
-      req,
-      static_root,
-      salt,
-      lobby_manager,
-      session_manager,
+      db:,
+      game_manager:,
+      lobby_manager:,
+      req:,
+      salt:,
+      server_component_path:,
       session: Error(Nil),
+      session_manager:,
+      static_root:,
     )
   next(app_request)
 }
@@ -92,21 +95,37 @@ pub fn session_middleware(
 
 pub fn router(app_req: AppRequest) -> AppResult {
   case app_req.req.method, request.path_segments(app_req.req) {
-    Get, ["assets" as start, ..path] | Get, ["images" as start, ..path] ->
-      serve_static_file([start, ..path], app_req.static_root)
+    Get, ["api", "lustre-server-component.mjs"] -> {
+      mist.send_file(app_req.server_component_path, offset: 0, limit: None)
+      |> result.map(fn(file) {
+        response.new(200)
+        |> response.set_header("content-type", "application/javascript")
+        |> response.set_body(file)
+      })
+      |> result.lazy_unwrap(fn() {
+        response.new(404)
+        |> response.set_body(mist.Bytes(bytes_tree.new()))
+      })
+    }
+    Get, ["assets", ..] as path | Get, ["images", ..] as path ->
+      serve_static_file(path, app_req.static_root)
     Get, ["favicon.ico"] ->
       serve_static_file(["favicon.ico"], app_req.static_root)
     Post, ["api", "session"] -> {
       let assert Ok(req) = mist.read_body(app_req.req, 1024 * 1024 * 10)
       let assert Ok(body_string) = bit_array.to_string(req.body)
       let decoder = decode.at(["session"], session.login_decoder())
-      let assert Ok(login_request) = json.parse(body_string, decoder)
-      user.login(
-        app_req.db,
-        app_req.salt,
-        login_request.username,
-        login_request.password,
-      )
+      body_string
+      |> json.parse(decoder)
+      |> result.replace_error(Nil)
+      |> result.then(fn(login_request) {
+        user.login(
+          app_req.db,
+          app_req.salt,
+          login_request.username,
+          login_request.password,
+        )
+      })
       |> result.map(fn(user) {
         let value = session.new(user.id, user.username)
         process.send(app_req.session_manager, session.Add(user.id, value))
@@ -144,7 +163,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap_both
     }
     Get, ["api", "session"] -> {
-      use <- with_authentication(app_req)
+      use _session <- with_authentication(app_req)
       app_req
       |> get_cookie_from_request
       |> result.map(fn(session) { json_response(200, session.to_json(session)) })
@@ -152,7 +171,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap_both
     }
     Get, ["api", "game"] -> {
-      use <- with_authentication(app_req)
+      use _session <- with_authentication(app_req)
       app_req.game_manager
       |> games.list
       |> result.map(game.games_list_to_json)
@@ -160,14 +179,13 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap(empty_response(400))
     }
     Post, ["api", "game"] -> {
-      use <- with_authentication(app_req)
+      use session <- with_authentication(app_req)
       let game_name_decoder = {
         use name <- decode.field("name", decode.string)
         decode.success(name)
       }
       {
         use game_name <- result.then(get_json_body(app_req, game_name_decoder))
-        use session <- result.then(app_req.session)
         use new_game <- result.then(
           process.try_call(
             app_req.game_manager,
@@ -187,8 +205,7 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.unwrap_both
     }
     Get, ["api", "game", game_id] -> {
-      use <- with_authentication(app_req)
-      let assert Ok(session) = app_req.session
+      use session <- with_authentication(app_req)
       game_id
       |> int.parse
       |> result.then(games.read(app_req.game_manager, _, session.id))
@@ -197,51 +214,19 @@ pub fn router(app_req: AppRequest) -> AppResult {
       |> result.replace_error(empty_response(404))
       |> result.unwrap_both
     }
-    Get, ["api", "lobby", "events"] -> {
-      use <- with_authentication(app_req)
-      app_req.session
-      |> result.map(fn(session) {
-        mist.server_sent_events(
-          app_req.req,
-          response.new(200),
-          fn(conn) {
-            let subj = process.new_subject()
-            let selector =
-              process.new_selector()
-              |> process.selecting(subj, function.identity)
-            process.send(app_req.lobby_manager, lobby.Join(session, subj))
-            let assert Ok(games) = games.list(app_req.game_manager)
-            let _ =
-              games
-              |> game.game_entries_to_json
-              |> string_tree.from_string
-              |> mist.event
-              |> mist.send_event(conn, _)
-            actor.Ready(Nil, selector)
-          },
-          fn(msg, conn, state) {
-            case msg {
-              lobby.Send(data) -> {
-                let _ =
-                  data
-                  |> string_tree.from_string
-                  |> mist.event
-                  |> mist.send_event(conn, _)
-
-                actor.continue(state)
-              }
-            }
-          },
-        )
-      })
-      |> result.replace_error(empty_response(403))
-      |> result.unwrap_both
+    Get, ["api", "lobby"] -> {
+      use session <- with_authentication(app_req)
+      lobby_component.start(
+        app_req.req,
+        app_req.lobby_manager,
+        app_req.game_manager,
+        session,
+      )
     }
     Get, ["socket", "game", id] -> {
-      use <- with_authentication(app_req)
+      use session <- with_authentication(app_req)
       {
         use id <- result.then(int.parse(id))
-        use session <- result.then(app_req.session)
         mist.websocket(
           request: app_req.req,
           on_init: fn(conn) {
@@ -299,12 +284,12 @@ pub fn router(app_req: AppRequest) -> AppResult {
 
 fn with_authentication(
   req: AppRequest,
-  handler: fn() -> Response(ResponseData),
+  handler: fn(Session) -> Response(ResponseData),
 ) -> Response(ResponseData) {
   req.session
   |> result.then(session.validate)
   |> result.replace_error(empty_response(403))
-  |> result.map(fn(_ok) { handler() })
+  |> result.map(fn(session) { handler(session) })
   |> result.unwrap_both
 }
 

@@ -132,9 +132,9 @@ pub fn add_cookie_header(
   response.prepend_header(res, "Set-Cookie", cookie)
 }
 
-pub fn validate(session: Session) -> Result(Nil, Nil) {
+pub fn validate(session: Session) -> Result(Session, Nil) {
   case timestamp.compare(session.expires_at, timestamp.system_time()) {
-    Gt -> Ok(Nil)
+    Gt -> Ok(session)
     _ -> Error(Nil)
   }
 }

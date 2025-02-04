@@ -6,6 +6,7 @@ import game/player.{
   Player, South, West,
 }
 import gleam/dict.{type Dict}
+import gleam/dynamic/decode.{type Decoder}
 import gleam/int
 import gleam/json.{type Json}
 import gleam/list
@@ -82,6 +83,19 @@ pub type Game {
     teams: Dict(Team, List(Int)),
     trick: Trick,
   )
+}
+
+pub fn to_game_entry(game: Game) -> GameEntry {
+  GameEntry(id: game.id, name: game.name, players: dict.size(game.players))
+}
+
+pub fn game_to_string(game: Game) -> String {
+  json.object([
+    #("id", json.int(game.id)),
+    #("name", json.string(game.name)),
+    #("players", json.int(dict.size(game.players))),
+  ])
+  |> json.to_string
 }
 
 pub fn player_position_to_json(positions: Dict(Position, Int)) -> Json {
@@ -870,4 +884,29 @@ pub fn games_list_to_json(entries: List(GameEntry)) -> String {
     ])
   })
   |> json.to_string
+}
+
+fn game_entry_decoder() -> Decoder(GameEntry) {
+  use id <- decode.field("id", decode.int)
+  use name <- decode.field("name", decode.string)
+  use players <- decode.field("players", decode.int)
+  decode.success(GameEntry(id, name, players))
+}
+
+pub fn message_decoder() -> Decoder(Dict(Int, GameEntry)) {
+  decode.one_of(
+    decode.list(game_entry_decoder())
+      |> decode.then(fn(games) {
+        list.fold(games, dict.new(), fn(acc, game) {
+          dict.insert(acc, game.id, game)
+        })
+        |> decode.success
+      }),
+    or: [
+      game_entry_decoder()
+      |> decode.then(fn(game) {
+        decode.success(dict.from_list([#(game.id, game)]))
+      }),
+    ],
+  )
 }

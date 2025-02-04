@@ -9,6 +9,7 @@ export default defineConfig({
     proxy: {
       "/api": {
         target: "http://localhost:4000",
+        ws: true,
       },
       "/socket": {
         target: "http://localhost:4000",

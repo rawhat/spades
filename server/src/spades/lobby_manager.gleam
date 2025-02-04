@@ -1,13 +1,12 @@
-import game/game.{type Game}
+import game/game.{type Game, type GameEntry}
 import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
-import gleam/json
 import gleam/list
 import gleam/otp/actor
 import spades/session.{type Session}
 
 pub type Message {
-  Send(String)
+  Send(GameEntry)
 }
 
 pub type LobbyAction {
@@ -35,7 +34,7 @@ pub fn start() -> Result(Subject(LobbyAction), actor.StartError) {
         |> dict.values
         |> list.each(fn(lobby_user) {
           game
-          |> game_to_string
+          |> game.to_game_entry
           |> Send
           |> process.send(lobby_user.subj, _)
         })
@@ -44,13 +43,4 @@ pub fn start() -> Result(Subject(LobbyAction), actor.StartError) {
     }
     |> actor.continue
   })
-}
-
-fn game_to_string(game: Game) -> String {
-  json.object([
-    #("id", json.int(game.id)),
-    #("name", json.string(game.name)),
-    #("players", json.int(dict.size(game.players))),
-  ])
-  |> json.to_string
 }

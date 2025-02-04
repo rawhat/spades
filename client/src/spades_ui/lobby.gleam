@@ -1,17 +1,17 @@
+import game/game.{type GameEntry}
 import gleam/dict.{type Dict}
-import gleam/dynamic/decode.{type Decoder}
+import gleam/dynamic/decode
 import gleam/http.{Post}
-import gleam/http/request.{type Request}
+import gleam/http/request
 import gleam/int
 import gleam/json
-import gleam/list
 import gleam/option.{type Option, None, Some}
-import gleam/uri
 import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{a, div, h1, h2}
+import lustre/element/html.{div, h1, h2}
 import lustre/event
+import lustre/server_component
 import lustre/ui
 import lustre/ui/button
 import lustre/ui/sequence
@@ -30,63 +30,8 @@ pub type Model {
   Model(games: Dict(Int, GameEntry), new_game: Option(String), error: String)
 }
 
-@external(javascript, "../spades_ui_ffi.mjs", "initSSE")
-fn do_init_sse(path: String, callback: fn(String) -> Nil) -> Nil
-
-fn init_sse(req: Request(String)) -> Effect(Msg) {
-  fn(dispatch) {
-    let path =
-      req
-      |> request.to_uri
-      |> uri.to_string
-    do_init_sse(path, fn(data) {
-      case json.parse(data, message_decoder()) {
-        Ok(res) -> dispatch(GamesAdded(res))
-        Error(_) -> Nil
-      }
-    })
-  }
-  |> effect.from
-}
-
 pub fn init() -> Model {
   Model(games: dict.new(), new_game: None, error: "")
-}
-
-pub fn start_lobby_socket() -> Effect(Msg) {
-  util.new_request()
-  |> request.set_path("/api/lobby/events")
-  |> init_sse()
-}
-
-// TODO:  share these with the back-end encoders?
-pub type GameEntry {
-  GameEntry(id: Int, name: String, players: Int)
-}
-
-fn game_entry_decoder() -> Decoder(GameEntry) {
-  use id <- decode.field("id", decode.int)
-  use name <- decode.field("name", decode.string)
-  use players <- decode.field("players", decode.int)
-  decode.success(GameEntry(id, name, players))
-}
-
-fn message_decoder() -> Decoder(Dict(Int, GameEntry)) {
-  decode.one_of(
-    decode.list(game_entry_decoder())
-      |> decode.then(fn(games) {
-        list.fold(games, dict.new(), fn(acc, game) {
-          dict.insert(acc, game.id, game)
-        })
-        |> decode.success
-      }),
-    or: [
-      game_entry_decoder()
-      |> decode.then(fn(game) {
-        decode.success(dict.from_list([#(game.id, game)]))
-      }),
-    ],
-  )
 }
 
 fn create_game(name: String) -> Effect(Msg) {
@@ -162,24 +107,6 @@ fn divider() -> Element(Msg) {
   ])
 }
 
-fn game_list(games: Dict(Int, GameEntry)) -> Element(Msg) {
-  ui.stack(
-    [],
-    games
-      |> dict.values
-      |> list.map(fn(game) {
-        div([], [
-          ui.sequence([], [
-            a([attribute.href("/game/" <> int.to_string(game.id))], [
-              ui.button([], [element.text("Join")]),
-            ]),
-            element.text(game.name),
-          ]),
-        ])
-      }),
-  )
-}
-
 fn new_game(game_name: Option(String)) -> Element(Msg) {
   case game_name {
     Some(name) -> {
@@ -207,6 +134,6 @@ pub fn view(model: Model) -> Element(Msg) {
     ui.centre([], h2([], [element.text("Lobby")])),
     divider(),
     ui.centre([], new_game(model.new_game)),
-    game_list(model.games),
+    server_component.component([server_component.route("/api/lobby")]),
   ])
 }

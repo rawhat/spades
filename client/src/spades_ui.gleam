@@ -75,15 +75,9 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     RouteChanged(route) -> #(Model(..model, route: route), effect.none())
     CreateMsg(create_user.OnCreate) -> #(
       Model(..model, route: Lobby),
-      effect.map(lobby.start_lobby_socket(), LobbyMsg),
+      effect.none(),
     )
-    LoginMsg(login.LoginSuccess) -> #(
-      Model(..model, route: Lobby),
-      effect.batch([
-        effect.map(lobby.start_lobby_socket(), LobbyMsg),
-        modem.push("/lobby", None, None),
-      ]),
-    )
+    LoginMsg(login.LoginSuccess) -> #(model, modem.push("/lobby", None, None))
     LoginMsg(login_msg) -> {
       let update = login.update(model.login, login_msg)
       #(Model(..model, login: update.0), effect.map(update.1, LoginMsg))
@@ -94,7 +88,6 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
     }
     LobbyMsg(lobby.CreateSuccess(game_id)) -> {
       #(model, modem.push("/game/" <> game_id, None, None))
-      // #(Model(..model, route: Game(game_id)), effect.none())
     }
     LobbyMsg(lobby_msg) -> {
       let update = lobby.update(model.lobby, lobby_msg)
