@@ -3,16 +3,18 @@ import gleam/dict.{type Dict}
 import gleam/erlang/process.{type Subject}
 import gleam/http/request.{type Request}
 import gleam/http/response.{type Response}
+import gleam/int
 import gleam/json
 import gleam/list
 import gleam/option.{Some}
 import gleam/otp/actor
-import gleam/string
 import lustre
+import lustre/attribute
 import lustre/effect.{type Effect}
 import lustre/element.{type Element}
-import lustre/element/html.{div}
+import lustre/element/html.{a, div}
 import lustre/server_component
+import lustre/ui
 import mist.{type Connection, type ResponseData}
 import spades/game_manager.{type ManagerAction}
 import spades/games
@@ -53,7 +55,25 @@ fn update(model: Model, msg: Msg) -> #(Model, Effect(Msg)) {
 }
 
 fn view(model: Model) -> Element(Msg) {
-  div([], [element.text(string.inspect(model.games))])
+  game_list(model.games)
+}
+
+fn game_list(games: Dict(Int, GameEntry)) -> Element(Msg) {
+  ui.stack(
+    [],
+    games
+      |> dict.values
+      |> list.map(fn(game) {
+        div([attribute.style([#("margin", "0 auto"), #("width", "50%")])], [
+          ui.sequence([], [
+            a([attribute.href("/game/" <> int.to_string(game.id))], [
+              ui.button([], [element.text("Join")]),
+            ]),
+            element.text(game.name),
+          ]),
+        ])
+      }),
+  )
 }
 
 pub fn start(
